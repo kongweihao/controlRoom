@@ -23,8 +23,8 @@ return [
 	'username'        => 'root',
 	// 密码
 	// 'password'        => 'shiyishou**helloSIAm--2018',
-    // 'password'        => 'Hello!nfjk@2020',
-	'password'        => 'root123456.',
+    'password'        => 'Hello!nfjk@2020',
+	// 'password'        => 'root123456.',
     // 端口
     'hostport'        => '3306',
     // 连接dsn
