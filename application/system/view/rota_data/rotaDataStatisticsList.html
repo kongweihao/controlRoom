@@ -1,0 +1,327 @@
+<div class="layui-body" style="padding: 15px;">
+	<!-- <blockquote class="layui-elem-quote layui-wran-color" style="margin-bottom: 20px;">xxx</blockquote> -->
+	<blockquote class="layui-elem-quote" style="margin-bottom: 20px;">
+		<p>— 支持对人名的模糊搜索</p>
+		<p>— 默认时间段：上月第一个白班 - 上月最后一个夜班</p>
+		<p>—【岗位类型】与【同事姓名】无需同时搜索</p>
+		<p>— 如果搜索不到某位同事，说明该同事还不是【值班人员】，可在【人员信息库】或【值班人员管理】菜单中将该同事设置为【值班人员】</p>
+		<p>— 白班工作时长：9h，夜班工作时长：15h</p>
+	</blockquote>
+	<!-- 搜索 -->
+	<div class="layui-collapse">
+		<div class="layui-colla-item">
+		  <h2 class="layui-colla-title">搜索面板</h2>
+		  <div class="layui-colla-content">
+			<form class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-input-block" style="margin-left: 0; text-align: center;">
+						<div class="layui-inline"> 
+							<span>起始时间</span>
+						</div>
+						<div class="layui-inline" style="width: 100px;"> 
+							<input type="text" name="timestamp_start" class="layui-input" id="timestamp_start_search">
+						</div>
+						<div class="layui-inline" style="width: 100px;"> 
+							<select name="banci_start" lay-filter="banci_start_search">
+								<option value="1" selected>白班</option>
+								<option value="0">夜班</option>
+							</select>
+						</div>
+						<div class="layui-inline"> 
+							<span>——</span>
+						</div>
+						<div class="layui-inline"> 
+							<span>结束时间</span>
+						</div>
+						<div class="layui-inline" style="width: 100px;"> 
+							<input type="text"  name="timestamp_end" class="layui-input" id="timestamp_end_search">
+						</div>
+						<div class="layui-inline" style="width: 100px;"> 
+							<select name="banci_end" id="" lay-filter="banci_end_search">
+								<option value="1">白班</option>
+								<option value="0" selected>夜班</option>
+							</select>
+						</div>
+					</div>
+					<div class="layui-input-block" style="margin: 10px 0 0; text-align: center;">
+						<div class="layui-inline" style="width: 165px;">
+							<select name="monitorPost_type_id" lay-filter="monitorPost_type_search">
+								<option value="-1" selected>-- 请选择岗位类型 --</option>
+								{volist name="monitorPostTypeList" id="vo"}
+								{if condition="$vo.monitorPost_type_id == $monitorPostTypeList_selected"}
+								<option value="{$vo.monitorPost_type_id}" selected>{$vo.monitorPost_type}</option>
+								{else/}
+								<option value="{$vo.monitorPost_type_id}">{$vo.monitorPost_type}</option>
+								{/if}
+								{/volist}
+							</select>
+						</div>
+						<!-- {volist name="monitorPostTypeList" id="mptl"}
+							{if condition="$mptl['is_select'] == 1"}
+							<input type="checkbox" name="monitorPost_type_id_arr[{$mptl.monitorPost_type_id}]" lay-skin="primary" title="{$mptl.monitorPost_type}" checked="">
+							{else/}
+							<input type="checkbox" name="monitorPost_type_id_arr[{$mptl.monitorPost_type_id}]" lay-skin="primary" title="{$mptl.monitorPost_type}">
+							{/if}
+						{/volist} -->
+						<div class="layui-inline"> 
+							<span>/</span>
+						</div>
+						<div class="layui-inline" style="width: 130px;">
+							<input 
+							type="text" 
+							name="member_name" 
+							class="layui-input" 
+							lay-filter="member_name_search" 
+							placeholder="请输入同事姓名"
+							onchange="member_name_change()">
+						</div>
+						<div class="layui-inline searchBtn" style="width: 130px;">
+							<button class="layui-btn" lay-submit lay-filter="searchRotaData">查询</button>
+						</div>
+					</div>
+				</div>
+			</form>
+		  </div>
+		</div>
+	</div>
+	<table id="rotaDataStatisticsTable" lay-filter="rotaDataStatisticsList_table"  style="clear: both;"></table>
+</div>
+<div id="memberRotaDetailFrame" style="display: none;text-align: center;">
+	<!-- 按当前搜索条件查看个人值班详情 -->
+	<div id="memberMessage" style="width: 100%;margin: 10px auto;">
+		<img src="" width="100" style="border-radius: 50%;margin: 10px auto;" alt="">
+		<div id="memberMessageDetail"></div>
+	</div>
+	<table id="memberRotaDetailTable" lay-filter="memberRotaDetailList_table"></table>
+</div>
+<script type="text/html" id="editBtn">
+	<a class="layui-btn layui-btn-xs" lay-event="detail" style="height:20px;line-height:20px;width:40px;padding:0">详情</a>
+</script>
+<script type="text/html" id="day_or_night_templet">
+	<span>{{d.is_day == 1 ? (d.is_night == 1 ? '24h' : '白班') : '夜班'}}</span>
+</script>
+<script>	
+	let rotaDataSearchform;//将form表单提取到公共环境
+	layui.use(['table', 'laydate'], function(){
+		let table = layui.table
+		,form = layui.form;
+		rotaDataSearchform = form;
+		// 加载table
+		getListTableRender(table)
+		
+		//监听头工具栏事件
+		table.on('toolbar(rotaDataStatisticsList_table)', function(obj){
+			var checkStatus = table.checkStatus(obj.config.id)
+			,data = checkStatus.data; //获取选中的数据
+			switch(obj.event){
+			case 'add':
+				layer.msg('批量添加功能暂不开放~')
+			break;
+			case 'update':
+				layer.msg('批量修改功能暂不开放~')
+			break;
+			case 'delete':
+				layer.msg('批量删除功能暂不开放~')
+			break;
+			};
+		});
+		
+		//监听行工具事件
+		table.on('tool(rotaDataStatisticsList_table)', function(obj){ //注：tool 是工具条事件名，test 是 table 原始容器的属性 lay-filter="对应的值"
+			var data = obj.data //获得当前行数据
+			,layEvent = obj.event; //获得 lay-event 对应的值
+			let thisGuyRotaList = []
+			let dayRotaArr = []
+			let dayRotaLen = data.dayRota.length
+			// 除去白天24小时的情况
+			for(let i = 0; i < dayRotaLen; i++){
+				if(data.dayRota[i].is_day != data.dayRota[i].is_night){
+					dayRotaArr.push(data.dayRota[i])
+				}
+			}
+			thisGuyRotaList = dayRotaArr.concat(data.nightRota)
+			if(layEvent === 'detail'){
+				layer.open({
+					type: 1
+					,title: '' //不显示标题栏
+					// ,closeBtn: false
+					,area: ['800px;','80%']
+					,totalRow: true //开启行合计
+					,shade: 0
+					,id: 'LAY_memberRotaDetail' //设定一个id，防止重复弹出
+					,btnAlign: 'c'
+					,moveType: 1 //拖拽模式，0或者1
+					,content: $('#memberRotaDetailFrame')
+					,success: function(){
+						$('#memberMessage img').attr('src','__ROOT__'+data.head)
+						$('#memberMessage #memberMessageDetail').text('联系方式：'+data.phone)
+						let tableFirstColTitle = ''
+						let timestamp_start =  $("input[name*='timestamp_start']")[0].value || '{$timestamp_start}'
+						let timestamp_end =  $("input[name*='timestamp_end']")[0].value || '{$timestamp_end}'
+						let start_banci =  $("select[name*='banci_start']")[0].value == 1 ? '白班' : '夜班'
+						let end_banci = $("select[name*='banci_end']")[0].value == 1 ? '白班' : '夜班'
+						tableFirstColTitle = data.name 
+							+'【' + timestamp_start + '/' + start_banci+'】—【' 
+							+ timestamp_end + '/' + end_banci + '】的值班详情'
+						let memberRotaDetailTable = layui.table;
+						memberRotaDetailTable.render({
+							elem: '#memberRotaDetailFrame'
+							// ,height: 300
+							,style:"margin: auto 10px"
+							// ,url: 'rotaDataStatisticsList' //数据接口
+							,limit: 1000//每页显示的条数（默认：10）。值务必对应 limits 参数的选项。注意：优先级低于 page 参数中的 limit 参数
+							,data: thisGuyRotaList//直接赋值数据。既适用于只展示一页数据，也非常适用于对一段已知数据进行多页展示。
+							// ,method: 'post' // 默认get
+							// ,page: true //开启分页
+							,defaultToolbar: ['add', 'filter', 'exports', 'print']
+							,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+							,totalRow: true //开启合计行
+							,request: {
+								// pageName: 'page' //页码的参数名称，默认：page
+								// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+							}
+							,response: {
+								// statusName: 'code' //规定数据状态的字段名称，默认：code
+								// ,statusCode: 1 //规定成功的状态码，默认：0
+								// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+								// countName: 'total' //规定数据总数的字段名称，默认：count
+								// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+							}
+							,parseData: function(res){
+								console.log(res)
+							}
+							,cols: [
+							[ //复杂表头
+								{field: '', title: tableFirstColTitle,  colspan: 3} //rowspan则是纵向跨越的单元格数
+							], 
+							[{field:'time_stamp',title: '时间'}
+							,{field:'week',title: '星期'}
+							,{field:'is_day', title: '班次', templet: '#day_or_night_templet'} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+							,{field:'monitor_post_name', title: '岗位', sort: true}
+							]]
+							,done: function(res, curr, count){
+								showTs(1,'加载成功',500)
+							}
+						});
+					}
+				}); 
+			} else if(layEvent === 'del'){
+			} else if(layEvent === 'edit'){
+			}
+		});
+	
+		// 搜索
+		// 起始时间
+		let timestamp_start_laydate = layui.laydate;
+		let timestamp_start_init = "{$timestamp_start}";
+		//执行一个laydate实例
+		timestamp_start_laydate.render({
+			elem: '#timestamp_start_search' //指定元素
+			,value: timestamp_start_init
+			,format:'yyyyMMdd'
+			,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+			,type: 'date'
+			,done: function(value, date, endDate){
+				
+			}
+		});
+		// 结束时间
+		let timestamp_end_laydate = layui.laydate;
+		let timestamp_end_init = "{$timestamp_end}";
+		//执行一个laydate实例
+		timestamp_end_laydate.render({
+			elem: '#timestamp_end_search' //指定元素
+			,value: timestamp_end_init
+			,format:'yyyyMMdd'
+			,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+			,type: 'date'
+			,done: function(value, date, endDate){
+				
+			}
+		});
+		// 提交搜索条件
+		form.on('submit(searchRotaData)', function(data){
+			// 开始时间大于结束时间时
+			if($("input[name*='timestamp_start']")[0].value > $("input[name*='timestamp_end']")[0].value){
+				showTs(0, '时间范围有误', 3000)
+				return false;
+			}
+			// 同一天班次顺序有误时
+			if($("input[name*='timestamp_start']")[0].value == $("input[name*='timestamp_end']")[0].value ){
+				if($("select[name*='banci_start']")[0].value < $("select[name*='banci_end']")[0].value){
+					showTs(0, '班次顺序有误', 3000)
+					return false;
+				}
+			}
+			getListTableRender(table)
+			// console.log(data.elem) //被执行事件的元素DOM对象，一般为button对象
+			// console.log(data.form) //被执行提交的form对象，一般在存在form标签时才会返回
+			// console.log(data.field) //当前容器的全部表单字段，名值对形式：{name: value}
+			return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+		});
+		// 岗位类型与同事姓名互斥
+		form.on('select(monitorPost_type_search)', function(data){
+			$("input[name*='member_name']")[0].value = ''
+		});
+	});
+	function getListTableRender(table){
+		table.render({
+			elem: '#rotaDataStatisticsTable'
+			,height: 500
+			,url: 'rotaDataStatisticsList' //数据接口
+			,initSort:{field:'day_nightWorkTimes', type:'desc'}
+			,limit: 1000//每页显示的条数（默认：10）。值务必对应 limits 参数的选项。注意：优先级低于 page 参数中的 limit 参数
+			,where: { 
+				getList: 1
+				,timestamp_start:  $("input[name*='timestamp_start']")[0].value || '{$timestamp_start}'
+				,timestamp_end:  $("input[name*='timestamp_end']")[0].value || '{$timestamp_end}'
+				,banci_start:  $("select[name*='banci_start']")[0].value
+				,banci_end:  $("select[name*='banci_end']")[0].value
+				,member_name: $("input[name*='member_name']")[0].value
+				,monitorPost_type_id: $("select[name*='monitorPost_type_id']")[0].value
+			}//接口的其他参数
+			// ,method: 'post' // 默认get
+			// ,page: true //开启分页
+			,defaultToolbar: ['add', 'filter', 'exports', 'print']
+			,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+    		,totalRow: true //开启合计行
+			,request: {
+				// pageName: 'page' //页码的参数名称，默认：page
+				// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+			}
+			,response: {
+				// statusName: 'code' //规定数据状态的字段名称，默认：code
+				// ,statusCode: 1 //规定成功的状态码，默认：0
+				// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+				// countName: 'total' //规定数据总数的字段名称，默认：count
+				// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+			}
+			,parseData:function(res){
+				console.log(res)
+			}
+			,cols: [[//表头
+			// 格子没对齐，找了半天原因发现是在table.render中的cols参数多了一个"," 不细心一点真看不出来，第一行开头不能多一个','
+			// {field:'id', title: 'ID', sort:true, fixed:'left', minWidth:'100'},
+			{field:'name', title: '姓名', minWidth:'100'} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+			,{field:'shiftRecordTime', title: '换班次数',sort:true, minWidth:'130'}
+			,{field:'day_nightWorkTimes', title: '总时长（h）',sort:true, minWidth:'130'}
+			,{field:'dayWorkTimes', title: '白班时长（h）',sort:true, minWidth:'150'}
+			,{field:'nightWorkTimes', title: '夜班时长（h）',sort:true, minWidth:'150'}
+			,{field:'day_nightTimes', title: '总班次（个）',sort:true, minWidth:'130'}
+			,{field:'dayTimes', sort:true, title: '白班次数（个）',sort:true, minWidth:'150'}
+			,{field:'nightTimes', title: '夜班次数（个）',sort:true, minWidth:'150'}
+			,{field:'duty', title: '工作职责', minWidth:'130'}
+			,{title: '操作', toolbar: '#editBtn',fixed: 'right', minWidth:'100'}
+			]]
+			,done: function(res, curr, count){
+				showTs(1,'加载成功',500)
+			}
+		});
+	}
+		
+	// 岗位类型与同事姓名互斥
+	function member_name_change(){
+		$("select[name*='monitorPost_type_id']")[0].value = -1
+		rotaDataSearchform.render("select");
+	}
+</script>

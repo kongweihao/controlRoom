@@ -1,0 +1,42 @@
+@CHARSET "UTF-8";
+/*登录页面css*/
+.loginWrap{
+	position: relative;
+	margin: 0 auto;
+	z-index: 9999;
+	text-align: center;
+}
+.loginWrap h2{
+	font-size: 22px;
+	text-align: center;
+	font-weight: 600;
+	color: #999;
+	margin-bottom: 50px;
+}
+.layui-form-item .layui-input-inline,.layui-input,.layui-input-block{
+	width: 100%;
+	margin-left: 0px;
+	background: transparent;
+	border-width:0 0 1px 0 ;
+}
+input:-webkit-autofill {
+	-webkit-box-shadow: 0 0 0px 1000px white inset;
+}
+#bg{
+	position: absolute;
+	background-color: #e6e6e6;
+	width: 100%;
+	height: 100%;
+}
+.line {
+	background-color: white;
+	position: absolute ;
+	width: 1000px;
+	height: 800px;
+	animation: xunazhuan 3s linear alternate infinite ;
+
+}
+@keyframes xunazhuan {0%{transform: rotate(-36deg)}100%{transform: rotate(-16deg)} }
+@-ms-keyframes xunazhuan {0%{transform: rotate(-36deg)}100%{transform: rotate(-16deg)} }
+@-webkit-keyframes xunazhuan {0%{transform: rotate(-36deg)}100%{transform: rotate(-16deg)} }
+@-moz-keyframes xunazhuan {0%{transform: rotate(-36deg)}100%{transform: rotate(-16deg)} }

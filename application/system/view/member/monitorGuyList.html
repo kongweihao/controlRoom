@@ -1,0 +1,347 @@
+<style>
+.main-part-article{
+	width: 100%;
+	height: 100%;
+	/*overflow-x: scroll;*/
+}
+.action-part{
+	padding-left: 20px;
+}
+.action-part-top{
+	display: flex;
+	height: 50px;
+	align-items: center;
+	margin: 0;
+}
+.action-part-top input{
+	width: 150px;
+	margin-right: 20px;
+}
+</style>
+<div class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>上传头像/表情包不大于2M</p>
+	</blockquote>
+	<div class="layui-collapse" style="margin: auto 15px;">
+		<div class="layui-colla-item">
+			<h2 class="layui-colla-title">搜索面板</h2>
+			<div class="layui-colla-content">
+				<div class="action-part ">
+					<form class="layui-form" action="{:url('@system/monitorGuyList')}" method="post">
+						<div class="action-part-top layui-form-item">
+							<input onblur="submit()" id="name" name="name" value="{$memberListSearchData.name}" placeholder="搜索姓名" autocomplete="off" class="layui-input" type="text" style="">
+							<input onblur="submit()" id="phone" name="phone" value="{$memberListSearchData.phone}" placeholder="搜索手机" autocomplete="off" class="layui-input" type="text">
+							<button id="searchbtn" onclick="submit()" class="layui-btn layui-btn-normal" type="button">搜索</button>
+							<button onclick="clearForm()" class="layui-btn layui-btn-normal" type="button">重置</button>
+							<button class="layui-btn layui-btn-normal member_head_img_showBtn" type="button">隐藏头像</button>
+							<button class="layui-btn layui-btn-normal member_emoticon_img_showBtn" type="button">隐藏表情包</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="panel panel-default table-responsive" style="padding: 10px; border: none;">
+		<table class="layui-table" lay-data="{height: 400}">
+			<style type="text/css">
+				.layui-table-cell {
+					height: auto;
+					line-height: 28px;
+				}
+			</style>
+			<thead>
+			<tr class="" style="background-color: #eeeeee">
+				<th lay-data="{field:'id'}" style="text-align: center">ID</th>
+				<th lay-data="{field:'name'}" style="text-align: center">姓名</th>
+				<th lay-data="{field:'is_monitor'}" style="text-align: center">是否值班人员</th>
+				<th lay-data="{field:'phone'}" style="text-align: center">手机号码</th>
+				<th lay-data="{field:'head'}" style="text-align: center; width: 130px;">头像</th>
+				<th lay-data="{field:'emoticon'}" style="text-align: center; width: 130px;">表情包</th>
+				<th lay-data="{field:'monitorPost_type_id'}" style="text-align: center">岗位类别</th>
+				<th lay-data="{field:'sex'}" style="text-align: center">性别</th>
+			</tr>
+			</thead>
+			<tbody>
+			{volist name="memberList" id="vo"}
+			<tr>
+				<td style="vertical-align: bottom;">{$vo.id}</td>
+				<td style="vertical-align: bottom;">
+					<input name="name" onblur="updataMessage('{$vo.id}','name',$(this).val(),'{$vo.name}')" value="{$vo.name}" required class="layui-input"  style="max-width: 100px;padding:0;text-align:center" >
+				</td>
+				<td style="vertical-align: bottom;">
+					<form class="layui-form">
+						<div class="layui-form-item">
+							<div class="layui-inline">
+								{if condition="$vo.is_monitor == '1'"}
+								<input type="checkbox" name="is_monitor" lay-skin="switch" memberId="{$vo.id}" lay-filter="switchIsMonitor" lay-text="是|否" checked>
+								{else/}
+								<input type="checkbox" name="is_monitor" lay-skin="switch" memberId="{$vo.id}" lay-filter="switchIsMonitor" lay-text="是|否">
+								{/if}
+							</div>
+						</div>
+					</form>
+				</td>
+				<td style="vertical-align: bottom;">
+					<input name="phone" onblur="updataMessage('{$vo.id}','phone',$(this).val(),'{$vo.phone}')" value="{$vo.phone}" required class="layui-input"  style="max-width: 100px;padding:0;text-align:center" >
+				</td>
+				<td style="text-align: center;vertical-align: bottom;" ondblclick="$('.fileInput{$vo.id}_head')[0].click()">
+					{notempty name="$vo.head"}
+					<img class="head{$vo.id} member_head_img" src=" __ROOT__{$vo.head}" alt="" style="max-width: 100px;" />
+					{/notempty}
+					<div class="images{$vo.id}"></div>
+					<input accept="image/*" type="file"  class="fileInput{$vo.id}_head" onchange="imgFlowPreview(this,'{$vo.id}','head')" style="width: 0;height: 0;" required>
+				</td>
+				<td style="text-align: center;vertical-align: bottom;" ondblclick="$('.fileInput{$vo.id}_emoticon')[0].click()">
+					{notempty name="$vo.emoticon"}
+					<img class="emoticon{$vo.id} member_emoticon_img" src=" __ROOT__{$vo.emoticon}" alt="" style="max-width: 100px;" />
+					{/notempty}
+					<div class="images{$vo.id}"></div>
+					<input accept="image/*" type="file"  class="fileInput{$vo.id}_emoticon" onchange="imgFlowPreview(this,'{$vo.id}','emoticon')" style="width: 0;height: 0;" required>
+				</td>
+				<td style="vertical-align: bottom;">
+					{if condition="$adminInfo.admin_account == 'kwh'"}
+					<input name="monitorPost_type_id" onblur="updataMessage('{$vo.id}','monitorPost_type_id',$(this).val(),'{$vo.monitorPost_type_id}')" value="{$vo.monitorPost_type_id}" required class="layui-input"  style="max-width: 100px;padding:0;text-align:center" >
+					{else/}
+					{$vo.monitorPost_type_id}
+					{/if}
+				</td>
+				<td style="vertical-align: bottom;">
+					<div class="layui-input" style="max-width: 100px;padding:0;text-align:center">
+						<select name="sex" style="border: none;" onchange="updataMessage('{$vo.id}','sex',$(this).val(),'{$vo.sex}')">
+							<option value="{$vo.sex}" selected>{$vo.sex}</option>
+							{if condition="$vo.sex == '男'"}
+							<option value="女">女</option>
+							{else/}
+							<option value="男">男</option>
+							{/if}
+						</select>
+					</div>
+				</td>
+			</tr>
+			{/volist}
+			</tbody>
+		</table>
+	</div>
+	<div class="fenyeWrap">
+		<div id="fenye"></div>
+		<div>共 {$memberList->total()} 条</div>
+	</div>
+</div>
+<script>
+	
+	layui.use(['table','form','laypage'], function(){
+		let table = layui.table;
+		
+		let form = layui.form;
+		
+		// 监听是否监控切换开关
+		form.on('switch(switchIsMonitor)', function(obj){
+			let is_checked = obj.elem.checked ? 1 : 0;
+			let memberId =  obj.elem.attributes.memberId.value;
+			// return console.log(obj,memberId,'is_monitor',is_checked,'')
+			updataMessage(memberId,'is_monitor',is_checked,'-1')
+		});
+		//分页
+		let laypage = layui.laypage;
+		
+		// 获取参数
+		let name = document.getElementsByName('name')[0].value;
+		let phone = document.getElementsByName('phone')[0].value;
+		let queryVar = '?name='+name+'&phone='+phone + '&';//不包含page的变量字符串
+		laypage.render({
+			elem: 'fenye',
+			count: "{:config('paginate')['list_rows'] * $memberList->lastPage()}", //数据总数
+			limit: "{:config('paginate')['list_rows']}",//每页显示的条数
+		    curr: "{$Request.get.page}", //当前页
+		    groups: 5, //连续显示分页数
+		    layout: ['prev', 'page', 'next', 'skip'],
+		    jump: function(obj, first){
+		        if(!first){
+					let currPage = obj.curr;//得到了当前页，用于向服务端请求对应数据
+					console.log(currPage)
+			    	location.href = "{:url('@system/monitorGuyList')}" + queryVar + 'page=' + currPage;
+		        }
+		    }
+		});
+	});
+	function clearForm() {
+		layui.use('form',function () {
+			let form = layui.form;
+			document.getElementsByName('name')[0].value = "";
+			document.getElementsByName('phone')[0].value = "";
+			form.render();
+			document.getElementsByClassName('layui-form')[0].submit();
+		})
+	}
+	let headLoadingKey = 1;//一次只允许上传一张图片
+	// 直接编辑上传头像
+	function imgFlowPreview(fileDom, sort, head_or_emoticon) {
+		// 测试权限，没有权限就不往下执行这样可以减少头像误上传
+		let authTest = 1;
+		$.ajax({
+			url:"{:url('@system/updateMember')}",
+			type:'post',
+			data:{id:sort},
+			async:false,//同步
+			success:function(res){
+				if(res.code == 0){
+					authTest = 0;
+				}
+			}
+		})
+		if(authTest == 0){
+			layer.msg('操作失败，可能是没有操作权限')
+			return
+		}
+		if(headLoadingKey){
+			headLoadingKey = 0;
+		}else{
+			layer.msg('有头像正在上传，请稍候~');
+			return
+		}
+		//判断是否支持FileReader
+		if (window.FileReader) {
+			var reader = new FileReader();
+		} else {
+			alert("您的设备不支持图片预览功能，如需该功能请升级您的设备！");
+		}
+		//获取文件
+		var file = fileDom.files[0];
+		
+		if(file){//获取不到说明用户点击之后没有选择图片
+			headLoadingKey = 1;
+			return
+		}
+		
+		//判断是否图片
+		if(file.type.indexOf('image/') == -1){
+			layer.alert('不是图片哦',{
+				icon:2,
+				skin: 'layer-ext-moon'
+			})
+			headLoadingKey = 1;
+			return;
+		}
+		// 及时提示
+		if(file.size > 2100000){
+			layer.alert('图片太大啦，请尽量不要超过2M', {
+				icon: 0,
+				skin: 'layer-ext-moon' //该皮肤由layer.seaning.com友情扩展。关于皮肤的扩展规则，去这里查阅
+			})
+			headLoadingKey = 1;
+			return;
+		}else if(file.size > 400000){//超过300+k的图片提示一下
+			layer.msg('图片比较大，请稍候~');
+		}
+		console.log(11)//删了就执行不了头像上传，但是表情包上传没问题
+
+		//读取完成
+		reader.onload = function (e) {
+			var formdata = new FormData();
+			let code = head_or_emoticon == 'head' ? 1 : 2;
+			formdata.append("code",code);  //选择对应文件夹，code = 5 对应文件夹路径为/public/uploads/imgs/member
+			// 因为base控制器中的getFolderName方法中定义了如下路径规则，如果想改得去base控制器中修改
+			// public function getFolderName($code){
+			// 	switch ($code){
+			// 		case 1:return 'head';
+            // 		case 2:return 'emoticon';
+			// 		case 3:return 'work';
+			// 		case 4:return 'business';
+			// 		case 5:return 'member';
+			// 		default:return 'default';
+			// 	}
+			// }
+			//获取文件路径名
+			
+			formdata.append("img", file);
+			$.ajax({
+				url: "{:url('@system/base/uploadFile')}",
+				type: "POST",
+				data: formdata,
+				contentType: false, // 注意这里应设为false
+				processData: false,
+				success: function (res) {
+					if (res == 0) {
+						layer.msg('文件出错或者网络错误，请稍后重试！');
+						// alert('文件出错或者网络错误，请稍后重试！')
+						headLoadingKey = 1;
+					} else if(res == 2) {
+						layer.msg('文件类型错误！');
+						// alert('文件类型错误！')
+						headLoadingKey = 1;
+					}else{
+						// 接下来更新到数据库
+						let data = {}
+						let imgUrl = res;
+						data['id'] = sort;
+						data[head_or_emoticon] = imgUrl;
+						$.ajax({
+							url:"{:url('@system/updateMember')}",
+							type:"post",
+							data:data,
+							success:function(res){
+								if(res == 1){
+									headLoadingKey = 1;
+									layer.msg('修改成功');
+									window.location.reload();//刷新
+								}else{
+									layer.msg('出现未知错误，请刷新重试');
+								}
+							}	
+						})
+					}
+				},
+				fail: function (res) {
+					alert(res)
+				}
+			})
+		};
+		reader.readAsDataURL(file);
+	}
+	function updataMessage(id,key,val,old_val){
+		// id代表
+		// key 要修改的字段
+		// val 当前值
+		// old_val 旧值
+		if(val == old_val){
+			// 无修改
+			return
+		}
+		let param = {}
+		param.id = id;
+		param[key] = val;
+		// 更新头像以外的用户信息
+		// param 代表需要更新的参数(需包含id，代表人员信息在数据库中的id)
+		$.ajax({
+			url:"{:url('@system/updateMember')}",
+			data:param,
+			type:"post",
+			success:function(res){
+				if(res == 1){
+					layer.msg('保存成功')
+					window.location.reload();//刷新
+				}else{
+					layer.msg('操作失败，可能是没有操作权限')
+				}
+			}
+		})
+	}
+	$('.member_head_img_showBtn').click(function(){
+		if($('.member_head_img').css('display') == 'none'){
+			$('.member_head_img').css('display','inline-block')
+			$('.member_head_img_showBtn').text('隐藏头像')
+		}else{
+			$('.member_head_img').css('display','none')
+			$('.member_head_img_showBtn').text('显示头像')
+		}
+	})
+	$('.member_emoticon_img_showBtn').click(function(){
+		if($('.member_emoticon_img').css('display') == 'none'){
+			$('.member_emoticon_img').css('display','inline-block')
+			$('.member_emoticon_img_showBtn').text('隐藏表情包')
+		}else{
+			$('.member_emoticon_img').css('display','none')
+			$('.member_emoticon_img_showBtn').text('显示表情包')
+		}
+	})
+</script>

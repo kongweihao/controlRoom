@@ -1,0 +1,389 @@
+<div class="layui-body" style="left:200px;">
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>- 【撤销说明】</p>
+		<p>- 调休开始前可撤回</p>
+	</blockquote>
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>我的调休申请记录</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<!-- 搜索面板 -->
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="开始日期" prop="vrl_timestamp_start">
+						<el-date-picker
+						v-model="searchForm.vrl_timestamp_start"
+						align="right"
+						type="date"
+						format="yyyy-MM-dd"
+						value-format="yyyyMMdd"
+						width="50"
+						placeholder="支持模糊搜索"
+						:picker-options="pickerOptionsStart"
+						@blur="search()"></el-date-picker>
+					</el-form-item>
+					<el-form-item label="开始午次" prop="vrl_half_day_start">
+						<el-select v-model="searchForm.vrl_half_day_start" width="50" placeholder="请选择" @change="search()">
+							<el-option label="全部" value=""></el-option>
+							<el-option label="上午" value="1"></el-option>
+							<el-option label="下午" value="2"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="结束日期" prop="vrl_timestamp_end">
+						<el-date-picker
+						v-model="searchForm.vrl_timestamp_end"
+						align="right"
+						type="date"
+						format="yyyy-MM-dd"
+						value-format="yyyyMMdd"
+						width="50"
+						placeholder="支持模糊搜索"
+						:picker-options="pickerOptionsEnd"
+						@blur="search()"></el-date-picker>
+					</el-form-item>
+					<el-form-item label="结束午次" prop="vrl_half_day_end">
+						<el-select v-model="searchForm.vrl_half_day_end" width="50" placeholder="请选择" @change="search()">
+							<el-option label="全部" value=""></el-option>
+							<el-option label="上午" value="1"></el-option>
+							<el-option label="下午" value="2"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="假期时长/天" prop="vrl_num_of_days_off">
+						<el-input
+						v-model="searchForm.vrl_num_of_days_off"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="申请说明" prop="vrl_remarks">
+						<el-input
+						v-model="searchForm.vrl_remarks"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="状态" prop="vrl_state">
+						<el-select v-model="searchForm.vrl_state" width="50" placeholder="请选择" @change="search()">
+							<el-option label="全部" value=""></el-option>
+							<el-option label="正常" value="1"></el-option>
+							<el-option label="撤回" value="-1"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+						<el-button @click="isShowSearch = !isShowSearch">收起</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<!-- 调休申请列表 -->
+			<el-table
+			:data="myVacationRecord"
+			max-height="400"
+			show-summary
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="vrl_timestamp_start"
+				label="开始日期"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.vrl_timestamp_start}}
+						<br>
+						<el-tag size="mini">
+							{{(scope.row.vrl_half_day_start == 1 ? '上午' : '下午')}}
+						</el-tag>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="vrl_timestamp_end"
+				label="结束日期"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.vrl_timestamp_end}}
+						<br>
+						<el-tag size="mini">
+							{{(scope.row.vrl_half_day_end == 1 ? '上午' : '下午')}}
+						</el-tag>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="vrl_num_of_days_off"
+				label="假期时长/天"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="vrl_applicant_account"
+				label="申请账号"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="vrl_applicant_nickname"
+				label="申请人"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="vrl_remarks"
+				label="申请说明"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="vrl_state"
+				label="状态"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.vrl_state != -1 ? '正常' : '撤回'}}
+					</template>
+				</el-table-column>
+				<el-table-column
+				fixed="right"
+				label="操作"
+				width="155"
+				align="center">
+					<template slot-scope="scope">
+						<!-- 日期未过，可以撤回 -->
+						<el-button v-if="scope.row.vrl_timestamp_start > nowDate && scope.row.vrl_state != -1" type="text" @click="handleReturnConfirm(scope.row)">撤回</el-button>
+						<!-- 上午未过，可以撤回 -->
+						<el-button v-else-if="scope.row.vrl_timestamp_start == nowDate && scope.row.vrl_half_day_start == 1 && H < 9 && scope.row.vrl_state != -1" type="text" @click="handleReturnConfirm(scope.row)">撤回</el-button>
+						<!-- 下午未过，可以撤回 -->
+						<el-button v-else-if="scope.row.vrl_timestamp_start == nowDate && scope.row.vrl_half_day_start == 2 && H < 14 && scope.row.vrl_state != -1" type="text" @click="handleReturnConfirm(scope.row)">撤回</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 500]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script>
+const Dates = new Date();
+const Y = Dates.getFullYear();
+const M = Dates.getMonth() + 1;
+const D = Dates.getDate();
+const H = Dates.getHours();
+const nowDate = Y + (M < 10 ? "0" : "") + M + (D < 10 ? "0" : "") + D;
+const myVacationRecord = {:json_encode($myVacationRecord)};
+const pagination = {
+				current_page: myVacationRecord.current_page,
+				last_page: myVacationRecord.last_page,
+				per_page: myVacationRecord.per_page,
+				total: myVacationRecord.total
+			};
+const app = new Vue({
+	el: '#app',
+	data() {
+		let checkImNum = (rule, value, callback) => {
+			if (value < 0) {
+				callback(new Error('必须≥0'));
+			} else {
+				callback();
+			}
+		};
+		return {
+			H: H,
+			nowDate: nowDate,
+			isShowSearch: false, // 打开搜索面板
+			searchForm: {
+				vrl_timestamp_start: '',
+				vrl_timestamp_end: '',
+				vrl_half_day_start: '',
+				vrl_half_day_end: '',
+				vrl_num_of_days_off: '',
+				vrl_applicant_account: '',
+				vrl_applicant_nickname: '',
+				vrl_remarks: '',
+				vrl_state: '',
+			},
+			myVacationRecord: myVacationRecord.data,
+			pagination: pagination,
+			pickerOptionsStart: {
+				shortcuts: [{
+					text: '今天',
+					onClick(picker) {
+					picker.$emit('pick', new Date());
+					}
+				}, {
+					text: '昨天',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24);
+					picker.$emit('pick', date);
+					}
+				}, {
+					text: '一周前',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24 * 7);
+					picker.$emit('pick', date);
+					}
+				}]
+			},
+			pickerOptionsEnd: {
+				shortcuts: [{
+					text: '今天',
+					onClick(picker) {
+					picker.$emit('pick', new Date());
+					}
+				}, {
+					text: '昨天',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24);
+					picker.$emit('pick', date);
+					}
+				}, {
+					text: '一周前',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24 * 7);
+					picker.$emit('pick', date);
+					}
+				}]
+			}
+		}
+	},
+	methods: {
+		handleReturnConfirm(row) {
+			this.$confirm('确认撤回休假日期为：'+row.vrl_timestamp_start + (row.vrl_half_day_start==1? '上午': '下午') + ' 至 ' + row.vrl_timestamp_end + (row.vrl_half_day_end==1? '上午': '下午')+'的年假申请？', '确认信息', {
+				confirmButtonText: '确定',
+				cancelButtonText: '取消',
+				type: 'warning'
+			})
+			.then(() => {
+				this.handleReturn(row)
+			})
+			.catch(action => {
+				this.$message({
+					type: 'info',
+					message: '已取消'
+				});
+			});
+		},
+		// 撤回申请
+		handleReturn(row) {
+			const _this = this
+			$.ajax({
+				url:'withdrawalOfMyVacationRequest',
+				type:'post',
+				data:{
+					vrl_id: row.vrl_id,
+				},
+				success:function (res) {
+					console.log(res);
+					const code = res.code
+					const msg = res.msg
+					if ( code === 1 ) {
+						// 数据被覆盖需要广播出去，强制页面刷新
+						_this.$notify({
+							title: '操作成功',
+							message: msg,
+							type: 'success',
+							duration: 500
+						})
+						row.vrl_state = -1;
+					} else {
+						_this.$notify({
+							title: '操作失败',
+							message: msg,
+							type: 'error',
+							duration: 0
+						})
+					}
+				},
+				error:function(e) {
+					console.log(e)
+					_this.$message({
+						type: 'error',
+						message: '发生错误，请刷新一下'
+					});
+				}
+			})
+		},
+		search(){
+			const _this = this;
+			$.ajax({
+				url:'myVacationRecord',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					console.log(_this.searchForm,_this.pagination,res);
+					_this.myVacationRecord = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					
+								_this.$message({
+									type: 'error',
+									message: '发生错误，请刷新一下'
+								});
+				}
+			})
+		},
+		resetForm(formName){
+			this.$refs[formName].resetFields();
+			if (formName === 'searchForm') {
+				this.search()
+			}
+		},
+		// pagination时
+		handleSizeChange(per_page){
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page){
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		},
+		handleClose(done) {
+			this.$confirm('确认关闭？')
+				.then(_ => {
+					done();
+				})
+          .catch(_ => {});
+      	}
+	}
+})
+</script>

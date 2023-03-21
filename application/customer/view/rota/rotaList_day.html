@@ -1,0 +1,363 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" style="position: absolute;">
+	<script type="text/javascript">
+		// 提高echart清晰度
+		//注意：
+        //1.这段代码应当写在echarts.js引入之前
+        //2.这个属性对于移动端设备有重要影响，使用时请结合项目，切勿乱用
+		window.devicePixelRatio = 3;
+	</script>
+	<style>
+	.img_emoticon{
+		display: none;
+	}
+	</style>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>当班值班人员信息</title>
+		<script src="__COMMON__/jquery-3.1.1.min.js"></script>
+		<link rel="stylesheet" href="__COMMON__/animate.css" />
+		<script src="__COMMON__/wow.min.js"></script>
+		
+		<script src="__COMMON__/vue.min.js"></script>
+
+		<!-- 引入elementUI框架 -->
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="__COMMON__/element-ui/lib/theme-chalk/index.css" />
+		<!-- 引入组件库（要在vue后面引用） -->
+		<script src="__COMMON__/element-ui/lib/index.js"></script>
+	</head>
+	<body style="position: absolute;top: -20px;">
+		<div id="frame">
+			<div class="head">
+				<img src="__IMG__/rotaList_day_title.png" alt="">
+				<p class="titleTxt">
+					<span></span>
+					&nbsp; 
+					<span>
+						{if condition="$rotaList_day.banci == 1"}
+						白班
+						{else/}
+						夜班
+						{/if}
+					</span>
+					监控人员值班表</p>
+
+			</div>
+			<div class="container">
+				<div class="row">
+					<div style="position: relative;display: inline-block;width: 23%;bottom: 120px;margin: 0;">
+						<div class="zbry" style="transform:scale(1,1.3)">
+							<p class="zbryTitle">值班长</p>
+							<img class="img_head" src="__ROOT__{$rotaList_day.0.head}" alt="" width="83" height="90" style="margin-bottom:26px;top:15px">
+							<img class="img_emoticon" src="__ROOT__{$rotaList_day.0.emoticon}" alt="" width="83" height="90" style="margin-bottom:26px;top:15px">
+							</p>
+							<p class="zbry_gangwei">值班长</p>
+							<p class="zbry_name">
+								{$rotaList_day.0.name}
+							</p>
+							<p class="phone">
+								<span>
+									值班电话：
+								</span>
+								<span style="display: inline-block;position: absolute;top: -14px;">
+									13922220360
+									<br>
+									13822220010
+								</span>
+							</p>
+						</div>
+					</div>
+					<div style="position: relative;display: inline-block;width: 68%;">
+						<div class="row">
+							<div class="zbry">
+								<p class="zbryTitle">{$rotaList_day.0.mp_alias}</p>
+								<img class="img_head" src="__ROOT__{$rotaList_day.0.head}" alt="" width="83" height="116">
+								<img class="img_emoticon" src="__ROOT__{$rotaList_day.0.emoticon}" alt="" width="83" height="116" >
+								<p class="zbry_gangwei">值班员</p>
+								<p class="zbry_name">
+									{$rotaList_day.0.name}
+								</p>
+								<p class="phone">电话：
+									{$rotaList_day.0.phone}
+								</p>
+							</div>
+							<div class="zbry">
+								<p class="zbryTitle">{$rotaList_day.1.mp_alias}</p>
+								<img class="img_head" src="__ROOT__{$rotaList_day.1.head}" alt="" width="83" height="116">
+								<img class="img_emoticon" src="__ROOT__{$rotaList_day.1.emoticon}" alt="" width="83" height="116" >
+								<p class="zbry_gangwei">值班员</p>
+								<p class="zbry_name">
+									{$rotaList_day.1.name}
+								</p>
+								<p class="phone">电话：
+									{$rotaList_day.1.phone}
+								</p>
+							</div>
+							<div class="zbry">
+								<p class="zbryTitle">{$rotaList_day.2.mp_alias}</p>
+								<img class="img_head" src="__ROOT__{$rotaList_day.2.head}" alt="" width="83" height="116">
+								<img class="img_emoticon" src="__ROOT__{$rotaList_day.2.emoticon}" alt="" width="83" height="116" >
+								<p class="zbry_gangwei">值班员</p>
+								<p class="zbry_name">
+									{$rotaList_day.2.name}
+								</p>
+								<p class="phone">电话：
+									{$rotaList_day.2.phone}
+								</p>
+							</div>
+						</div>
+						<div class="row">
+							<div class="zbry">
+								<p class="zbryTitle">{$rotaList_day.3.mp_alias}</p>
+								<img class="img_head" src="__ROOT__{$rotaList_day.3.head}" alt="" width="83" height="116">
+								<img class="img_emoticon" src="__ROOT__{$rotaList_day.3.emoticon}" alt="" width="83" height="116" >
+								<p class="zbry_gangwei">值班员</p>
+								<p class="zbry_name">
+									{$rotaList_day.3.name}
+								</p>
+								<p class="phone">电话：
+									{$rotaList_day.3.phone}
+								</p>
+							</div>
+							<div class="zbry">
+								<p class="zbryTitle">{$rotaList_day.4.mp_alias}</p>
+								<img class="img_head" src="__ROOT__{$rotaList_day.4.head}" alt="" width="83" height="116">
+								<img class="img_emoticon" src="__ROOT__{$rotaList_day.4.emoticon}" alt="" width="83" height="116" >
+								<p class="zbry_gangwei">值班员</p>
+								<p class="zbry_name">
+									{$rotaList_day.4.name}
+								</p>
+								<p class="phone">电话：
+									{$rotaList_day.4.phone}
+								</p>
+							</div>
+							<div class="zbry">
+								<p class="zbryTitle">{$rotaList_day.5.mp_alias}</p>
+								<img class="img_head" src="__ROOT__{$rotaList_day.5.head}" alt="" width="83" height="116">
+								<img class="img_emoticon" src="__ROOT__{$rotaList_day.5.emoticon}" alt="" width="83" height="116" >
+								<p class="zbry_gangwei">值班员</p>
+								<p class="zbry_name">
+									{$rotaList_day.5.name}
+								</p>
+								<p class="phone">电话：
+									{$rotaList_day.5.phone}
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="timer" style="position: absolute;right:20px;bottom:10px;font-size:14px;">
+		</div>	
+	</body>
+</html>
+<script>
+const app = new Vue({
+		el: '#app',
+		data() {
+			return {}
+		},
+		methods: {},
+		computed: {
+			// 对于任何复杂逻辑，你都应当使用计算属性
+		},
+		// 不要在选项 property 或回调上使用箭头函数，
+		// 比如 created: () => console.log(this.a) 或 vm.$watch('a', newValue => this.myMethod())。
+		// 因为箭头函数并没有 this，this 会作为变量一直向上级词法作用域查找，直至找到为止，
+		// 经常导致 
+		// Uncaught TypeError: Cannot read property of undefined 
+		// 或 Uncaught TypeError: this.myMethod is not a function 之类的错误。
+		beforeCreate:function(){
+			// 初始化：事件&生命周期
+		},
+		created:function(){
+			// 初始化：注入&校验
+			let _this = this;
+		},
+		beforeMount:function(){
+		},
+		mounted:function(){
+			// 创建vm.$el 并用其替换"el" 
+			// 挂载完毕
+			let _this = this;
+		},
+		beforeUpdate:function(){
+			// 当data被修改时
+		},
+		updated: function () {
+			// 虚拟dom重新渲染并应用更新
+			let _this = this;
+		},
+		beforeDestroy:function(){
+			// 当调用vm.$destroy()函数时
+		},
+		destroy:function(){
+			// 解除绑定销毁子组件以及事件监听器
+			// 销毁完毕 
+		}
+	})
+
+const wow = new WOW({animateClass: 'animated',});
+wow.init();
+  function xys(){
+		let innerWbili = window.innerWidth/1100;
+		let innerHbili = window.innerHeight/600;
+		$('body').css({'top':'0'})
+		$('html').css({'width':'0','height':'0','transform':'scaleX('+innerWbili+') scaleY(' +innerHbili+ ')'})
+  }
+  xys()
+  window.onresize = function(){ 
+    xys()
+  }
+  var Timer,banci;
+  clearInterval(Timer)
+  let t1 = new Date();
+  banci = t1.getHours() >= 9 && t1.getHours() < 18 ? '白班' : '夜班';
+  $('.titleTxt span:nth-child(1)').text(t1.getMonth()+1 + '月' + t1.getDate() + '日')
+  Timer = setInterval(function(){
+	let t2 = new Date();
+	let txt2 = t2.getHours() >= 9 && t2.getHours() < 18 ? '白班' : '夜班';
+	if(banci != txt2){ 
+		// 由于服务器上的时间和本地客户端的时间存在误差，前端本地时间快了2min，
+		// 这样就会造成获取后台数据时还是上一班次的信息，解决方案是前端换班前延迟10min，保证请求后台数据时，后台数据能够及时更新得上
+		setInterval(function(){
+			location.reload()
+		}, 600000)
+		clearInterval(Timer)
+	}
+	// 元旦前三天自动跳转至春节版
+	if (t1.getMonth() + 1 === 1 && t1.getDate() <= 3) {
+		window.location.href = "rotaList_day_happyNewYear2021"
+	}
+  },1000)
+
+//   ctr + alt + F1 切换表情包版本与正式版本
+let is_emoticon = 1;//表情包版本与正式版本切换开关
+document.onkeydown = function(event){
+	var e = event || window.event || arguments.callee.caller.arguments[0];
+	var keyCode = e.keyCode || e.which || e.charCode;
+	var altKey = e.altKey ;
+	var ctrlKey = e.ctrlKey ;
+	// 按下三个组合键切换表情包  ctr + alt + F1
+	if(ctrlKey && altKey && keyCode == 112) {
+		if(is_emoticon){
+			$('.img_head').css('display','none')
+			$('.img_emoticon').css('display','inline-block')
+			is_emoticon = 0;
+		}else{
+			$('.img_emoticon').css('display','none')
+			$('.img_head').css('display','inline-block')
+			is_emoticon = 1;
+		}
+	}
+}
+
+
+let tipDiv = document.createElement('DIV');
+let tipDivWidth = 280;
+let tipDivheight = 36;
+let tipDivTop = window.innerHeight/2 - tipDivheight;
+let tipDivLeft = window.innerWidth/2 - tipDivWidth;
+
+tipDiv.style.position = 'fixed';
+tipDiv.style.top = tipDivTop + 'px';
+tipDiv.style.left = tipDivLeft + 'px';
+tipDiv.style.width = tipDivWidth + 'px';
+tipDiv.style.height = tipDivheight +  'px';
+tipDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
+tipDiv.style.textAlign = 'center';
+tipDiv.style.verticalAlign = 'center';
+tipDiv.style.fontSize = '16px';
+tipDiv.style.paddingTop = '15px';
+tipDiv.style.borderRadius = '5px';
+tipDiv.textContent = '试试按下组合键：ctr+alt+F1';
+tipDiv.className = 'wow rubberBand tipDiv';
+tipDiv.setAttribute('data-wow-duration','1s');
+document.body.appendChild(tipDiv)
+setInterval(function(){
+	$('.tipDiv').remove()
+},4000)
+
+</script>
+<style>
+body{
+	background-image: url('__IMG__/rotaList_day_bg.png');
+	background-position: center;
+	background-repeat: no-repeat;
+	line-height: normal;
+	font-weight: normal;
+	color: #FFFFFF;
+	background-attachment: fixed;
+	background-size: cover;
+	width: 1100px;
+	height: 600px;
+	margin: 0;
+	padding:0;
+	overflow: hidden;
+}
+.head{
+	text-align: center;
+	height: 80px;
+	width: 100%;
+	padding-top: 30px;
+	position: relative;
+}
+.titleTxt{
+    position: relative;
+    top: -66px;
+    font-size: 24px;
+}
+.container{
+	position: relative;
+	width: 100%;
+	text-align: center
+}
+.row{
+	position: relative;
+	width: 100%;
+	height: 222px;
+}
+.zbry{
+	display: inline-block;
+	width: 226px;
+	height: 208px;
+	background-image: url('__IMG__/rotaList_day_frame1.png');
+	margin: auto 10px;
+	text-align: left;
+	/* transform: scaleX(0.8); */
+}
+.zbry img{
+	top: 8px;
+	left: 10px;
+	position: relative;
+	font-size: 14px;
+	border-radius: 5px;
+	/* border: 1px solid #55adff; */
+	/* -moz-box-shadow:2px 2px 20px #55adff; 
+	-webkit-box-shadow:2px 2px 20px #55adff;
+	box-shadow:2px 2px 20px #55adff; */
+}
+.zbryTitle{
+	text-align: center;
+	padding:0;
+	margin:8px auto;
+}
+.zbry_gangwei{
+    position: relative;
+    top: -112px;
+    left: 129px;
+    font-size: 14px;
+}
+.zbry_name{
+	position: relative;
+    top: -95px;
+    left: 127px;
+}
+.phone{
+    position: relative;
+    top: -73px;
+    left: 26px;
+}
+</style>

@@ -1,0 +1,161 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<blockquote class="layui-elem-quote" style="margin:15px">
+			<p>- 周五夜~周日夜1个班次1天调休、节假日则由管理员手动配额，其他正常工作时间0调休</p>
+		</blockquote>
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>调休配额日历</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-calendar v-model="calendarValue">
+				<!-- 这里使用的是 2.5 slot 语法，对于新项目请使用 2.6 slot 语法-->
+				<template
+				slot="dateCell"
+				slot-scope="{date, data}">
+						<p :class="data.isSelected ? 'is-selected' : ''">
+							{{ data.day.split('-').slice(1).join('-') }} {{ data.isSelected ? '✔️' : ''}}
+							<!-- 用于判断该日期是否已被管理员设置了其他内容 -->
+							<span v-show="false">
+								{{data.isSettingDay = 0}}
+								{{data.isSettingNight = 0}}
+							</span>
+							<el-row
+							style="margin: 5px auto auto"
+							v-for="i in rotaVacationDaysOffList"
+							v-if="data.day.split('-').join('') == i.rvdom_timestamp && i.rvdom_day_or_night == 1">
+								<span v-show="false">{{data.isSettingDay = 1}}</span>
+								<!-- 当行显示超出省略号代替 -->
+								<span style="
+								display: inline-block;
+								width: 120px;
+								word-break:keep-all;
+								white-space:nowrap;
+								overflow:hidden;
+								text-overflow:ellipsis; ">
+									<el-tag size="mini">白</el-tag>
+									<span style="color:red">{{i.rvdom_days_off +'天'}}</span>
+									<el-tooltip class="item" effect="dark" :content="i.rvdom_remarks" placement="top">
+										<span style="color:#e6a23c;">{{i.rvdom_remarks}}</span>
+									</el-tooltip>
+								</span>
+							</el-row>
+							<el-row
+							style="margin: 5px auto auto"
+							v-if="
+							(date.toString().slice(0,3) == 'Sat'
+							|| date.toString().slice(0,3) == 'Sun')
+							&& data.isSettingDay == 0">
+								<el-tag size="mini">白</el-tag>
+								<span style="color:red">{{'1天'}}</span>
+							</el-row>
+							<el-row
+							style="margin: 5px auto auto"
+							v-for="i in rotaVacationDaysOffList"
+							v-if="data.day.split('-').join('') == i.rvdom_timestamp && i.rvdom_day_or_night == 0">
+								<span v-show="false">{{data.isSettingNight = 1}}</span>
+								<span style="
+								display: inline-block;
+								width: 120px;
+								word-break:keep-all;
+								white-space:nowrap;
+								overflow:hidden;
+								text-overflow:ellipsis; ">
+									<el-tag type="info" size="mini">夜</el-tag>
+									<span style="color:red">{{i.rvdom_days_off +'天'}}</span>
+									<el-tooltip class="item" effect="dark" :content="i.rvdom_remarks" placement="top">
+										<span style="color:#e6a23c;">{{i.rvdom_remarks}}</span>
+									</el-tooltip>
+								</span>
+							</el-row>
+							<el-row
+							style="margin: 5px auto auto"
+							v-if="
+							(date.toString().slice(0,3) == 'Fri'
+							|| date.toString().slice(0,3) == 'Sat'
+							|| date.toString().slice(0,3) == 'Sun')
+							&& data.isSettingNight == 0">
+								<el-tag type="info" size="mini">夜</el-tag>
+								<span style="color:red">{{'1天'}}</span>
+							</el-row>
+						</p>
+				</template>
+			</el-calendar>
+		</el-card>
+	</div>
+</div>
+<style>
+.is-selected {
+	color: #1989FA;
+}
+</style>
+<script>
+if (window.orientation != undefined && window.orientation != 90 && window.orientation != -90) {
+	alert("手机端建议使用横屏模式")
+}
+const rotaVacationDaysOffList = {:json_encode($rotaVacationDaysOffList)};
+const app = new Vue({
+	el: '#app',
+	data() {
+		return {
+			calendarValue:  new Date(),
+			rotaVacationDaysOffList: rotaVacationDaysOffList,
+		}
+	},
+	methods: {
+	},
+	watch: {
+		calendarValue: {	//深度监听，可监听到对象、数组的变化
+			handler(val, oldVal){
+				const _this = this;
+				// 月份/年份发生变化时重新获取后台数据
+				if (val.getMonth() !== oldVal.getMonth() || val.getFullYear() !== oldVal.getFullYear()) {
+					const previous_m =(val.getMonth() == 0 ? val.getFullYear()-1 + '12' : val.getFullYear() + (val.getMonth() > 9 ? val.getMonth() : '0' + val.getMonth()).toString())
+					const this_m = val.getFullYear() + ((val.getMonth()+1) > 9 ? (val.getMonth()+1) : '0' + (val.getMonth()+1)).toString()
+					const next_m =(val.getMonth() == 11 ? val.getFullYear()+1 + '01' : val.getFullYear() + ((val.getMonth()+2) > 9 ? (val.getMonth()+2) : '0' +(val.getMonth()+2)).toString())
+					const data =  {
+							isSearch: 1,
+							previous_m: previous_m,
+							this_m: this_m,
+							next_m: next_m,
+						}
+					$.ajax({
+						url: 'rotaVacationDaysOffList',
+						data: data,
+						type: 'post',
+						success: function (res) {
+							console.log(res);
+							const code = res.code
+							const msg = res.msg
+							if(code === 0){
+								_this.$message({
+									type: 'info',
+									message: msg
+								});
+							}else if(code > 0){
+								_this.rotaVacationDaysOffList = res.data
+								_this.$message({
+									type: 'success',
+									message: msg
+								});
+								
+							}else{
+								_this.$message({
+									type: 'error',
+									message: '操作失败，请刷新重试：' + msg
+								});
+							}
+						},
+						error: function (err) {
+							_this.$message({
+								type: 'error',
+								message: '发生未知错误，请刷新重试'
+							});
+						}
+					})
+				}
+			},
+			deep: true //true 深度监听
+		}
+	}
+})
+</script>

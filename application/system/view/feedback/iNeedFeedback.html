@@ -1,0 +1,312 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>{{ruleForm.fb_type === 1 ? '给开发小组加鸡腿' : (ruleForm.fb_type === 0 ? '单纯反馈一下' : '吐槽一下')}}</legend>
+		</fieldset>
+		<el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm" style="margin-right: 15px">
+			<el-form-item label="反馈类型" prop="fb_type">
+				<el-select v-model="ruleForm.fb_type" placeholder="请选择活动区域">
+					<el-option label="吐槽一下" :value="-1"></el-option>
+					<el-option label="好评一下" :value="1"></el-option>
+					<el-option label="反馈一下" :value="0"></el-option>
+				</el-select>
+			</el-form-item>
+			<el-form-item label="内容" prop="fb_content">
+				<el-input type="textarea" v-model="ruleForm.fb_content" placeholder="一吐为快，让我们变得更好"></el-input>
+			</el-form-item>
+			<el-form-item>
+				<el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
+				<el-button @click="resetForm('ruleForm')">重置</el-button>
+			</el-form-item>
+		</el-form>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="类型" prop="fb_type">
+						<el-select v-model="searchForm.fb_type" placeholder="请选择反馈类型">
+							<el-option></el-option>
+							<el-option label="吐槽" :value="-1"></el-option>
+							<el-option label="好评" :value="1"></el-option>
+							<el-option label="单纯反馈一下" :value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="账号" prop="admin_account">
+						<el-input
+						v-model="searchForm.admin_account"
+						width="50"></el-input>
+					</el-form-item>
+					<el-form-item label="反馈内容" prop="fb_content">
+						<el-input
+						v-model="searchForm.fb_content"></el-input>
+					</el-form-item>
+					<el-form-item label="解决方案" prop="fb_solution">
+						<el-input
+						v-model="searchForm.fb_solution"></el-input>
+					</el-form-item>
+					<el-form-item label="是否已读" prop="fb_is_read">
+						<el-select v-model="searchForm.fb_is_read">
+							<el-option></el-option>
+							<el-option label="已读" :value="1"></el-option>
+							<el-option label="未读" :value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="处理情况" prop="fb_is_handle">
+						<el-select v-model="searchForm.fb_is_handle">
+							<el-option></el-option>
+							<el-option label="已处理" :value="1"></el-option>
+							<el-option label="未处理" :value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="反馈时间" prop="create_time">
+						<el-date-picker
+						v-model="searchForm.create_time"
+						type="datetimerange"
+						format="yyyy-MM-dd HH:mm:ss"
+						value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<el-divider>我的反馈数据~</el-divider>
+			<el-table
+			:data="feedbacklist"
+			max-height="400"
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="expand">
+					<template
+					slot-scope="props">
+						<el-row :gutter="20">
+							<el-col :span="12">
+								<el-divider>
+								反馈详情
+								</el-divider>
+								<el-input
+								autosize
+								type="textarea"
+								style="max-height:200px;overflow: scroll;display: block;width: 100%;"
+								v-model="props.row.fb_content"
+								disabled></el-input>
+							</el-col>
+							<el-col :span="12">
+								<el-divider>
+								解决方案
+								</el-divider>
+								<el-input
+								autosize
+								type="textarea"
+								style="max-height:200px;overflow: scroll;display: block;width: 100%;"
+								v-model="props.row.fb_solution"
+								disabled></el-input>
+							</el-col>
+						</el-row>
+					</template>
+				</el-table-column>
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="fb_type"
+				label="类型"
+				width="130px"
+				align="center">
+					<template slot-scope="scope">
+						<i v-if="scope.row.fb_type == 1" class="el-icon-sunny" style="color: orange">好了个评</i>
+						<i v-if="scope.row.fb_type == 0" class="el-icon-share">单纯反了个馈</i>
+						<i v-if="scope.row.fb_type == -1" class="el-icon-cloudy" style="color: red">吐了个槽</i>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="admin_account"
+				label="账号"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="fb_content"
+				label="反馈内容"
+				show-overflow-tooltip
+				width="200"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="fb_solution"
+				label="解决方案"
+				show-overflow-tooltip
+				width="200"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="fb_is_read"
+				label="是否已读"
+				width="150"
+				align="center">
+					<template slot-scope="scope">
+					{{scope.row.fb_is_read === 0 ? '未读：管理员还没看到呢~去催催他吧~' : '已读：管理员已经知道啦~'}}
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="fb_is_handle"
+				label="处理情况"
+				width="180px"
+				align="center"
+				disabled>
+					<template slot-scope="scope">
+					{{scope.row.fb_is_handle === 0 ? '未处理' : '已处理'}}
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="create_time"
+				label="反馈时间"
+				width="155"
+				align="center"></el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 2000]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script>
+	const feedbacklist = {:json_encode($feedbacklist)};
+	const admin_account = {:json_encode($admin_account)};
+	const pagination = {
+				current_page: feedbacklist.current_page,
+				last_page: feedbacklist.last_page,
+				per_page: feedbacklist.per_page,
+				total: feedbacklist.total
+			};
+	let app = new Vue({
+		el: '#app',
+		data() {
+			return {
+				ruleForm: {
+					admin_account: '{$adminInfo.admin_account}',
+					fb_type: -1,
+					fb_content: ''
+				},
+				rules: {
+					fb_type: [
+						{ required: true, message: '请选择反馈类型', trigger: 'change' }
+					],
+					fb_content: [
+						{ required: true, message: '请描述一下~', trigger: 'blur' }
+					]
+				},
+				isShowSearch: false, // 打开搜索面板
+				searchForm: {
+					admin_account: '',
+					fb_type: '',
+					fb_content: '',
+					fb_is_read: '',
+					fb_is_handle: '',
+					fb_solution: '',
+					create_time: [],
+					update_time: []
+				},
+				feedbacklist: feedbacklist.data,
+				pagination: pagination,
+			};
+		},
+		methods: {
+			submitForm(formName) {
+				const _this = this
+				_this.$refs[formName].validate((valid) => {
+					if (valid) {
+						$.ajax({
+							url: "{:url('@system/addFeedback')}",
+							data: _this.ruleForm,
+							type: 'POST',
+							success: function (res) {
+								let msg = ''
+								if(res === 1){
+									switch (_this.ruleForm.fb_type) {
+										case 1:
+											msg = '感谢支持'
+											break;
+										case 0:
+											msg = '感谢反馈'
+											break;
+										case -1:
+											msg = '收到，我们会尽快查看并优化'
+											break;
+										default:
+											break;
+									}
+									showTs(1, msg, 1000)
+									setTimeout(() => {
+										window.location.reload()
+									}, 1000);
+									// 重置
+									_this.resetForm('ruleForm')									
+								}else{
+									showTs(0, '出现未知错误，请联系管理员', 5000)
+								}
+							},
+							error: function (err) {
+								showTs(0, '出现未知错误，请联系管理员', 5000)
+								console.log(err);
+							}
+						})
+					} else {
+						return false;
+					}
+				});
+			},
+			resetForm(formName) {
+				this.$refs[formName].resetFields();
+			},
+			search(){
+				const _this = this;
+				$.ajax({
+					url:'iNeedFeedback',
+					type:'post',
+					data:{
+						isSearch: 1,
+						pagination: _this.pagination,
+						searchForm: _this.searchForm
+					},
+					success:function (res) {
+						_this.feedbacklist = res.data
+						_this.pagination = {
+							current_page: res.current_page,
+							last_page: res.last_page,
+							per_page: res.per_page,
+							total: res.total
+						}
+					},
+					error:function(e){
+						console.log(e)
+						showTs(0, '发生错误，请刷新一下~', 10000)
+					}
+				})
+			},
+			resetForm(formName){
+				this.$refs[formName].resetFields();
+			},
+			// pagination时
+			handleSizeChange(per_page){
+				const _this = this;
+				_this.pagination.per_page = per_page
+				_this.search();
+			},
+			handleCurrentChange(current_page){
+				const _this = this;
+				_this.pagination.current_page = current_page
+				_this.search();
+			}
+		}
+	})
+	app = null
+</script>

@@ -1,0 +1,27 @@
+<div class="topNav" style="position: relative;">
+	<div class="logo">
+		<a href="">{$settingInfo.website_title}</a>
+		<a href="javascript:void(0)" class="expandLeftNav" style="background: transparent" onclick="expandLeftNav();"><i class="fa fa-bars" style="color: #cccccc"></i></a>
+	</div>
+	<ul class="layui-nav">
+		<li class="layui-nav-item adminInfo">
+			<a href="javascript:;">
+				{notempty name="$adminInfo.admin_head"}
+				<img src="{$adminInfo.admin_head}" alt="{$adminInfo.admin_account}" />
+				{else/}
+				<i class="fa fa-user-circle"></i>
+				{/notempty}
+				{notempty name="$adminInfo.admin_nickname"}
+				{$adminInfo.admin_nickname}
+				{else/}
+				{$adminInfo.admin_account}
+				{/notempty}
+			</a>
+			<dl class="layui-nav-child">
+				<dd>
+					<a href="{:url('@system/logout')}"><i class="fa fa-sign-out" aria-hidden="true"></i> 退出</a>
+				</dd>
+			</dl>
+		</li>
+	</ul>
+</div>

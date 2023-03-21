@@ -1,0 +1,231 @@
+<style>
+    .add-goods form{
+        width: 50%;
+    }
+    .layui-form-label{
+        width: 100px;
+    }
+</style>
+<div class="layui-body">
+	<div class="main-part-article"><!--页面主体-->
+    	<div class="add-goods">
+        <fieldset class="layui-elem-field layui-field-title" style="width: 70%">
+            <legend>新增人员</legend>
+        </fieldset>
+        <form class="layui-form addForm" enctype="multipart/form-data">
+            <div class="layui-form-item">
+				<label class="layui-form-label">姓名</label>
+				<div class="layui-input-block">
+                    <input name="name" value="{$data.name}" required class="layui-input" placeholder="输入姓名（注意不要与现有人员重复）" style="width: 200px;" maxlength="30">
+                </div>
+            </div>
+            
+			<div class="layui-form-item">
+                <label class="layui-form-label">手机</label>
+                <div class="layui-input-block">
+                    <input name="phone" value="{$data.phone}" required class="layui-input" placeholder="输入手机" style="width: 200px;" maxlength="30">
+                </div>
+            </div>
+            
+            <div class="layui-form-item">
+                <label class="layui-form-label" >是否值班人员</label>
+                <div class="layui-input-block">
+                    <input type="checkbox" name="is_monitor" value="1" lay-skin="switch" lay-text="是|否">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">头像</label>
+                <div class="layui-input-block">
+                    <div class="images1"></div>
+                    <div class="layui-btn layui-btn-normal" id="imgflow1">
+                        <input accept="image/*" type="file" onchange="imgFlowPreview(this,1)"
+                               style="position:absolute;left:0;height:30px;align-items:center;z-index:1;opacity: 0;" required>
+                        <div>添加图片</div>
+                    </div>
+                    <input name="head" style="display: none">
+                </div>
+			</div>
+			
+			<div class="layui-form-item">
+                <label class="layui-form-label">性别</label>
+                <div class="layui-input-inline" style="width:200px;">
+                    <select name="sex" required>
+                            <option value=''></option>
+                            <option value='男'>男</option>
+                            <option value='女'>女</option>
+                    </select>
+                </div>
+            </div>
+            
+			<div class="layui-form-item">
+                <label class="layui-form-label">科室</label>
+                <div class="layui-input-block">
+                    <input name="department" value="{$data.department}" required class="layui-input" placeholder="输入科室" style="width: 200px;" maxlength="30">
+                </div>
+            </div>
+            
+			<div class="layui-form-item">
+                <label class="layui-form-label">小组</label>
+                <div class="layui-input-block">
+                    <input name="group" value="{$data.group}" required class="layui-input" placeholder="输入小组" style="width: 200px;" maxlength="30">
+                </div>
+            </div>
+            
+			<div class="layui-form-item">
+                <label class="layui-form-label">工号</label>
+                <div class="layui-input-block">
+                    <input name="job_number" value="{$data.job_number}" required class="layui-input" placeholder="输入工号" style="width: 200px;" maxlength="30">
+                </div>
+            </div>
+            
+			<div class="layui-form-item">
+                <label class="layui-form-label">potal</label>
+                <div class="layui-input-block">
+                    <input name="potal" value="{$data.potal}" required class="layui-input" placeholder="输入potal" style="width: 200px;" maxlength="30">
+                </div>
+            </div>
+            
+
+            <div class="layui-form-item" style="position: absolute;top: 100px;width: 65%;right: 50px;">
+                <label class="layui-form-label">职责</label>
+                <div class="layui-input-block">
+                    <textarea name="duty" required class="layui-input" placeholder="输入职责" style="height: 500px;">
+                    </textarea>
+                </div>
+            </div>
+            
+            <div class="layui-form-item" pane="">
+                <label class="layui-form-label">岗位类别</label>
+                <div class="layui-input-block">
+                    {volist name="monitorPostTypeList" id="mptl"}
+                        {if condition="$mptl['is_select'] == 1"}
+                        <input type="checkbox" name="monitorPost_type_id_arr[{$mptl.monitorPost_type_id}]" lay-skin="primary" title="{$mptl.monitorPost_type}" checked="">
+                        {else/}
+                        <input type="checkbox" name="monitorPost_type_id_arr[{$mptl.monitorPost_type_id}]" lay-skin="primary" title="{$mptl.monitorPost_type}">
+                        {/if}
+                    {/volist}
+                </div>
+            </div>
+            <div class="layui-input-block" style="text-align: center">
+                <div class="layui-btn layui-btn-big submit">确定</div>
+            </div>
+        </form>
+
+    	</div>
+	</div>
+</div>
+
+<script>
+    window.onload = function () {
+		// 初始化便显示图片
+        if ('{$data.head}'){
+            var img = $(".images1");
+            img.empty();
+            img = img.html();
+            img += '<img width="200" style="margin: 10px 10px 10px 0;" src="' + __ROOT__ + '{$data.head}' + '">'
+            $(".images1").html(img);
+            document.getElementsByName('head')[0].value = '{$data.head}';
+        }
+    }
+    function imgFlowPreview(fileDom, sort) {
+        //判断是否支持FileReader
+        if (window.FileReader) {
+            var reader = new FileReader();
+        } else {
+            alert("您的设备不支持图片预览功能，如需该功能请升级您的设备！");
+        }
+        //获取文件
+        var file = fileDom.files[0];
+        var imageType = /^image\//;
+        //是否是图片
+        if (!imageType.test(file.type)) {
+            alert("请选择图片！");
+            return;
+        }
+        //读取完成
+        reader.onload = function (e) {
+            var formdata = new FormData();
+            formdata.append("code",5);  //选择对应文件夹，code = 5 对应文件夹路径为/public/uploads/imgs/member
+			// 因为base控制器中的getFolderName方法中定义了如下路径规则，如果想改得去base控制器中修改
+			// public function getFolderName($code){
+			// 	switch ($code){
+			// 		case 1:return 'anteater';
+			// 		case 2:return 'banner';
+			// 		case 3:return 'work';
+			// 		case 4:return 'business';
+			// 		case 5:return 'member';
+			// 		default:return 'default';
+			// 	}
+			// }
+			//获取文件路径名
+            formdata.append("img", file);
+            $.ajax({
+                url: "{:url('@system/base/uploadFile')}",
+                type: "POST",
+                data: formdata,
+                contentType: false, // 注意这里应设为false
+                processData: false,
+                success: function (res) {
+                    console.log(res)
+                    if (res.url == false) {
+                        alert('网络错误，请稍后再试！')
+                    } else {
+                        var img = $(".images" + sort);
+                        img.empty();
+                        img = img.html();
+                        img += '<img width="200" style="margin: 10px 10px 10px 0;" src="' + __ROOT__ + res.url + '">'
+                        $(".images" + sort).html(img);
+                        if (sort == 1) {
+                            document.getElementsByName('head')[0].value = res.url;
+                        } else {
+                            alert("内部错误！");
+                        }
+
+                    }
+                },
+                fail: function (res) {
+                    alert(res.url)
+                }
+            })
+        };
+        reader.readAsDataURL(file);
+    }
+
+    
+    $('.submit').click(function(){
+        if(document.getElementsByName('name')[0].value == ""){
+            layer.alert('姓名不能为空', {
+                icon: 2,
+                skin: 'layer-ext-moon' //该皮肤由layer.seaning.com友情扩展。关于皮肤的扩展规则，去这里查阅
+            })
+            return;
+        }
+        let formdata = $('.addForm').serializeArray()
+        let monitorPost_type_id_arr = []
+        for(let i = 0; i< formdata.length; i++){
+            if(formdata[i].name.indexOf('monitorPost_type_id_arr') != -1){
+                // 利用正则表达式替换掉非数字的字符串就可以了
+                monitorPost_type_id_arr.push(formdata[i].name.replace(/[^0-9]/ig,""))
+                formdata.splice(i,1)//删除数组项
+                i--;
+            }
+        }
+        formdata.push({
+            name: 'monitorPost_type_id',
+            value: monitorPost_type_id_arr.join(',')
+        })
+        $.ajax({
+            url:"addMember",
+            data:formdata,
+            type:'POST',
+            success:function(res){
+                if(res == 1){
+                    layer.msg('保存成功')
+                }else{
+                    layer.msg('保存失败，或许是该用户已存在所致')
+                }
+            }
+        })
+    })
+</script>

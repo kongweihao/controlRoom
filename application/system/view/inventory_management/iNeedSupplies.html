@@ -1,0 +1,559 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>我要申领（购物车数据仅做临时保存当前待申领物资用）</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<el-button type="text" @click="isShowShoppingCard = !isShowShoppingCard" style="float: right;">购物车（{{shoppingCart.length}}）</el-button>
+			<!-- 搜索面板 -->
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="物资名称" prop="im_name">
+						<el-input
+						v-model="searchForm.im_name"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="可申请物资" prop="im_name">
+						<el-select v-model="searchForm.im_can_apply_num_state" @change="search()">
+							<el-option label="全部" :value="1"></el-option>
+							<el-option label="只显示可申请" :value="2"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="录入时间" prop="create_time">
+						<el-date-picker
+						v-model="searchForm.create_time"
+						type="datetimerange"
+						format="yyyy-MM-dd HH:mm:ss"
+						value-format="yyyy-MM-dd HH:mm:ss"
+						@blur="search()"></el-date-picker>
+					</el-form-item>
+					<el-form-item label="上一次操作时间" prop="update_time">
+						<el-date-picker
+						v-model="searchForm.update_time"
+						type="datetimerange"
+						format="yyyy-MM-dd HH:mm:ss"
+						value-format="yyyy-MM-dd HH:mm:ss"
+						@blur="search()"></el-date-picker>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+						<el-button @click="isShowSearch = !isShowSearch">收起</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<el-divider>默认显示可申请数量 > 0 的物资</el-divider>
+			<!-- 可申请库存列表 -->
+			<el-table
+			:data="iNeedSupplies"
+			max-height="400"
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="im_name"
+				label="物资名称"
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="im_can_apply_num"
+				label="可申请数量"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="im_num_of_applications"
+				label="申领数量"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						<el-form :inline="true" :model="scope.row" :rules="applyRules"  ref="applyForm">
+							<el-form-item prop="im_num_of_applications">
+								<el-span class="el-icon-minus" @click="editNumOA(scope.row, 'minus')" style="cursor: pointer;"></el-span>
+								<el-input v-model.number="scope.row.im_num_of_applications" @change="checkShoppingCard(scope.row)" style="width:65px;text-align:center;margin: auto 5px"></el-input>
+								<el-span class="el-icon-plus" @click="editNumOA(scope.row, 'plus')" style="cursor: pointer;"></el-span>
+							</el-form-item>
+						</el-form>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="im_unit"
+				label="单位"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				fixed="right"
+				label="操作"
+				width="100"
+				align="center">
+					<template slot-scope="scope">
+						<el-button type="text" @click="applyForMaterials('applyForm', scope.row)">申领</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 500]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+		<div v-if="isShowShoppingCard" style="position: absolute;top:0;width: 100%;height:100%;background-color:#0003;z-index: 100;padding-top:15px;">
+			<el-card v-loading="shoppingCardLoading" style="display: block;margin: auto 15px;">
+				<el-button type="text" @click="submitShoppingCard()">提交</el-button>
+				<el-button type="text" @click="isShowShoppingCard = !isShowShoppingCard" style="float: right;">关闭</el-button>
+				<!-- 购物车列表 -->
+				<el-table
+				:data="shoppingCart"
+				max-height="440"
+				border
+				style="margin-top:15px">
+					<el-table-column
+					type="index"
+					label="序号"
+					width="50"
+					sortable
+					align="center"></el-table-column>
+					<el-table-column
+					prop="im_name"
+					label="物资名称"
+					sortable
+					align="center">
+					</el-table-column>
+					<el-table-column
+					prop="im_can_apply_num"
+					label="可申请数量"
+					show-overflow-tooltip
+					sortable
+					align="center">
+					</el-table-column>
+					<el-table-column
+					prop="im_num_of_applications"
+					label="申领数量"
+					show-overflow-tooltip
+					sortable
+					align="center">
+						<template slot-scope="scope">
+							<el-form :inline="true" :model="scope.row" :rules="applyRules"  ref="applyForm">
+								<el-form-item prop="im_num_of_applications">
+									<el-span class="el-icon-minus" @click="editNumOA(scope.row, 'minus')" style="cursor: pointer;"></el-span>
+									<el-input v-model.number="scope.row.im_num_of_applications" @change="checkShoppingCard(scope.row)" style="width:65px;text-align:center;margin: auto 5px"></el-input>
+									<el-span class="el-icon-plus" @click="editNumOA(scope.row, 'plus')" style="cursor: pointer;"></el-span>
+								</el-form-item>
+							</el-form>
+						</template>
+					</el-table-column>
+					<el-table-column
+					prop="im_unit"
+					label="单位"
+					show-overflow-tooltip
+					sortable
+					align="center">
+					</el-table-column>
+				</el-table>
+			</el-card>
+		</div>
+	</div>
+</div>
+<script>
+const iNeedSupplies = {:json_encode($iNeedSupplies)};
+const shoppingCart = []
+// 初始化申请数量
+initApplyNum(iNeedSupplies.data)
+const pagination = {
+				current_page: iNeedSupplies.current_page,
+				last_page: iNeedSupplies.last_page,
+				per_page: iNeedSupplies.per_page,
+				total: iNeedSupplies.total
+			};
+let app = new Vue({
+	el: '#app',
+	data() {
+		var checkImNum = (rule, value, callback) => {
+			if (value <= 0) {
+				callback(new Error('必须＞0'));
+			} else {
+				callback();
+			}
+		};
+		return {
+			isShowSearch: false, // 打开搜索面板
+			isShowShoppingCard: false, // 打开购物车面板
+			shoppingCardLoading: false,
+			searchForm: {
+				im_name: '',
+				im_can_apply_num_state: 2,
+				create_time: [],
+				update_time: []
+			},
+			iNeedSupplies: iNeedSupplies.data,
+			shoppingCart: shoppingCart,
+			pagination: pagination,
+			applyForm: {
+				im_num_of_applications: '',
+			},
+			applyRules: {
+				im_num_of_applications: [
+					{ validator: checkImNum, trigger: 'blur' },
+					{ required: true, message: '不能为空', trigger: 'blur' },
+					{ type: 'number', message: '必须为数字值'}
+				]
+			}
+		}
+	},
+	methods: {
+		search(){
+			const _this = this;
+			$.ajax({
+				url:'iNeedSupplies',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					// 初始化申请数量
+					initApplyNum(res.data)
+					_this.iNeedSupplies = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					_this.$message({
+						type: 'error',
+						message: '发生错误，请刷新一下'
+					});
+				}
+			})
+		},
+		resetForm(formName){
+			this.$refs[formName].resetFields();
+			if (formName === 'searchForm') {
+				this.search()
+			}
+		},
+		submitShoppingCard() {
+			// 提交购物车
+			const _this = this;
+			if (this.shoppingCart.length === 0) {
+				this.$message({
+					type: 'info',
+					message: '购物车为空'
+				});
+			} else {
+				this.$confirm('确定申领购物车中所有物资？', '提示', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning'
+				}).then(({ value }) => {
+					let submitTime = 0 // 提交次数
+					let errRes = [] // 错误报告
+					_this.shoppingCardLoading = true
+					for (let i = 0; i < _this.shoppingCart.length; i++) {
+						let row = {}
+						row = _this.shoppingCart[i]
+						row.statement = '免填申请理由'
+						$.ajax({
+							url: 'addINeedSupplies',
+							data: row,
+							type: 'post',
+							success: function (res) {
+								submitTime++
+								const code = res.code
+								const msg = res.msg
+								_this.shoppingCart[i]['res'] = res
+								if(code === 0){
+									_this.$message({
+										type: 'info',
+										message: msg
+									});
+								}else if(code > 0){
+									_this.$message({
+										type: 'success',
+										message: _this.shoppingCart[i]['im_name'] + msg
+									});
+								}else{
+									_this.$message({
+										type: 'error',
+										message: _this.shoppingCart[i]['im_name'] + msg
+									});
+									errRes.push(_this.shoppingCart[i])
+								}
+
+								// 提交次数足够
+								if (submitTime == _this.shoppingCart.length) {
+									if (errRes.length > 0) {
+										_this.$message({
+											type: 'error',
+											message: '购物车部分商品申请发生错误，请联系管理员'
+										});
+									} else {
+										setTimeout(() => {
+											location.reload()
+										}, 4000);
+									}
+								}
+							},
+							error: function (err) {
+								_this.$message({
+									type: 'error',
+									message: '发生未知错误，请刷新重试'
+								});
+							}
+						})
+					}
+				}).catch(() => {
+					this.$message({
+						type: 'info',
+						message: '已取消'
+					});
+				});
+			}
+		},
+		applyForMaterials(formName, row) {
+			const _this = this;
+			this.$confirm('确定申领数量为'+ row.im_num_of_applications +'的【' + row.im_name + '】？', '提示', {
+				confirmButtonText: '确定',
+				cancelButtonText: '取消',
+				type: 'warning'
+			}).then(({ value }) => {
+				const patt = /(^[1-9]\d*$)/; // 正则校验是否为正整数
+				if (patt.test(row.im_num_of_applications)) {
+					if (row.im_num_of_applications > row.im_can_apply_num) {
+						_this.$message({
+							type: 'error',
+							message: '申请数量必须小于可申请数量!'
+						});
+					} else {
+						row.statement = '免填申请理由'
+						$.ajax({
+							url: 'addINeedSupplies',
+							data: row,
+							type: 'post',
+							success: function (res) {
+								console.log(res);
+								const code = res.code
+								const msg = res.msg
+								if(code === 0){
+									_this.$message({
+										type: 'info',
+										message: msg
+									});
+								}else if(code > 0){
+									_this.$message({
+										type: 'success',
+										message: msg
+									});
+									location.reload()
+								}else{
+									_this.$message({
+										type: 'error',
+										message: msg
+									});
+								}
+							},
+							error: function (err) {
+								_this.$message({
+									type: 'error',
+									message: '发生未知错误，请刷新重试'
+								});
+							}
+						})
+					}
+				} else {
+					row.im_num_of_applications = 0
+					_this.$message({
+						type: 'error',
+						message: '申请数量必须为正整数!'
+					});
+				}
+			}).catch(() => {
+				this.$message({
+					type: 'info',
+					message: '已取消'
+				});
+			});
+		},
+		handleEdit(row, key){
+			const _this = this;
+			row['key'] = key
+			$.ajax({
+				url: 'editInventoryManagementList',
+				type: 'post',
+				data: row,
+				success: function (res) {
+					const code = res.code
+					const msg = res.msg
+					if(code === 0){
+						_this.$message({
+							type: 'info',
+							message: msg
+						});
+					}else if(code > 0){
+						_this.$message({
+							type: 'success',
+							message: msg
+						});
+						// 修改物资数量时，同时修改可申请数量
+						if (key === 'im_num') {
+							row['im_can_apply_num'] = res.im_can_apply_num
+						}
+					}else{
+						_this.$message({
+							type: 'error',
+							message: msg
+						});
+					}
+				},
+				error: function (err) {
+					_this.$message({
+						type: 'error',
+						message: '发生未知错误，请刷新重试'
+					});
+				}
+			})
+		},
+		checkShoppingCard(row){
+			// if(row['im_num_of_applications']  0)
+			// 防止溢出 + 检测值是否为数字值 + 同步购物车
+			if (row['im_num_of_applications'] == 0) {
+				this.editNumOA(row, 'plus') 
+				this.editNumOA(row, 'minus') 
+			} else {
+				this.editNumOA(row, 'minus') 
+				this.editNumOA(row, 'plus') 
+			}
+		},
+		editNumOA(row, type) {
+			const _this = this;
+			// 测试可知，字符串与‘0’比较，结果均为false
+			row['im_num_of_applications'] = parseInt(row['im_num_of_applications']) >= 0 ? parseInt(row['im_num_of_applications']) : 0
+			
+			if (type === 'minus') {
+				(--row['im_num_of_applications'] < 0) && (row['im_num_of_applications'] = 0)
+				if (row['im_num_of_applications'] == 0) {
+					for (let i = 0; i < this.shoppingCart.length; i++) {
+						if (this.shoppingCart[i]['im_id'] == row.im_id) {
+							this.shoppingCart.splice(i,1)
+						}					
+					}
+				}
+			} else if (type === 'plus') {
+				row['im_num_of_applications']++
+				let	isPlus = 1;
+				for (let i = 0; i < this.shoppingCart.length; i++) {
+					if (this.shoppingCart[i]['im_id'] == row.im_id) {
+						isPlus = 0;
+					}					
+				}
+				// 若购物车已存在则不再添加该商品，反之添加
+				isPlus && this.shoppingCart.push(row)
+			} else {
+				_this.$message({
+					type: 'error',
+					message: '出现未知错误，请联系管理员，错误信息：编辑物资数量时发生函数参数错误' 
+				});
+			}
+			// 如果超过可申请数量，则重置数量为可申请数量值
+			(row['im_num_of_applications'] > row['im_can_apply_num']) && (row['im_num_of_applications'] = row['im_can_apply_num'])
+		},
+		handleDelete(row) {
+			const _this = this;;
+			this.$confirm('此操作将永久删除物资【' + row.im_name + '】 是否继续?', '提示', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning',
+					center: true
+				}).then(() => {
+					$.ajax({
+						url: 'deleteInventoryManagementList',
+						type: 'post',
+						data: {im_id:row.im_id},
+						success: function (res) {
+							console.log(res);
+							const code = res.code
+							const msg = res.msg
+							if(code === 0){
+								_this.$message({
+									type: 'info',
+									message: msg
+								});
+							}else if(code > 0){
+								_this.$message({
+									type: 'success',
+									message: '删除成功!'
+								});
+								location.reload()
+							}else{
+								_this.$message({
+									type: 'error',
+									message: msg
+								});
+							}
+						},
+						error: function (err) {
+							_this.$message({
+							type: 'error',
+							message: '发生未知错误，请刷新重试'
+						});
+						}
+					})
+				}).catch(() => {
+					this.$message({
+						type: 'info',
+						message: '已取消删除'
+					});
+				});
+		},
+		// pagination时
+		handleSizeChange(per_page){
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page){
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		}
+	}
+})
+function initApplyNum(arr) {
+	// 初始化申请数量
+	for (let i = 0; i < arr.length; i++) {
+		arr[i]['im_num_of_applications'] = 0
+		// 重新建立 shoppingCart 与 iNeedSupplies数据双向绑定
+		for (let j = 0; j < shoppingCart.length; j++) {
+			if (shoppingCart[j]['im_id'] == arr[i]['im_id']) {
+				arr[i]['im_num_of_applications'] = shoppingCart[j]['im_num_of_applications']
+				shoppingCart.splice(j,1);
+				shoppingCart.push(arr[i])
+			}
+		}
+	}
+}
+</script>

@@ -1,0 +1,457 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<blockquote class="layui-elem-quote" style="margin:15px">
+			<p>- 周五夜~周日夜1个班次1天调休、节假日则由管理员手动配额，其他正常工作时间0调休</p>
+			<p>- 由于配额可以再次编辑会出现以下两个问题：</p>
+			<p>- 1、每个人的值班调休余额都是实时计算的</p>
+			<p>- 2、历史已调休的班次，如果配额被修改了将无法撤回已调休的班次</p>
+			<p>- 一期解决方案：只需判断被编辑日期是否历史日期，若是则不可编辑（毕竟不是历史日期，用户也无法使用）</p>
+		</blockquote>
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>调休配额管理</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button @click="isShowAddDrawer = true" type="primary" icon="el-icon-plus" circle></el-button>
+			<el-calendar v-model="calendarValue">
+				<!-- 这里使用的是 2.5 slot 语法，对于新项目请使用 2.6 slot 语法-->
+				<template
+				slot="dateCell"
+				slot-scope="{date, data}">
+						<p :class="data.isSelected ? 'is-selected' : ''">
+							{{ data.day.split('-').slice(1).join('-') }} {{ data.isSelected ? '✔️' : ''}}
+							<!-- isSettingDay用于判断该日期是否已被管理员设置了其他内容 -->
+							<!-- isSettingDay用于判断该日期是否有初始配额 -->
+							<span v-show="false">
+								{{data.am = new Object()}}
+								{{data.pm = new Object()}}
+								{{data.isSettingDay = 0}}
+								{{data.pm.isSettingNight = 0}}
+								{{data.am.isDefault = 0}}
+								{{data.pm.isDefault = 0}}
+								{{data.day > nowDate ? (data.isEdit = 1) : (data.isEdit = 0)}}
+							</span>
+								<el-row
+								style="margin: 5px auto auto"
+								v-for="i in rotaVacationDaysOffManagementList"
+								v-if="data.day.split('-').join('') == i.rvdom_timestamp && i.rvdom_day_or_night == 1">
+									<el-tooltip class="item" effect="dark" :content="data.isEdit ? ('双击修改'+data.day+'白班') : '历史日期不可编辑'" placement="top">
+										<span v-show="false">
+											{{data.isSettingDay = 1}}
+											{{data.am.rvdom_id = i.rvdom_id}}
+											{{data.am.rvdom_timestamp = i.rvdom_timestamp}}
+											{{data.am.rvdom_day_or_night = i.rvdom_day_or_night}}
+											{{data.am.rvdom_days_off = i.rvdom_days_off}}
+											{{data.am.rvdom_remarks = i.rvdom_remarks}}
+										</span>
+										<span 
+										@dblclick="handleShowEditForm(data, 'am')"
+										style="
+										display: inline-block;
+										width: 120px;
+										word-break:keep-all;
+										white-space:nowrap;
+										overflow:hidden;
+										text-overflow:ellipsis; ">
+											<el-tag size="mini">白</el-tag>
+											<span style="color:red">{{i.rvdom_days_off +'天'}}</span>
+											<el-tooltip class="item" effect="dark" :content="i.rvdom_remarks" placement="bottom">
+												<span style="color:#e6a23c;">{{i.rvdom_remarks}}</span>
+											</el-tooltip>
+										</span>
+									</el-tooltip>
+								</el-row>
+								<el-row
+								style="margin: 5px auto auto"
+								v-if="data.isSettingDay == 0 &&
+								(date.toString().slice(0,3) == 'Sat'
+								|| date.toString().slice(0,3) == 'Sun')">
+									<el-tooltip class="item" effect="dark" :content="data.isEdit ? ('双击修改'+data.day+'白班') : '历史日期不可编辑'" placement="top">
+										<span v-show="false">
+											{{data.am.isDefault = 1}}
+											{{data.am.rvdom_timestamp = data.day.split('-').join('')}}
+											{{data.am.rvdom_day_or_night = 1}}
+											{{data.am.rvdom_days_off = 1}}
+										</span>
+										<span @dblclick="handleShowEditForm(data, 'am')">
+											<el-tag size="mini">白</el-tag>
+											<span style="color:red">{{'1天'}}</span>
+										</span>
+									</el-tooltip>
+								</el-row>
+
+								<el-row
+								style="margin: 5px auto auto"
+								v-for="i in rotaVacationDaysOffManagementList"
+								v-if="data.day.split('-').join('') == i.rvdom_timestamp && i.rvdom_day_or_night == 0">
+									<el-tooltip class="item" effect="dark" :content="data.isEdit ? ('双击修改'+data.day+'夜班') : '历史日期不可编辑'" placement="top">
+										<span v-show="false">
+											{{data.pm.isSettingNight = 1}}
+											{{data.pm.rvdom_id = i.rvdom_id}}
+											{{data.pm.rvdom_timestamp = i.rvdom_timestamp}}
+											{{data.pm.rvdom_day_or_night = i.rvdom_day_or_night}}
+											{{data.pm.rvdom_days_off = i.rvdom_days_off}}
+											{{data.pm.rvdom_remarks = i.rvdom_remarks}}
+										</span>
+										<span
+										@dblclick="handleShowEditForm(data, 'pm')"
+										style="
+										display: inline-block;
+										width: 120px;
+										word-break:keep-all;
+										white-space:nowrap;
+										overflow:hidden;
+										text-overflow:ellipsis; ">
+											<el-tag type="info" size="mini">夜</el-tag>
+											<span style="color:red">{{i.rvdom_days_off +'天'}}</span>
+											<el-tooltip class="item" effect="dark" :content="i.rvdom_remarks" placement="bottom">
+												<span style="color:#e6a23c;">{{i.rvdom_remarks}}</span>
+											</el-tooltip>
+										</span>
+									</el-tooltip>
+								</el-row>
+								<el-row
+								style="margin: 5px auto auto"
+								v-if="data.pm.isSettingNight == 0 &&
+								(date.toString().slice(0,3) == 'Fri'
+								|| date.toString().slice(0,3) == 'Sat'
+								|| date.toString().slice(0,3) == 'Sun')">
+									<el-tooltip class="item" effect="dark" :content="data.isEdit ? ('双击修改'+data.day+'夜班') : '历史日期不可编辑'" placement="top">
+										<span v-show="false">
+											{{data.pm.isDefault = 1}}
+											{{data.pm.rvdom_timestamp = data.day.split('-').join('')}}
+											{{data.pm.rvdom_day_or_night = 0}}
+											{{data.pm.rvdom_days_off = 1}}
+										</span>
+										<span @dblclick="handleShowEditForm(data, 'pm')">
+											<el-tag type="info" size="mini">夜</el-tag>
+											<span style="color:red">{{'1天'}}</span>
+										</span>
+									</el-tooltip>
+								</el-row>
+							</el-tooltip>
+						</p>
+				</template>
+			</el-calendar>
+		</el-card>
+		<el-drawer
+		title="新增"
+		:visible.sync="isShowAddDrawer"
+		direction="ltr"
+		size="30%"
+		:modal-append-to-body = "false"
+		close-on-press-escape = "false"
+		style="height: 100%;">
+			<el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+				<el-form-item label="日期" required>
+					<el-col :span="18">
+						<el-form-item prop="rvdom_timestamp">
+							<el-date-picker
+							type="date"
+							placeholder="选择日期"
+							v-model="ruleForm.rvdom_timestamp"
+							style="width: 100%;"
+							format="yyyy 年 MM 月 dd 日"
+							value-format="yyyyMMdd">
+							</el-date-picker>
+						</el-form-item>
+					</el-col>
+				</el-form-item> <br>
+				<el-form-item label="班次" prop="rvdom_day_or_night">
+					<el-col :span="18">
+						<el-select v-model="ruleForm.rvdom_day_or_night" placeholder="请选择班次">
+							<el-option label="白" :value="1"></el-option>
+							<el-option label="夜" :value="0"></el-option>
+						</el-select>
+					</el-col>
+				</el-form-item><br>
+				<el-form-item label="配额" prop="rvdom_days_off">
+					<el-col :span="18">
+						<span class="el-icon-remove-outline" @click="handleChangeRvdomDaysOff('ruleForm','-')"></span>
+						<el-input v-model="ruleForm.rvdom_days_off" disabled style="display: inline-block;width:50%"></el-input>
+						<span class="el-icon-circle-plus-outline" @click="handleChangeRvdomDaysOff('ruleForm','+')"></span>
+					</el-col>
+				</el-form-item><br>
+				<el-form-item label="说明" prop="rvdom_remarks">
+					<el-col :span="18">
+						<!-- v-model后加.trim输入框默认不能输入空格 -->
+						<el-input type="textarea" v-model.trim="ruleForm.rvdom_remarks"></el-input>
+					</el-col>
+				</el-form-item><br>
+				<el-form-item>
+					<el-button type="primary" @click="submitForm('ruleForm')">立即创建</el-button>
+					<el-button @click="resetForm('ruleForm')">重置</el-button>
+				</el-form-item>
+			</el-form>
+		</el-drawer>
+
+		<el-drawer
+		title="编辑"
+		:visible.sync="isShowEditDrawer"
+		direction="ltr"
+		size="30%"
+		:modal-append-to-body = "false"
+		close-on-press-escape = "false"
+		style="height: 100%;">
+			<el-form :model="editForm" :rules="rules" ref="editForm" label-width="100px" class="demo-editForm">
+				<el-form-item label="日期" required>
+					<el-col :span="18">
+						<el-form-item prop="rvdom_timestamp">
+							<el-date-picker
+							disabled
+							type="date"
+							placeholder="选择日期"
+							v-model="editForm.rvdom_timestamp"
+							style="width: 100%;"
+							format="yyyy 年 MM 月 dd 日"
+							value-format="yyyyMMdd">
+							</el-date-picker>
+						</el-form-item>
+					</el-col>
+				</el-form-item> <br>
+				<el-form-item label="班次" prop="rvdom_day_or_night">
+					<el-col :span="18">
+						<el-select v-model="editForm.rvdom_day_or_night" disabled placeholder="请选择班次">
+							<el-option label="白" :value="1"></el-option>
+							<el-option label="夜" :value="0"></el-option>
+						</el-select>
+					</el-col>
+				</el-form-item><br>
+				<el-form-item label="配额" prop="rvdom_days_off">
+					<el-col :span="18">
+						<span class="el-icon-remove-outline" @click="handleChangeRvdomDaysOff('editForm','-')"></span>
+						<el-input v-model="editForm.rvdom_days_off" disabled style="display: inline-block;width:50%"></el-input>
+						<span class="el-icon-circle-plus-outline" @click="handleChangeRvdomDaysOff('editForm','+')"></span>
+					</el-col>
+				</el-form-item><br>
+				<el-form-item label="说明" prop="rvdom_remarks">
+					<el-col :span="18">
+						<!-- v-model后加.trim输入框默认不能输入空格 -->
+						<el-input type="textarea" v-model.trim="editForm.rvdom_remarks"></el-input>
+					</el-col>
+				</el-form-item><br>
+				<el-form-item>
+					<el-button type="primary" @click="handleEdit()">修改</el-button>
+					<el-button @click="resetForm('editForm')">重置</el-button>
+				</el-form-item>
+			</el-form>
+		</el-drawer>
+	</div>
+</div>
+<style>
+.is-selected {
+	color: #1989FA;
+}
+</style>
+<script>
+if (window.orientation != undefined && window.orientation != 90 && window.orientation != -90) {
+	alert("手机端建议使用横屏模式")
+}
+const rotaVacationDaysOffManagementList = {:json_encode($rotaVacationDaysOffManagementList)};
+const Dates = new Date();
+const Y = Dates.getFullYear();
+const M = Dates.getMonth() + 1;
+const D = Dates.getDate();
+const nowDate = Y + (M < 10 ? "-0" : "-") + M + (D < 10 ? "-0" : "-") + D;
+const app = new Vue({
+	el: '#app',
+	data() {
+		return {
+			calendarValue:  new Date(),
+			rotaVacationDaysOffManagementList: rotaVacationDaysOffManagementList,
+			isShowAddDrawer: false,
+			isShowEditDrawer: false,
+        	direction: 'ltr',
+        	nowDate: nowDate,
+        	editForm: {
+				rvdom_id: '',
+				rvdom_timestamp: '',
+				rvdom_day_or_night: '',
+				rvdom_days_off: '',
+				rvdom_remarks: ''
+			},
+			ruleForm: {
+				rvdom_timestamp: '',
+				rvdom_day_or_night: '',
+				rvdom_days_off: 0,
+				rvdom_remarks: ''
+			},
+			rules: {
+				rvdom_timestamp: [
+					{ required: true, message: '日期不能为空', trigger: 'change' }
+				],
+				rvdom_day_or_night: [
+					{ required: true, message: '请选择班次', trigger: 'change' }
+				],
+				rvdom_days_off: [
+					{ required: true, message: '请设置可休假天数', trigger: 'blur' },
+				],
+				rvdom_remarks: [
+					{ required: true, message: '请填写说明', trigger: 'blur' }
+				]
+			}
+		}
+	},
+	methods: {
+		submitForm(formName) {
+			const _this = this
+			this.$refs[formName].validate((valid) => {
+				if (_this.ruleForm.rvdom_timestamp <= nowDate.split('-').join('')) {
+					_this.$message({
+						type: 'error',
+						message: '历史日期配额不可修改'
+					});
+					return false;
+				}
+				if (valid) {
+					$.ajax({
+						url: 'addrotaVacationDaysOffManagementList',
+						data: _this.ruleForm,
+						type: 'post',
+						success: function (res) {
+							const code = res.code
+							const msg = res.msg
+							if (code > 0){
+								_this.$message({
+									type: 'success',
+									message: msg
+								});
+							} else {
+								_this.$message({
+									type: 'error',
+									message: '操作失败，请刷新重试：' + msg
+								});
+							}
+						}
+					})
+				} else {
+					console.log('error submit!!');
+					return false;
+				}
+			});
+		},
+		resetForm(formName) {
+			this.$refs[formName].resetFields();
+		},
+		handleChangeRvdomDaysOff(formName,type){
+			if (type == '+') {
+				this[formName].rvdom_days_off += 0.5
+			}
+			if (type == '-' && this[formName].rvdom_days_off > 0) {
+				this[formName].rvdom_days_off -= 0.5
+			}
+		},
+		handleShowEditForm(data,am_or_pm){
+			if (data.isEdit) {
+				// 默认周末配额的执行add方法
+				if (data[am_or_pm].isDefault) {
+					this.isShowAddDrawer = true;
+					this.ruleForm.rvdom_timestamp =  data[am_or_pm].rvdom_timestamp
+					this.ruleForm.rvdom_day_or_night = parseInt( data[am_or_pm].rvdom_day_or_night)
+					this.ruleForm.rvdom_days_off =  data[am_or_pm].rvdom_days_off
+					this.ruleForm.rvdom_remarks =  data[am_or_pm].rvdom_remarks
+				} else {
+					this.isShowEditDrawer = true;
+					this.editForm.rvdom_id = data[am_or_pm].rvdom_id
+					this.editForm.rvdom_timestamp =  data[am_or_pm].rvdom_timestamp
+					this.editForm.rvdom_day_or_night = parseInt( data[am_or_pm].rvdom_day_or_night)
+					this.editForm.rvdom_days_off =  data[am_or_pm].rvdom_days_off
+					this.editForm.rvdom_remarks =  data[am_or_pm].rvdom_remarks
+				}
+			} else {
+				this.$message({
+						type: 'info',
+						message: '不可编辑'
+					});
+			}
+			return false;
+		},
+		handleEdit(){
+			const _this = this;
+			$.ajax({
+				url: 'editrotaVacationDaysOffManagementList',
+				type: 'post',
+				data: _this.editForm,
+				success: function (res) {
+					const code = res.code
+					const msg = res.msg
+					if (code === 0){
+						_this.$message({
+									type: 'info',
+									message: msg
+								});
+					} else if (code > 0){
+						_this.$message({
+							type: 'success',
+							message: msg
+						});
+					} else {
+						_this.$message({
+							type: 'error',
+							message: '操作失败，请刷新重试：' + msg
+						});
+					}
+				},
+				error: function (err) {
+					_this.$message({
+							type: 'error',
+							message: '发生未知错误，请刷新重试'
+						});
+				}
+			})
+		}
+	},
+	watch: {
+		calendarValue: {	//深度监听，可监听到对象、数组的变化
+			handler(val, oldVal){
+				const _this = this;
+				// 月份/年份发生变化时重新获取后台数据
+				if (val.getMonth() !== oldVal.getMonth() || val.getFullYear() !== oldVal.getFullYear()) {
+					const previous_m =(val.getMonth() == 0 ? val.getFullYear()-1 + '12' : val.getFullYear() + (val.getMonth() > 9 ? val.getMonth() : '0' + val.getMonth()).toString())
+					const this_m = val.getFullYear() + ((val.getMonth()+1) > 9 ? (val.getMonth()+1) : '0' + (val.getMonth()+1)).toString()
+					const next_m =(val.getMonth() == 11 ? val.getFullYear()+1 + '01' : val.getFullYear() + ((val.getMonth()+2) > 9 ? (val.getMonth()+2) : '0' +(val.getMonth()+2)).toString())
+					const data =  {
+							isSearch: 1,
+							previous_m: previous_m,
+							this_m: this_m,
+							next_m: next_m,
+						}
+					$.ajax({
+						url: 'rotaVacationDaysOffManagementList',
+						data:data,
+						type: 'post',
+						success: function (res) {
+							const code = res.code
+							const msg = res.msg
+							if (code === 0){
+								_this.$message({
+										type: 'info',
+										message: msg
+									});
+							} else if (code > 0){
+								_this.rotaVacationDaysOffManagementList = res.data
+								_this.$message({
+									type: 'success',
+									message: msg
+								});
+								
+							} else {
+								_this.$message({
+									type: 'error',
+									message: '操作失败，请刷新重试：' + msg
+								});
+							}
+						},
+						error: function (err) {
+							_this.$message({
+									type: 'error',
+									message: '发生未知错误，请刷新重试'
+								});
+						}
+					})
+				}
+			},
+			deep: true //true 深度监听
+		}
+	}
+})
+</script>

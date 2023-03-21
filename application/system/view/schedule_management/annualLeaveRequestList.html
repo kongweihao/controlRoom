@@ -1,0 +1,351 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>大家的年假申请记录</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<!-- 搜索面板 -->
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="工单号" prop="alrl_job_num">
+						<el-input
+						v-model="searchForm.alrl_job_num"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="开始日期" prop="alrl_timestamp_start">
+						<el-date-picker
+						v-model="searchForm.alrl_timestamp_start"
+						align="right"
+						type="date"
+						format="yyyy-MM-dd"
+						value-format="yyyyMMdd"
+						width="50"
+						placeholder="支持模糊搜索"
+						:picker-options="pickerOptionsStart"
+						@blur="search()"></el-date-picker>
+					</el-form-item>
+					<el-form-item label="开始午次" prop="alrl_half_day_start">
+						<el-select v-model="searchForm.alrl_half_day_start" width="50" placeholder="请选择" @change="search()">
+							<el-option label="全部" value=""></el-option>
+							<el-option label="上午" value="1"></el-option>
+							<el-option label="下午" value="2"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="结束日期" prop="alrl_timestamp_end">
+						<el-date-picker
+						v-model="searchForm.alrl_timestamp_end"
+						align="right"
+						type="date"
+						format="yyyy-MM-dd"
+						value-format="yyyyMMdd"
+						width="50"
+						placeholder="支持模糊搜索"
+						:picker-options="pickerOptionsEnd"
+						@blur="search()"></el-date-picker>
+					</el-form-item>
+					<el-form-item label="结束午次" prop="alrl_half_day_end">
+						<el-select v-model="searchForm.alrl_half_day_end" width="50" placeholder="请选择" @change="search()">
+							<el-option label="全部" value=""></el-option>
+							<el-option label="上午" value="1"></el-option>
+							<el-option label="下午" value="2"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="假期时长/天" prop="alrl_num_of_days_off">
+						<el-input
+						v-model="searchForm.alrl_num_of_days_off"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="申请账号" prop="alrl_applicant_account">
+						<el-input
+						v-model="searchForm.alrl_applicant_account"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="申请人" prop="alrl_applicant_nickname">
+						<el-input
+						v-model="searchForm.alrl_applicant_nickname"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="申请说明" prop="alrl_remarks">
+						<el-input
+						v-model="searchForm.alrl_remarks"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="状态" prop="alrl_state">
+						<el-select v-model="searchForm.alrl_state" width="50" placeholder="请选择" @change="search()">
+							<el-option label="全部" value=""></el-option>
+							<el-option label="正常" value="1"></el-option>
+							<el-option label="撤回" value="-1"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-tooltip class="item" effect="dark" content="既年假有效年度，默认为当年" placement="top">
+						<el-form-item label="年假年度" prop="rvs_annual_leave_year">
+							<el-input
+							v-model="searchForm.rvs_annual_leave_year"
+							width="50"
+							placeholder="支持模糊搜索"
+							@blur="search()"></el-input>
+						</el-form-item>
+					</el-tooltip>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+						<el-button @click="isShowSearch = !isShowSearch">收起</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<!-- 年假申请列表 -->
+			<el-table
+			:data="annualLeaveRequestList"
+			max-height="400"
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="alrl_job_num"
+				label="工单号"
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="rvs_annual_leave_year"
+				label="年度"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="alrl_timestamp_start"
+				label="开始日期"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.alrl_timestamp_start}}
+						<br>
+						<el-tag size="mini">
+							{{(scope.row.alrl_half_day_start == 1 ? '上午' : '下午')}}
+						</el-tag>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="alrl_timestamp_end"
+				label="结束日期"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.alrl_timestamp_end}}
+						<br>
+						<el-tag size="mini">
+							{{(scope.row.alrl_half_day_end == 1 ? '上午' : '下午')}}
+						</el-tag>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="alrl_num_of_days_off"
+				label="假期时长/天"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="alrl_applicant_account"
+				label="申请账号"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="alrl_applicant_nickname"
+				label="申请人"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="alrl_remarks"
+				label="申请说明"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="alrl_state"
+				label="状态"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.alrl_state != -1 ? '正常' : '撤回'}}
+					</template>
+				</el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 500]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script>
+const annualLeaveRequestList = {:json_encode($annualLeaveRequestList)};
+const rvs_annual_leave_year = {:json_encode($rvs_annual_leave_year)};
+const pagination = {
+				current_page: annualLeaveRequestList.current_page,
+				last_page: annualLeaveRequestList.last_page,
+				per_page: annualLeaveRequestList.per_page,
+				total: annualLeaveRequestList.total
+			};
+const app = new Vue({
+	el: '#app',
+	data() {
+		let checkImNum = (rule, value, callback) => {
+			if (value < 0) {
+				callback(new Error('必须≥0'));
+			} else {
+				callback();
+			}
+		};
+		return {
+			isShowSearch: false, // 打开搜索面板
+			searchForm: {
+				alrl_job_num: '',
+				rvs_annual_leave_year: rvs_annual_leave_year,
+				alrl_timestamp_start: '',
+				alrl_timestamp_end: '',
+				alrl_half_day_start: '',
+				alrl_half_day_end: '',
+				alrl_num_of_days_off: '',
+				alrl_applicant_account: '',
+				alrl_applicant_nickname: '',
+				alrl_remarks: '',
+				alrl_state: '',
+			},
+			annualLeaveRequestList: annualLeaveRequestList.data,
+			pagination: pagination,
+			pickerOptionsStart: {
+				shortcuts: [{
+					text: '今天',
+					onClick(picker) {
+					picker.$emit('pick', new Date());
+					}
+				}, {
+					text: '昨天',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24);
+					picker.$emit('pick', date);
+					}
+				}, {
+					text: '一周前',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24 * 7);
+					picker.$emit('pick', date);
+					}
+				}]
+			},
+			pickerOptionsEnd: {
+				shortcuts: [{
+					text: '今天',
+					onClick(picker) {
+					picker.$emit('pick', new Date());
+					}
+				}, {
+					text: '昨天',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24);
+					picker.$emit('pick', date);
+					}
+				}, {
+					text: '一周前',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24 * 7);
+					picker.$emit('pick', date);
+					}
+				}]
+			}
+		}
+	},
+	methods: {
+		search(){
+			const _this = this;
+			$.ajax({
+				url:'annualLeaveRequestList',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					_this.annualLeaveRequestList = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					
+								_this.$message({
+									type: 'error',
+									message: '发生错误，请刷新一下'
+								});
+				}
+			})
+		},
+		resetForm(formName){
+			this.$refs[formName].resetFields();
+			if (formName === 'searchForm') {
+				this.search()
+			}
+		},
+		// pagination时
+		handleSizeChange(per_page){
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page){
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		},
+		handleClose(done) {
+			this.$confirm('确认关闭？')
+				.then(_ => {
+					done();
+				})
+          .catch(_ => {});
+      	}
+	}
+})
+</script>

@@ -1,0 +1,598 @@
+<div class="layui-body" style="padding: 15px;">
+	<blockquote class="layui-elem-quote layui-wran-color" style="margin-bottom: 20px;">注意：岗位变化将直接影响值班表导入、导出以及前端展示功能，请谨慎操作！</blockquote>
+	<blockquote class="layui-elem-quote" style="margin-bottom: 20px;">岗位变化后仅在下一次班表导入时才会生效（既以下所有字段的改变只会在下一次导入班表时被应用）</blockquote>
+	
+	<form class="layui-form formList">
+		<div class="layui-form-item">
+			<div class="layui-input-inline" style="float: right; width: 130px; ">
+				<select class="layui-btn" lay-filter="exporMuban" >
+					<option value="xls">导出模板(xls格式)</option>
+					<option value="csv">导出模板(csv格式)</option>
+				</select>
+			</div>
+			<div class="layui-input-inline" style="float: right; width: 130px;">
+				<select name="day_or_night" lay-filter="day_or_night_search">
+					{volist name="day_or_night_search_arr" id="vo"}
+					{if condition="$vo.value == $day_or_night"}
+					<option value="{$vo.value}" selected>{$vo.name}</option>
+					{else/}
+					<option value="{$vo.value}">{$vo.name}</option>
+					{/if}
+					{/volist}
+				</select>
+			</div>
+			<div class="layui-input-inline" style="float: right; width: 130px;">
+				<select name="monitorPost_type_id" lay-filter="monitorPost_type_search">
+					<option value="-1" selected>-- 全部类型 --</option>
+					{volist name="monitorPostTypeList" id="vo"}
+					{if condition="$vo.monitorPost_type_id == $monitorPostTypeList_selected"}
+					<option value="{$vo.monitorPost_type_id}" selected>{$vo.monitorPost_type}</option>
+					{else/}
+					<option value="{$vo.monitorPost_type_id}">{$vo.monitorPost_type}</option>
+					{/if}
+					{/volist}
+				</select>
+			</div>
+		</div>
+	</form>
+	
+	<table id="monitorPostTable" lay-filter="monitorPostList_table"></table>
+	<blockquote class="layui-elem-quote" style="margin-top: 20px;">
+		<p>【岗位名称】：各个岗位名称，用于支撑值班表导入导出功能</p>
+		<p>【类型】：共{$monitorPostTypeListLen}大类，不可修改，分别为
+			{volist name="$monitorPostTypeList" id="vo"}
+				{$vo.monitorPost_type}、
+			{/volist}
+			可对【岗位名称】和人员进行分类</p>
+		<p>【前端别名】：【岗位名称】的前端别名，用于前端展示，比如：ITMC白班与ITMC夜班前端别名可以统一为ITMC，统一前端展示</p>
+	</blockquote>
+	<blockquote class="layui-elem-quote" style="margin-top: 20px;">
+		<p>影响模块</p>
+		<p>影响短信接口字数，短信字数超过67算第二条，目前字数...</p>
+	</blockquote>
+</div>
+<div id="MonitorPostFrame" style="display: none;">
+	<!-- 新增/编辑岗位弹窗 -->
+	<form id="form" class="layui-form" method="POST" style="padding: 10px 20px 10px 10px;">
+		<blockquote class="layui-elem-quote layui-wran-color" style="margin-bottom: 20px;">注意：岗位变化将直接影响值班表导入、导出以及展示功能，请谨慎操作！</blockquote>
+		<div class="layui-form-item">
+			<label class="layui-form-label star" >岗位名</label>
+			<div class="layui-input-block">
+				<input name="post_name" required lay-verify="required" autocomplete="off" class="layui-input" placeholder="输入岗位名（注意不要与现有岗位名重复）">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label" >前端别名</label>
+			<div class="layui-input-block">
+				<input name="mp_alias" autocomplete="off" class="layui-input" placeholder="为空则默认为【岗位名】">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label star" >类型</label>
+			<div class="layui-input-block">
+				<select name="monitorPost_type_id" required lay-verify="required" autocomplete="off">
+					<option value=""></option>
+					{volist name="monitorPostTypeList" id="vo"}
+					<option value="{$vo.monitorPost_type_id}">{$vo.monitorPost_type}</option>
+					{/volist}
+				</select>
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label" >是否白班</label>
+			<div class="layui-input-block">
+				<input type="checkbox" name="is_day" value="1" lay-skin="switch" lay-filter="status" lay-text="是|否">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label" >是否夜班</label>
+			<div class="layui-input-block">
+				<input type="checkbox" name="is_night" value="1" lay-skin="switch" lay-filter="status" lay-text="是|否">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label" >后台查看班表时的顺序</label>
+			<div class="layui-input-block">
+				<input name="sort" value="" autocomplete="off" class="layui-input" placeholder="">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label" >前端展示时的白班顺序</label>
+			<div class="layui-input-block">
+				<input name="sort_day" value="" autocomplete="off" class="layui-input" placeholder="若不是白班岗位，则无需填">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label" >前端展示时的夜班顺序</label>
+			<div class="layui-input-block">
+				<input name="sort_night" value="" autocomplete="off" class="layui-input" placeholder="若不是夜班岗位，则无需填">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label" >状态</label>
+			<div class="layui-input-block">
+				<input type="checkbox" name="is_active" value="1" lay-skin="switch" lay-filter="status" lay-text="激活|禁用">
+			</div>
+		</div>
+		<div class="layui-form-item layui-form-text">
+			<label class="layui-form-label" >职责</label>
+			<div class="layui-input-block">
+				<textarea name="duty" placeholder="岗位职责" class="layui-textarea"></textarea>
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<div class="layui-input-block">
+			  <button id="MonitorPost_submit_btn" class="layui-btn" lay-submit>立即提交</button>
+			  <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+			</div>
+		  </div>
+	</form>
+</div>
+<script type="text/html" id="switchIsDay">
+	<input type="checkbox" name="is_day" value="{{d.id}}" lay-skin="switch" lay-text="是|否" lay-filter="switchIsDay" {{ d.is_day == 1 ? 'checked' : '' }}>
+</script>
+<script type="text/html" id="switchIsNight">
+	<input type="checkbox" name="is_night" value="{{d.id}}" lay-skin="switch" lay-text="是|否" lay-filter="switchIsNight" {{ d.is_night == 1 ? 'checked' : '' }}>
+</script>
+<script type="text/html" id="switchIsShowForRotaListOrdinaryPage">
+	<input type="checkbox" name="is_show_for_rotaListOrdinary_page" value="{{d.id}}" lay-skin="switch" lay-text="是|否" lay-filter="switchIsShowForRotaListOrdinaryPage" {{ d.is_show_for_rotaListOrdinary_page == 1 ? 'checked' : '' }}>
+</script>
+<script type="text/html" id="switchIsActive">
+	<input type="checkbox" name="is_active" value="{{d.id}}" lay-skin="switch" lay-text="激活|禁用" lay-filter="switchIsActive" {{ d.is_active == 1 ? 'checked' : '' }}>
+</script>
+<script type="text/html" id="editBtn">
+	<a class="layui-btn layui-btn-xs" lay-event="edit" style="height:20px;line-height:20px;width:40px;padding:0">编辑</a>
+	<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del" style="height:20px;line-height:20px;width:40px;padding:0">删除</a>
+</script>
+<script>
+	function sortMonitorPost(target, id){
+		let params = {};
+		let sort = parseInt(target.value)
+		let monitor_post_id = id
+		params[target.name] = sort;
+		params.id = monitor_post_id;
+		$.ajax({
+			type: 'post'
+			,data: params
+			,url: "editMonitorPost"
+			,success: function(res){
+				if(res == 1){
+					showTs(1, '修改成功', 500)
+				}else{
+					showTs(1, '没有更新', 500)
+				}
+			}
+		})
+	}
+	
+	layui.use('table', function(){
+		let table = layui.table;
+		formList = layui.form;
+		formAdd = layui.form;
+		formEdit = layui.form;
+		table.render({
+			elem: '#monitorPostTable'
+			// ,height: 300
+			,url: 'monitorPostList' //数据接口
+			,where: { 
+				monitorPostList: 1
+				,monitorPost_type_id: '{$monitorPostTypeList_selected}'
+				,day_or_night: '{$day_or_night}'
+			}//接口的其他参数
+			// ,method: 'post' // 默认get
+			,page: true //开启分页
+			,defaultToolbar: ['add', 'filter', 'exports', 'print']
+			,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+    		,totalRow: true //开启合计行
+			,request: {
+				// pageName: 'page' //页码的参数名称，默认：page
+				// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+			},parseData: function(res){ //res 即为原始返回的数据
+				// console.log(res)
+			}
+			,response: {
+				// statusName: 'code' //规定数据状态的字段名称，默认：code
+				// ,statusCode: 1 //规定成功的状态码，默认：0
+				// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+				// countName: 'total' //规定数据总数的字段名称，默认：count
+				// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+			}
+			,cols: [[//表头
+			{type: 'checkbox', fixed: 'left'}
+			,{field:'post_name',title: '岗位名称（用于导入班表）', fixed: 'left', minWidth:200}
+			,{field:'mp_alias', title: '前端别名（用于前端展示）', minWidth:200} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+			,{field:'monitorPost_type', title: '类型（用于人员分类）', sort: true, minWidth:200}
+			,{field:'sort', title: '后台查看班表时的顺序', edit: 'text', sort: true, minWidth:200} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+			,{field:'sort_day', title: '前端展示时的白班顺序', edit: 'text', sort: true, minWidth:200} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+			,{field:'sort_night', title: '前端展示时的夜班顺序', edit: 'text', sort: true, minWidth:200}
+			,{field:'is_day', title: '是否白班', templet: '#switchIsDay', unresize: true, minWidth:120}
+			,{field:'is_night', title: '是否夜班', templet: '#switchIsNight', unresize: true, minWidth:120}
+			,{field:'is_show_for_rotaListOrdinary_page', title: '是否在普通权限值班表管理页面显示', templet: '#switchIsShowForRotaListOrdinaryPage', unresize: true, minWidth:300}
+			,{field:'is_active', title: '状态', templet: '#switchIsActive', unresize: true, minWidth:120}
+			,{field:'duty',   title: '工作职责'}
+			,{width:130, title: '操作', toolbar: '#editBtn',fixed: 'right'}
+			]]
+			,done: function(res, curr, count){
+				showTs(1,'加载成功',500)
+			}
+		});
+
+		//监听切换按钮操作
+		formList.on('switch(switchIsDay)', function(obj){
+			let is_active = obj.elem.checked ? 1 : 0;
+			let monitor_post_id = this.value;
+			let params = {}
+			params.id = monitor_post_id;
+			params[this.name] = is_active;
+			params['update_one_ziduan'] = 1;
+			$.ajax({
+				data: params
+				,url: "editMonitorPost"
+				,success: function(res){
+					if(res == 1){
+						if(is_active == 1){
+							showTs(1, '激活成功', 500)
+						}else{
+							showTs(1, '禁用成功', 500)
+						}
+					}else{
+						if(is_active == 1){
+							showTs(0, '激活失败', 500)
+						}else{
+							showTs(0, '禁用失败', 500)
+						}
+					}
+				}
+			})
+		});
+		formList.on('switch(switchIsNight)', function(obj){
+			let is_active = obj.elem.checked ? 1 : 0;
+			let monitor_post_id = this.value;
+			let params = {}
+			params.id = monitor_post_id;
+			params[this.name] = is_active;
+			params['update_one_ziduan'] = 1;
+			$.ajax({
+				data: params
+				,url: "editMonitorPost"
+				,success: function(res){
+					// console.log(res)
+					if(res == 1){
+						if(is_active == 1){
+							showTs(1, '激活成功', 500)
+						}else{
+							showTs(1, '禁用成功', 500)
+						}
+					}else{
+						if(is_active == 1){
+							showTs(0, '激活失败', 500)
+						}else{
+							showTs(0, '禁用失败', 500)
+						}
+					}
+				}
+			})
+		});
+		formList.on('switch(switchIsShowForRotaListOrdinaryPage)', function(obj){
+			let is_active = obj.elem.checked ? 1 : 0;
+			let monitor_post_id = this.value;
+			let params = {}
+			params.id = monitor_post_id;
+			params[this.name] = is_active;
+			params['update_one_ziduan'] = 1;
+			$.ajax({
+				data: params
+				,url: "editMonitorPost"
+				,success: function(res){
+					// console.log(res)
+					if(res == 1){
+						if(is_active == 1){
+							showTs(1, '激活成功', 500)
+						}else{
+							showTs(1, '禁用成功', 500)
+						}
+					}else{
+						if(is_active == 1){
+							showTs(0, '激活失败', 500)
+						}else{
+							showTs(0, '禁用失败', 500)
+						}
+					}
+				}
+			})
+		});
+		formList.on('switch(switchIsActive)', function(obj){
+			let is_active = obj.elem.checked ? 1 : 0;
+			let monitor_post_id = this.value;
+			let params = {}
+			params.id = monitor_post_id;
+			params[this.name] = is_active;
+			params['update_one_ziduan'] = 1;
+			$.ajax({
+				data: params
+				,url: "editMonitorPost"
+				,success: function(res){
+					if(res == 1){
+						if(is_active == 1){
+							showTs(1, '激活成功', 500)
+						}else{
+							showTs(1, '禁用成功', 500)
+						}
+						window.location.reload()//以便重新加载【导出模板】
+					}else{
+						if(is_active == 1){
+							showTs(0, '激活失败', 500)
+						}else{
+							showTs(0, '禁用失败', 500)
+						}
+					}
+				}
+			})
+		});
+		
+		// 监听搜索框选择事件
+		formList.on('select(monitorPost_type_search)', function(obj) {
+            $('.formList').submit();
+        });
+		// 监听搜索框选择事件
+		formList.on('select(day_or_night_search)', function(obj) {
+            $('.formList').submit();
+		});
+		// 模板表头
+		let cols_monitorPostList = ['日期'];
+		"{for start='0' end='$monitorPostList_len'}"
+		cols_monitorPostList.push("{$monitorPostList[$i]['post_name']}")
+		"{/for}"
+		// 监听导出模板功能
+		formList.on('select(exporMuban)', function(data){
+			table.exportFile(cols_monitorPostList,'日期字段无需编辑，导入时系统默认从1号开始自动编排日期' ,data.value); //默认导出 csv，也可以为：xls
+			return false;//阻止表单跳转
+		});
+		//监听头工具栏事件
+		table.on('toolbar(monitorPostList_table)', function(obj){
+			var checkStatus = table.checkStatus(obj.config.id)
+			,data = checkStatus.data; //获取选中的数据
+			switch(obj.event){
+			case 'add':
+			layer.open({
+				type: 1
+				,title: '新增岗位' //不显示标题栏
+				// ,closeBtn: false
+				,area: ['600px;','80%']
+				,shade: 0.8
+				,id: 'LAY_addMonitorPost' //设定一个id，防止重复弹出
+				,btnAlign: 'c'
+				,moveType: 1 //拖拽模式，0或者1
+				,content: $('#MonitorPostFrame')
+			});  
+			$("#MonitorPostFrame input[name='id']").remove();
+			$('#MonitorPostFrame form').attr({'action':'addMonitorPost'}) 
+			$('#MonitorPost_submit_btn').attr({'lay-filter':'addMonitorPost_submit'})
+
+			$("#MonitorPostFrame input[name='post_name']").val('')
+			$("#MonitorPostFrame input[name='mp_alias']").val('')
+			
+			$('#editSelection_monitorPost_type_id').empty();
+			let optionJson = []//获得岗位类型列表
+			"{volist name='monitorPostTypeList' id='vo'}"
+			optionJson.push({
+				monitorPost_type_id:"{$vo.monitorPost_type_id}"
+				,monitorPost_type:"{$vo.monitorPost_type}"
+			})
+			"{/volist}"
+			let optionHtml = "<option value=''>请选择岗位类型</option>"
+			for(let i = 0 ; i < optionJson.length ; i++){
+				optionHtml+="<option value='"+optionJson[i].monitorPost_type_id+"'>"+optionJson[i].monitorPost_type+"</option>"
+			}
+			$("#MonitorPostFrame select[name='monitorPost_type_id']").html(optionHtml)
+			// 重新渲染select元素
+			formAdd.render("select");
+
+			$("#MonitorPostFrame input[name='is_day']").removeAttr("checked");
+			$("#MonitorPostFrame input[name='is_night']").removeAttr("checked");
+			$("#MonitorPostFrame input[name='is_active']").removeAttr("checked");
+
+			// 重新渲染checkbox元素
+			formAdd.render("checkbox");
+
+			$("#MonitorPostFrame input[name='sort']").val('1000')
+			$("#MonitorPostFrame input[name='sort_day']").val('1000')
+			$("#MonitorPostFrame input[name='sort_night']").val('1000')
+			$("#MonitorPostFrame input[name='duty']").val('')
+
+			break;
+			case 'update':
+				layer.msg('批量修改功能暂不开放~')
+				return
+			break;
+			case 'delete':
+				if(data.length === 0){
+					layer.msg('请选择一行');
+				} else {
+					let post_name_msg = ''
+					for(let i = 0 ; i < data.length ; i++){
+						post_name_msg += i+1+'、'+data[i].post_name + '<br><br>'
+					}
+					layer.open({
+						type: 1
+						,title: '批量删除岗位' //不显示标题栏
+						// ,closeBtn: false
+						// ,area: ['600px;','80%']
+						,shade: 0.8
+						,id: 'LAY_addMonitorPost' //设定一个id，防止重复弹出
+						,moveType: 1 //拖拽模式，0或者1
+						,content: '<div style="padding: 50px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;">亲！确认批量删除以下岗位吗？<br><br>'+post_name_msg+'删除后无法恢复请谨慎操作</div>'
+						,btn: ['确认删除', '取消']
+        				,btnAlign: 'c'
+						,success: function(layero){
+							var btn = layero.find('.layui-layer-btn');
+							btn.find('.layui-layer-btn0').click(function(){
+								let id_arr = [];
+								for(let i = 0 ; i < data.length ; i++){
+									id_arr.push(data[i].id)
+								}
+								$.ajax({
+									url: 'deleteMonitorPost'
+									,data: { id: id_arr }
+									,type: 'post'
+									,success: function( res ){
+										if( res >= 1 ){
+											window.location.reload()
+										}else{
+											showTs( 0, '删除失败：' + res.msg, 2000 )
+										}
+									}
+								})
+							});
+						}
+					}); 
+				}
+			break;
+			};
+		});
+		
+		//监听行工具事件
+		table.on('tool(monitorPostList_table)', function(obj){ //注：tool 是工具条事件名，test 是 table 原始容器的属性 lay-filter="对应的值"
+			var data = obj.data //获得当前行数据
+			,layEvent = obj.event; //获得 lay-event 对应的值
+			if(layEvent === 'detail'){
+			layer.msg('查看操作');
+			} else if(layEvent === 'del'){
+			layer.confirm('真的删除岗位【'+data.post_name+'】么？', function(index){
+				$.ajax({
+					url: 'deleteMonitorPost'
+					,data: { id: obj.data.id }
+					,type: 'post'
+					,success: function( res ){
+						if( res === 1 ){
+							showTs( 1, '删除成功', 500 )
+							obj.del(); //删除对应行（tr）的DOM结构
+							layer.close(index);
+						}else{
+							showTs( 0, '删除失败：' + res.msg, 2000 )
+						}
+					}
+				})
+			});
+			} else if(layEvent === 'edit'){
+				layer.open({
+					type: 1
+					,title: '编辑岗位' //不显示标题栏
+					// ,closeBtn: false
+					,area: ['600px;','80%']
+					,shade: 0.8
+					,id: 'LAY_editMonitorPost' //设定一个id，防止重复弹出
+					,btnAlign: 'c'
+					,moveType: 1 //拖拽模式，0或者1
+					,content: $('#MonitorPostFrame')
+				}); 
+				// 重置form表单提交路径
+				$('#MonitorPostFrame form').attr({'action':'editMonitorPost'}) 
+				// 去掉提交按钮过滤器，该过滤器仅用于新增岗位时，编辑无需过滤器因此去掉
+				$('#MonitorPost_submit_btn').attr({'lay-filter':''})
+				$('form').append($('<input>',{
+					"hidden": "hidden"
+					,"value": obj.data.id
+					,"name": 'id'
+				}))
+				// 将需要编辑的数据赋值到表单中
+				$("#MonitorPostFrame input[name='post_name']").val(obj.data.post_name)
+				$("#MonitorPostFrame input[name='mp_alias']").val(obj.data.mp_alias)
+				$('#editSelection_monitorPost_type_id').empty();
+				let optionJson = []//获得岗位类型列表
+				"{volist name='monitorPostTypeList' id='vo'}"
+				optionJson.push({
+					monitorPost_type_id:"{$vo.monitorPost_type_id}"
+					,monitorPost_type:"{$vo.monitorPost_type}"
+				})
+				"{/volist}"
+				let optionHtml = "<option value=''>请选择岗位类型</option>"
+				for(let i = 0 ; i < optionJson.length ; i++){
+					if(optionJson[i].monitorPost_type_id == obj.data.monitorPost_type_id){
+						optionHtml+="<option selected value='"+optionJson[i].monitorPost_type_id+"'>"+optionJson[i].monitorPost_type+"</option>"
+					}else{
+						optionHtml+="<option value='"+optionJson[i].monitorPost_type_id+"'>"+optionJson[i].monitorPost_type+"</option>"
+					}
+				}
+				$("#MonitorPostFrame select[name='monitorPost_type_id']").html(optionHtml)
+				// 重新渲染select元素
+				formEdit.render("select");
+
+				if (obj.data.is_day == 1) {
+					$("#MonitorPostFrame input[name='is_day']").attr("checked", "checked");
+				} else {
+					$("#MonitorPostFrame input[name='is_day']").removeAttr("checked");
+				}
+				if (obj.data.is_night == 1) {
+					$("#MonitorPostFrame input[name='is_night']").attr("checked", "checked");
+				} else {
+					$("#MonitorPostFrame input[name='is_night']").removeAttr("checked");
+				}
+				if (obj.data.is_active == 1) {
+					$("#MonitorPostFrame input[name='is_active']").attr("checked", "checked");
+				} else {
+					$("#MonitorPostFrame input[name='is_active']").removeAttr("checked");
+				}
+
+				// 重新渲染checkbox元素
+				formEdit.render("checkbox");
+
+				$("#MonitorPostFrame input[name='sort']").val(obj.data.sort)
+				$("#MonitorPostFrame input[name='sort_day']").val(obj.data.sort_day)
+				$("#MonitorPostFrame input[name='sort_night']").val(obj.data.sort_night)
+				$("#MonitorPostFrame textarea[name='duty']").val(obj.data.duty)
+				// console.log(obj.data)
+			}
+		});
+	
+		//监听单元格编辑
+		table.on('edit(monitorPostList_table)', function(obj){
+			let value = obj.value //得到修改后的值
+			,data = obj.data //得到所在行所有键值
+			,field = obj.field; //得到字段
+			let params = {};
+			params['id'] = data.id;
+			params['update_one_ziduan'] = 1;
+			params[field] = value;
+			$.ajax({
+				url: 'editMonitorPost'
+				,type: 'post'
+				,data: params
+				,success: function(res){
+					if(res === 1){
+						showTs( 1, '修改成功', 500 )
+					}else if(res !== 0){
+						showTs( 0, '发生错误：' + res, 500 )
+					}
+				}
+				,error: function(err){
+					layer.msg('错误：' + err)
+				}
+			})
+		});
+	
+		// 监听添加岗位表单的提交事件
+		formAdd.on('submit(addMonitorPost_submit)', function(data){
+			let is_false = true;
+			$.ajax({
+				url: 'addMonitorPost'
+				,type: 'get'
+				,async: false
+				,data: { 
+					post_name: data.field.post_name
+					,checked_postName: 1
+				 }
+				,success: function(res){
+					const code = res.code
+					const msg = res.msg
+					if(code === 0){
+						layer.msg(msg)
+						is_false = false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+					}
+				}
+			})
+			return is_false;
+		});
+		
+	});
+</script>

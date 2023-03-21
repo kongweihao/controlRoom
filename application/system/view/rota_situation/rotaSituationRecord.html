@@ -1,0 +1,1959 @@
+<style>
+	/* element 展开行表格默认格式 */
+ .tableData-expand {
+    font-size: 0;
+  }
+  .tableData-expand label {
+    width: auto;
+	font-weight:normal;
+    color: #99a9bf;
+  }
+  .tableData-expand .el-form-item {
+    margin-right: 0;
+    margin-bottom: 0;
+    width: 50%;
+  }
+</style>
+<div class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px">
+		<p>- 切换表格与搜索条件为空时，默认显示待跟进（结束时间（督办获取）为空）数据</p>
+		<p>- 长时间（5h）不操作系统会自动断开，此时只需刷新重新登陆即可</p>
+	</blockquote>
+	<div id="app" style="padding: 15px;">
+		<el-tabs 
+		type="border-card" 
+		value="packUpTab"
+		v-loading="tabsLoading"
+		:element-loading-text="tabsLoadingTxt"
+		element-loading-spinner="el-icon-loading"
+		element-loading-background="rgba(0, 0, 0, 0.8)"
+		style="margin-bottom:10px">
+			<el-tab-pane label="收起" name="packUpTab">
+			</el-tab-pane>
+			<el-tab-pane label="组合搜索" name="searchTab">
+				<div style="padding: 15px;border-radius: 5px;max-height: 500px;overflow:scroll;border: 1px solid #eee;">
+					<el-card class="box-card">
+						<el-divider content-position="left">tips~</el-divider>
+						<div>- 若置空所有搜索条件，则默认加载待跟进数据</div>
+					</el-card>
+					<el-form ref="formJson[now_ctrr_rsrm_id_l2]" :model="formJson[now_ctrr_rsrm_id_l2]"  
+					style="margin: 10px auto;
+					padding: 10px auto;">
+						<template>
+							<div>
+								<el-divider content-position="left">【搜索方式一：关键词组合】</el-divider>
+								<el-card class="box-card">
+									<el-form-item 
+									:label="searchKeyWords.label"
+									:key="searchKeyWords.key"
+									size="mini"
+									style="width: auto;display: inline-block;">
+										<el-tooltip>
+											<div slot="content">{{searchKeyWords.tips}}</div>
+											<!-- 文本类型 -->
+											<el-input 
+											type="text"
+											autosize 
+											v-model="searchKeyWords.value"></el-input >
+										</el-tooltip>
+									</el-form-item>
+								</el-card>
+								<el-divider><span style="color: orangered;">两种搜索取并集</span></el-divider>
+								<div style="text-align: center;">
+									<el-button type="primary" size="mini"  @click="search">开始搜索</el-button>
+									<el-button type="primary" size="mini"  @click="resetSearch(now_ctrr_rsrm_id_l2)">重置</el-button>
+								</div>
+								<el-divider content-position="left">【搜索方式二：字段搜索（检索速度较慢）】</el-divider>
+								<el-card class="box-card">
+									<el-form-item 
+									v-for="item in formJson[now_ctrr_rsrm_id_l2]"
+									:label="item.ctrr_rsrm_name"
+									:key="item.ctrr_rsrm_id"
+									size="mini"
+									style="width: 50%;display: inline-block;">
+										<el-tooltip :disabled="item.ctrr_rsrm_tips ?  false : true">
+											<div slot="content">{{item.ctrr_rsrm_tips}}</div>
+											<!-- 开关类型依然使用下拉框类型，因为还需要考虑空值的状态 -->
+											<el-input v-if="item.ctrr_rsrm_type == 1" 
+											v-model="item.value"
+											type="textarea"
+											autosize 
+											placeholder="请选择"></el-input >
+											<!-- 开关类型依然使用下拉框类型，因为还需要考虑空值的状态 -->
+											<el-select v-else-if="item.ctrr_rsrm_type == 2" 
+											v-model="item.value"
+											placeholder="请选择">
+												<el-option></el-option>
+												<el-option
+												v-for="itemOption in item.ctrr_rsrm_valueFortype"
+												:key="itemOption"
+												:label="itemOption"
+												:value="itemOption">
+												</el-option>
+											</el-select >
+											<!-- 下拉框类型 -->
+											<el-select v-else-if="item.ctrr_rsrm_type == 3" 
+											v-model="item.value"
+											placeholder="请选择">
+												<el-option></el-option>
+												<el-option
+												v-for="itemOption in item.ctrr_rsrm_valueFortype"
+												:key="itemOption"
+												:label="itemOption"
+												:value="itemOption">
+												</el-option>
+											</el-select >
+											<!-- 单个时间类型：用时间范围元素承载 -->
+											<el-date-picker v-else-if="item.ctrr_rsrm_type == 6"
+											v-model="item.value"
+											type="datetimerange"
+											format="yyyy/MM/dd HH:mm:ss"
+											value-format="yyyy/M/d/H/m/s"
+											align="left"
+											unlink-panels
+											range-separator="至"
+											start-placeholder="开始日期"
+											end-placeholder="结束日期"
+											:picker-options="pickerOptionsRange"></el-date-picker>
+											<!-- 无法识别类型 -->
+											<el-input v-else disabled >无法识别的搜索类型，请联系管理员</el-input disabled >
+										</el-tooltip>
+										<br>
+									</el-form-item>
+									<el-form-item 
+									label="数据新增时间"
+									:key="dataCreate.key"
+									size="mini"
+									style="width: 49%;display: inline-block;">
+										<!-- 单个时间类型：用时间范围元素承载 -->
+										<el-date-picker
+										v-model="dataCreate.value"
+										type="datetimerange"
+										format="yyyy/MM/dd HH:mm:ss"
+										value-format="yyyy-MM-dd HH:mm:ss"
+										align="left"
+										unlink-panels
+										range-separator="至"
+										start-placeholder="开始日期"
+										end-placeholder="结束日期"
+										:picker-options="pickerOptionsRange"></el-date-picker>
+									</el-form-item>
+									<el-form-item 
+									label="数据更新时间"
+									:key="dataUpdate.key"
+									size="mini"
+									style="width: 50%;display: inline-block;">
+										<!-- 单个时间类型：用时间范围元素承载 -->
+										<el-date-picker
+										v-model="dataUpdate.value"
+										type="datetimerange"
+										format="yyyy/MM/dd HH:mm:ss"
+										value-format="yyyy-MM-dd HH:mm:ss"
+										align="left"
+										unlink-panels
+										range-separator="至"
+										start-placeholder="开始日期"
+										end-placeholder="结束日期"
+										:picker-options="pickerOptionsRange"></el-date-picker>
+									</el-form-item>
+								</el-card>
+							</div>
+						</template>
+						<el-divider><span style="color: orangered;">两种搜索取并集</span></el-divider>
+						<div style="text-align: center;">
+							<el-button type="primary" size="mini"  @click="search">开始搜索</el-button>
+							<el-button type="primary" size="mini"  @click="resetSearch(now_ctrr_rsrm_id_l2)">重置</el-button>
+						</div>
+					</el-form>
+				</div>
+			</el-tab-pane>
+			<el-tab-pane label="新增" name="addTab">
+				<div style="margin-bottom:15px;padding: 15px;border-radius: 5px;max-height: 500px;overflow:scroll;border: 1px solid #eee;">
+					<el-form ref="formAddJson[now_ctrr_rsrm_id_l2]" :model="formAddJson[now_ctrr_rsrm_id_l2]"  
+					style="margin: 10px auto;
+					padding: 10px auto;">
+						<el-form-item 
+						v-for="item in formAddJson[now_ctrr_rsrm_id_l2]"
+						:label="item.ctrr_rsrm_name"
+						:key="item.ctrr_rsrm_id"
+						size="mini"
+						style="width: 23%;display: inline-block;margin: auto 5px;"
+						:error="item.errMsg"
+						:required = "item.ctrr_rsrm_is_needed? true : false">
+							<el-tooltip :disabled="item.ctrr_rsrm_tips ?  false : true">
+								<div slot="content">{{item.ctrr_rsrm_tips}}</div>
+								<!-- 文本类型 -->
+								<el-input 
+								v-if="item.ctrr_rsrm_type ==1" 
+								type="textarea"
+								autosize 
+								v-model="item.value"></el-input >
+								<!-- 开关类型 -->
+								<el-switch v-else-if="item.ctrr_rsrm_type ==2"
+								:active-text="item.ctrr_rsrm_valueFortype[0]"
+								:inactive-text="item.ctrr_rsrm_valueFortype[1]"
+								:active-value="item.ctrr_rsrm_valueFortype[0]"
+								:inactive-value="item.ctrr_rsrm_valueFortype[1]"
+								v-model="item.value"></el-switch >
+								<!-- 下拉框类型 -->
+								<el-select v-else-if="item.ctrr_rsrm_type ==3" 
+								v-model="item.value"
+								placeholder="请选择">
+									<el-option></el-option>
+									<el-option
+									v-for="itemOption in item.ctrr_rsrm_valueFortype"
+									:key="itemOption"
+									:label="itemOption"
+									:value="itemOption">
+									</el-option>
+								</el-select >
+								<!-- 单个时间类型 -->
+								<el-date-picker v-else-if="item.ctrr_rsrm_type == 6"
+								type="datetime"
+								format="yyyy/MM/dd HH:mm:ss"
+								value-format="yyyy/MM/dd HH:mm:ss"
+								placeholder="选择日期时间"
+								align="left"
+								:picker-options="pickerOptions"
+								v-model="item.value"></el-date-picker>
+								<!-- 无法识别类型 -->
+								<el-input v-else disabled >无法识别的搜索类型，请联系管理员</el-input disabled >
+							</el-tooltip>
+							<br>
+						</el-form-item>
+						<div style="text-align: center;margin-top: 15px">
+							<el-button type="primary"  size="mini" @click="handleAdd(now_ctrr_rsrm_id_l2)">提交（新增）</el-button>
+						</div>
+					</el-form>
+				</div>
+			</el-tab-pane>
+			<el-tab-pane label="批量导入" name="importTab">
+				<blockquote class="layui-elem-quote" style="margin:15px">
+					<el-tabs>
+						<el-tab-pane label="收起"></el-tab-pane>
+						<el-tab-pane label="一些说明">
+							<p>—— 为了获得友好的导入体验，除非导入数据存在不可忽略的问题，系统将尽量不过多阻止导入</p>
+							<p>—— 有问题的数据会以【错误提示弹窗】的形式反馈给您，导入的数据依然会获得完整的处理。最终是否写入数据由您决定</p>
+							<p>—— 不过，如果错误数据超过十条或缺乏必填字段，系统将会禁止本次导入</p>
+							<p>—— 请在下方选择需要导入的表格，注意 excel 中的 sheet 名称以及 sheet 中的字段均需要与当前表格对应</p>
+							<p>—— 请使用谷歌或火狐等高级浏览器执行导入程序</p>
+						</el-tab-pane>
+						<el-tab-pane label="导入格式要求">
+							<p>—— 格式问题都是不可忽略的错误，发生这类问题系统将禁止本次导入，并为您反馈【错误报告】</p>
+							<p>—— 导入文件大小不超过1M，导入数据总条数不超过1w条</p>
+							<p>—— 仅支持xls与xlsx格式</p>
+							<p>—— 主键字段：主键字段值不可重复，如工单号</p>
+							<p>—— 必填字段：检测是否存在该字段</p>
+							<p>—— 时间格式：yyyy/MM/dd HH:mm:ss（eg：2020/06/05 09:01:03）（自定义的时间字段系统仅做提示不会阻扰导入）</p>
+							<p>—— 下拉框：检测是否符合系统设定的下拉选项值</p>
+							<p>—— 开关值：检测是否符合系统设定的开关值</p>
+							<p>—— 换行符：为保证数据安全，系统将默认删除换行符</p>
+							<p>—— 空表不做检测</p>
+						</el-tab-pane>
+					</el-tabs>
+				</blockquote>
+				<input type="file" id="importdOneExcel" name="importdOneExcel" style="display: none;"></input>
+				<el-card class="box-card" v-loading="tableLoading">
+					<div slot="header" class="clearfix">
+						<el-span class="el-icon-circle-check">  请在下方勾选需要导入的表格</el-span>
+						<br>
+						<el-span style="color: red;">请确保导入数据与系统已有数据不重复</el-span>
+						<el-button type="primary" @click="handlImportFile" size="mini" style="float: right;">开始导入</el-button>
+					</div>
+					<el-tree
+					:data="treeForImportData"
+					show-checkbox
+					node-key="ctrr_rsrm_id"
+					ref="treeForImportExcel"
+					:props="defaultImportTreeProps"></el-tree>
+				</el-card>
+			</el-tab-pane>
+			<el-tab-pane label="生成大值班" name="dutySummaryTap">
+				<el-divider content-position="left">请选择时间范围</el-divider>
+				<el-date-picker
+				v-model="dutySummaryTimeRange"
+				type="datetimerange"
+				format="yyyy/MM/dd HH:mm:ss"
+				value-format="yyyy/M/d/H/m/s"
+				range-separator="至"
+				start-placeholder="开始时间"
+				end-placeholder="结束时间（督办获取）"
+				:picker-options="pickerOptionsRange"></el-date-picker>
+				<el-button type="primary" @click="handlGetADutySummary">生成大值班总结</el-button>
+				<el-card type="box-card" style="margin-top:15px;">
+					<el-divider content-position="left">大值班总结</el-divider>
+					<el-divider><span style="color: orangered;">上班次遗留故障数据是根据选定的时间范围确定的</span></el-divider>
+					<el-button size="mini" @click="handleCopy" type="primary" style="float: right;margin-bottom:15px">复制</el-button>
+					<el-input id="dutySummaryTxt" type="textarea" autosize style="max-height: 400px;overflow: scroll;" v-model="dutySummary.head + dutySummary.incompletedData + dutySummary.completedData"></el-input>
+				</el-card>
+			</el-tab-pane>
+		</el-tabs>
+		<el-card class="box-card" v-loading="tableLoading">
+			<div slot="header" class="clearfix">
+				<div>
+					<el-tooltip>
+						<div slot="content">获取当前表格待跟进数据</div>
+						<el-button type="primary" size="mini" @click="handlGetincompletedData">待跟进</el-button>
+					</el-tooltip>
+					<el-button style="float: right;" type="primary" size="mini" @click="handleGetLatelyAdd('thisMonth')">最近一月新增</el-button>
+					<el-button style="float: right;" type="primary" size="mini" @click="handleGetLatelyAdd('thisWeek')">最近一周新增</el-button>
+					<el-button style="float: right;" type="primary" size="mini" @click="handleGetLatelyAdd('today')">最近一日新增</el-button style="float: right;">
+				</div>
+				<el-divider></el-divider>
+				<el-tooltip>
+					<div slot="content">可以直接输入搜索</div>
+					<div>
+						<span>（切换表格将默认加载待办数据）</span>
+						<el-cascader 
+						v-model="cascaderDataDefault"
+						:options="cascaderData" 
+						:props="defaultCascaderProps"
+						filterable
+						:show-all-levels="false"
+						@change="handleCascaderChange"
+						size="mini"
+						style="float: left;"></el-cascader>
+					</div>
+				</el-tooltip>
+				<el-button style="float: right;margin-right: 15px;" type="primary" size="mini" @click="handlExportFile">导出</el-button>
+			</div>
+			<template>
+				<el-alert title="默认显示前8个字段，点击“>”可打开详情，若希望修改字段顺序可向管理员反馈" :closable="false" type="warning" style="margin-bottom: 10px;"></el-alert>
+				<el-card class="box-card" v-show="tempDataShow">
+					<div slot="header" class="clearfix">
+						<span>最近一次编辑的数据</span>
+						<el-button style="float: right; padding: 3px 0" type="text" @click="tempDataShow = false">不需要了，关闭</el-button>
+					</div>
+					<div style="height: 200px;overflow: scroll;">
+						<el-alert title="刚刚您编辑的数据已被其他同事修改了，目前已帮您获取了最新数据，同时已将您刚刚编辑的数据临时保存在这里了，直接复制粘贴回去即可" :closable="false" type="warning" style="margin-bottom: 10px;"></el-alert>
+						<div v-for="o in tableKey" :key="o" class="text item">
+							{{ o.label + '：' + (tempData[o.key] || '')}}
+						</div>
+					</div>
+				</el-card>
+				<el-table
+				ref="multipleTable"
+				v-loading="tableLoading"
+				:data="tableData"
+				max-height="800"
+				border>
+					<el-table-column type="expand">
+						<template slot-scope="props">
+							<el-form label-position="left" inline class="tableData-expand">
+								<el-form-item 
+									v-for="(value,index) in tableKey"
+									:label="tableKey[index].label"
+									:error="errFieldMsg[props.$index + '_' + tableKey[index].key]"
+									:prop="tableKey[index].key"
+									:required = "tableKey[index].ctrr_rsrm_is_needed? true : false">
+									<el-tooltip :disabled="tableKey[index].ctrr_rsrm_tips ? false: true">
+										<div slot="content">{{tableKey[index].ctrr_rsrm_tips}}</div>
+										<!-- 文本类型 -->
+										<el-input
+										v-if="levelThree[tableKey[index].key].ctrr_rsrm_type == 1"
+										type="textarea"
+										size="mini" 
+										v-model="props.row[tableKey[index].key]" 
+										placeholder="请输入内容" 
+										@change="handleEdit(props, tableKey[index], props.row[tableKey[index].key])"
+										:show-word-limit="true"
+										:rows="1"></el-input> 
+										<!-- 开关类型 -->
+										<el-switch
+										v-else-if="levelThree[tableKey[index].key].ctrr_rsrm_type == 2"
+										size="mini" 
+										v-model="props.row[tableKey[index].key]" 
+										:active-text="levelThree[tableKey[index].key].ctrr_rsrm_valueFortype[0]"
+										:inactive-text="levelThree[tableKey[index].key].ctrr_rsrm_valueFortype[1]"
+										:active-value="levelThree[tableKey[index].key].ctrr_rsrm_valueFortype[0]"
+										:inactive-value="levelThree[tableKey[index].key].ctrr_rsrm_valueFortype[1]"
+										@change="handleEdit(props, tableKey[index], props.row[tableKey[index].key])"></el-switch> 
+										<!-- 下拉框类型 -->
+										<el-select
+										v-else-if="levelThree[tableKey[index].key].ctrr_rsrm_type == 3"
+										v-model="props.row[tableKey[index].key]"
+										placeholder="请选择"
+										size="mini" 
+										@change="handleEdit(props, tableKey[index], props.row[tableKey[index].key])">
+											<el-option></el-option>
+											<el-option
+											v-for="i in levelThree[tableKey[index].key].ctrr_rsrm_valueFortype"
+											:key="i"
+											:label="i"
+											:value="i"></el-option>
+										</el-select>
+										<!-- 时间选择器类型 -->
+										<el-date-picker
+										v-else-if="levelThree[tableKey[index].key].ctrr_rsrm_type == 6"
+										type="datetime"
+										format="yyyy/MM/dd HH:mm:ss"
+										size="mini" 
+										value-format="yyyy/MM/dd HH:mm:ss"
+										placeholder="选择日期时间"
+										align="left"
+										:picker-options="pickerOptions"
+										v-model="props.row[tableKey[index].key]"
+										@change="handleEdit(props, tableKey[index], props.row[tableKey[index].key])"></el-date-picker>
+										<!-- 无法识别类型 -->
+										<el-input v-else disabled >无法识别的搜索类型，请联系管理员</el-input disabled >
+									</el-tooltip>
+								</el-form-item>
+							</el-form>
+						</template>
+					</el-table-column>
+					<el-table-column
+						v-for="i in columNum"
+						sortable
+						:label="tableKey[i-1].label"
+						:prop="tableKey[i-1].key"
+						style="height: 10px;"
+						show-overflow-tooltip>
+						<template slot-scope="props">
+							<!-- 开关类型 -->
+							<el-span
+							v-if="levelThree[tableKey[i-1].key].ctrr_rsrm_type == 2">
+							{{ props.row[tableKey[i-1].key] ? levelThree[tableKey[i-1].key].ctrr_rsrm_valueFortype[0] : levelThree[tableKey[i-1].key].ctrr_rsrm_valueFortype[1] }}
+							</el-span>
+							<!-- 开关类型 -->
+							<el-span v-else>
+							{{props.row[tableKey[i-1].key]}}
+							</el-span>
+						</template>
+					</el-table-column>
+					<el-table-column label="操作">
+						<template slot-scope="scope">
+							<!-- 编辑弹窗 -->
+							<el-tooltip placement="top">	
+								<div slot="content">删除将无法恢复</div>
+								<el-button
+								size="mini"
+								type="danger" 
+								icon="el-icon-delete" circle
+								@click.native.prevent="handleDelete(scope.$index, scope.row)"></el-button>
+							</el-tooltip>
+						</template>
+					</el-table-column>
+				</el-table>
+				<div class="block" style="padding-top: 20px;">
+					<el-pagination
+					  @size-change="handleSizeChange"
+					  @current-change="handleCurrentChange"
+					  :current-page="pagination.currentPage"
+					  :page-sizes="pagination.pageSizeArr"
+					  :page-size="pagination.pageSize"
+					  layout="total, sizes, prev, pager, next, jumper"
+					  :total="pagination.total">
+					</el-pagination>
+				</div>
+			</template>
+		</el-card>
+
+
+		<el-drawer
+			title="错误报告（这里只显示不超过5000条错误提示，超过5000条的话可查看【错误报告.xls】）"
+			:visible.sync="isShowErrorReportDrawer"
+			direction="ltr"
+			size="50%"
+			close-on-press-escape = "false"
+			:show-close = "false"
+			:modal-append-to-body = "false"
+			:before-close = "handleCloseDrawer"
+			style="height: 100%;">
+			<el-tabs type="border-card" style="margin: auto 15px">
+				<el-alert
+				title="请根据错误报告对导入文件进行修改并刷新页面缓存后，再重新导入"
+				type="warning"
+				style="margin 10px auto"
+				:closable="false"></el-alert>
+				<el-tab-pane v-for="(vArr, k) in errorReport" :label="k">
+					<div style="height: 400px; overflow: scroll;">
+						<p v-for="item in vArr">{{ item }}</p>
+					</div>
+				</el-tab-pane>
+			</el-tabs>
+		</el-drawer>
+	</div>
+</div>
+
+<script>
+	// 对于已经创建的实例，Vue 不允许动态添加根级别的响应式 property。
+	// 所以所有响应式的数据最好是提前加载出来，否则后面要新增一个相应级别的数据会有点麻烦
+	let levelOneList = {:json_encode($levelOneList)}; // 构造1级分类json数据
+	console.log(levelOneList);
+	let levelTwoList = {}; // 构造2级表格json数据
+	let levelThree = {} // 构造3级字段json数据
+	let tableDataBySQL = {:json_encode($tableDataBySQL)};
+	let pagination = {:json_encode($pagination)};
+	for(let i=0; i<levelOneList.length; i++){
+		for(let j=0; j<levelOneList[i].children.length; j++){
+			levelTwoList[levelOneList[i].children[j].ctrr_rsrm_id] = levelOneList[i].children[j]
+			for(let z=0; z<levelOneList[i].children[j].children.length; z++){
+				levelThree[levelOneList[i].children[j].children[z].ctrr_rsrm_id] = levelOneList[i].children[j].children[z]
+			}
+		}
+	}
+	// 初始化tableData数据
+	// 默认加载第一张二级表的数据
+	// lastTableData 保存上一次table数据，用于冲突检测
+	// errFieldMsg 构造字段检测错误信息，用于返回字段校验信息
+	let tableData = []
+	let lastTableData = []
+	let errFieldMsg = {}
+	for(let i = 0; i < tableDataBySQL.length; i++){
+		tableDataBySQL[i].ctrr_rsrmD_data = tableDataBySQL[i].ctrr_rsrmD_data.replace(/\n/g,"\\\\n").replace(/\r/g,"\\r")
+		tableData.push(JSON.parse(tableDataBySQL[i].ctrr_rsrmD_data))
+		lastTableData.push(JSON.parse(tableDataBySQL[i].ctrr_rsrmD_data))
+		// 将缺失的三级字段补充回去
+		for(let j = 0; j < levelOneList[0].children[0].children.length; j++){
+			let ctrr_rsrm_idForKey = levelOneList[0].children[0].children[j].ctrr_rsrm_id
+			if(!tableData[i].hasOwnProperty(ctrr_rsrm_idForKey)){
+				tableData[i][ctrr_rsrm_idForKey] = ''
+			}
+			// 格式为：i：数据处于第几行  ctrr_rsrm_idForKey：字段id
+			errFieldMsg[i + '_' + ctrr_rsrm_idForKey] = ''
+		}
+		tableData[i]['ctrr_rsrmD_id'] = tableDataBySQL[i].ctrr_rsrmD_id
+	}
+	let treeForImportData = [] // 导入excel的树形组件选择器
+	// 初始化动态加载每一张二级表用于搜索的form数据
+	// 注：为了减少http请求，table表格中的字段是根据formJson进行动态加载的，
+	// 因此如果后续要减少搜索项，只需要在显示的时候隐藏搜索项即可，以避免影响table表格的价值
+	let l2_to_l3_allFiled = {}//保存2~3级所有字段数据
+	let formJson = {
+					// 格式
+					// L2的ctrr_rsrm_id:{
+					// 	L3的ctrr_rsrm_id: L3字段的value
+					// }
+				}
+	// 构造 l2_to_l3_allFiled 与 formJson 
+	for(let i = 0; i < levelOneList.length; i++){
+		const levelTwoList = levelOneList[i].children;
+		const treeForImportData_item = {
+			ctrr_rsrm_id: levelOneList[i].ctrr_rsrm_id,
+			ctrr_rsrm_name: levelOneList[i].ctrr_rsrm_name,
+			children:[],
+			index:i
+		}
+		for(let j = 0; j < levelTwoList.length; j++){
+			const levelThreeList = levelTwoList[j].children;
+			let l2_to_l3_allFiled_item = {}
+			let formJson_item = {}
+			const treeForImportData_item_item = {
+				ctrr_rsrm_id: levelTwoList[j].ctrr_rsrm_id,
+				ctrr_rsrm_name: levelTwoList[j].ctrr_rsrm_name,
+				index:j
+			}
+			treeForImportData_item['children'].push(treeForImportData_item_item)
+			for(let z = 0; z < levelThreeList.length; z++){
+				// if(levelThreeList[z].ctrr_rsrm_type !== 1){
+					formJson_item[levelThreeList[z].ctrr_rsrm_id] = levelThreeList[z]
+					formJson_item[levelThreeList[z].ctrr_rsrm_id]['value'] = ''
+				// }
+				l2_to_l3_allFiled_item[levelThreeList[z].ctrr_rsrm_id] = levelThreeList[z]
+				l2_to_l3_allFiled_item[levelThreeList[z].ctrr_rsrm_id]['value'] = ''
+				l2_to_l3_allFiled_item[levelThreeList[z].ctrr_rsrm_id]['errMsg'] = '' // 字段错误提示
+			}
+			l2_to_l3_allFiled[levelTwoList[j].ctrr_rsrm_id] = l2_to_l3_allFiled_item
+			formJson[levelTwoList[j].ctrr_rsrm_id] = formJson_item
+			// formJson[levelTwoList[j].ctrr_rsrm_id]['searchKeyWords'] = ''
+		}
+		treeForImportData.push(treeForImportData_item)
+	}
+	// 初始化加载tableKey，用于构造table表格列的结构
+	let tableKey = []
+	for(let i = 0; i < levelOneList[0].children[0].children.length; i++){
+		tableKey.push({
+			key:levelOneList[0].children[0].children[i].ctrr_rsrm_id.toString(),
+			label:levelOneList[0].children[0].children[i].ctrr_rsrm_name,
+			ctrr_rsrm_tips:levelOneList[0].children[0].children[i].ctrr_rsrm_tips,
+			ctrr_rsrm_is_needed:levelOneList[0].children[0].children[i].ctrr_rsrm_is_needed,
+			ctrr_rsrm_is_key: levelOneList[0].children[0].children[i].ctrr_rsrm_is_key
+		})
+	}
+	let app = new Vue({
+		el: '#app',
+		data() {
+			return {
+				levelOneList: levelOneList,
+				levelTwoList: levelTwoList,
+				levelThree: levelThree,
+				columNum: tableKey.length >= 8 ? 8 : tableKey.length,//设置table列数据隐藏时显示的列数，注：如果本身列数不足会报错，因此每次加载数据时需要检查表格列数是否偏少，若偏少则只需加载所有列即可
+				SearchPanelBtn: false,
+				AddBtn: false,
+				tabsLoading: false, // 切换标签的loading
+				dateFormatReg: /^\d{2,4}\/\d{2}\/\d{2}\s\d{2}\:\d{2}\:\d{2}/, // 匹配时间格式： yyyy/MM/dd HH:mm:ss
+				tabsLoadingTxt: 'loading...',// 使用切换标签loading时候的文字提示
+				tableLoading: false, // 数据表格面板loading
+				l2_to_l3_allFiled: l2_to_l3_allFiled,// 1~3级字段所有数据
+				formJson: formJson,
+				formAddJson: JSON.parse(JSON.stringify(l2_to_l3_allFiled)),//由于js本身的拷贝机制，导致如果直接给this.formAddJson赋值formJson会使得this.formJson与this.formAddJson底层数据相互影响，因此这里用深拷贝的方式将数据拷贝一份
+				// DateTimePicker 日期时间选择器数据
+				// 单个时间
+				pickerOptions: {
+					shortcuts: [{
+						text: '今天',
+						onClick(picker) {
+						picker.$emit('pick', new Date());
+						}
+					}, {
+						text: '昨天',
+						onClick(picker) {
+						const date = new Date();
+						date.setTime(date.getTime() - 3600 * 1000 * 24);
+						picker.$emit('pick', date);
+						}
+					}, {
+						text: '一周前',
+						onClick(picker) {
+						const date = new Date();
+						date.setTime(date.getTime() - 3600 * 1000 * 24 * 7);
+						picker.$emit('pick', date);
+						}
+					}]
+				},
+				// 时间范围
+				pickerOptionsRange: {
+					shortcuts: [{
+						text: '最近一周',
+						onClick(picker) {
+							const end = new Date();
+							const start = new Date();
+							start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+							picker.$emit('pick', [start, end]);
+						}
+					}, {
+						text: '最近一个月',
+						onClick(picker) {
+							const end = new Date();
+							const start = new Date();
+							start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+							picker.$emit('pick', [start, end]);
+						}
+					}, {
+						text: '最近三个月',
+						onClick(picker) {
+							const end = new Date();
+							const start = new Date();
+							start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+							picker.$emit('pick', [start, end]);
+						}
+					}]
+				},
+				// 字段校验规则的错误信息
+				errFieldMsg: errFieldMsg,
+				tableKey: tableKey,
+				tableData: tableData,
+				// 用于search()方法
+				searchKeyWords: {
+					label: '多个关键词请用“@”符号隔开，如：张三@广西，无需考虑顺序',
+					tips: '关键词搜索会对全表进行全量搜索，无需区分字段',
+					key: 'searchKeyWords',
+					value: ''// 搜索关键词字符串
+				}, 
+				dataCreate:{
+					key: 'create_time',
+					value: ''
+				},
+				dataUpdate:{
+					key: 'update_time',
+					value: ''
+				},
+				levelOneList_index: 0,// 当前显示数据的一级表数据索引
+				levelTwoList_index: 0,// 当前显示数据的二级表数据索引
+				now_ctrr_rsrm_id_l2: levelOneList[0].children[0].ctrr_rsrm_id,// 当前显示数据的二级表id
+				pagination: pagination,
+				
+				lastTableData:JSON.parse(JSON.stringify(lastTableData)),//保留上一次table数据，用于冲突检测
+				// 临时保存用户最近一次编辑的数据，一般用于在冲突检测发生冲突之后，将用户数据保存在一个临时容器中
+				tempDataShow: false,
+				tempData: '', 
+				treeForImportData: treeForImportData, // 树形组件数据
+				cascaderData: treeForImportData, // 级联组件数据
+				cascaderDataDefault: [treeForImportData[0].index, treeForImportData[0].children[0].index], // 级联组件数据第一次加载时的默认值
+				defaultImportTreeProps: { // 树形组件属性自定义
+					// children: 'children',
+					label: 'ctrr_rsrm_name',
+					disabled: 'disableTreeCheckout'
+				},
+				defaultCascaderProps: { // 级联组件属性自定义
+					// children: 'children',
+					label: 'ctrr_rsrm_name',
+					value: 'index'
+				},
+				keyForImport:[], //保存导入excel的key
+
+				// 用于生成大值班
+				dutySummaryTimeRange:'', // 大值班总结时间范围搜索条件
+				dutySummary:{
+					head:'', // 总结信息
+					incompletedData:'', // 待跟进故障
+					completedData:'', // 已消除故障
+				}, 
+				// 大值班总结数据
+				// 错误报告——初步设计为仅含不可忽略错误
+				errorReport: {},
+				isShowErrorReportDrawer: false, // 错误报告抽屉显示
+			}
+		},
+		methods: {
+			// 切换级联菜单时触发加载数据
+			handleCascaderChange(indexArr){
+				const _this = this
+				_this.levelOneList_index = indexArr[0]
+				_this.levelTwoList_index = indexArr[1]	
+				// 切换页面的时候要将原搜索数据置空
+				_this.resetSearch(_this.now_ctrr_rsrm_id_l2)
+				_this.now_ctrr_rsrm_id_l2 = levelOneList[indexArr[0]].children[indexArr[1]].ctrr_rsrm_id
+				_this.search()
+			},
+			search() {
+				const _this = this
+				_this.tabsLoading = true;
+				// 深拷贝
+				let searchFormPre = JSON.parse(JSON.stringify(_this.formJson[_this.now_ctrr_rsrm_id_l2]));
+				let searchKeyWordsJson = {
+					// 'AND'  用于交集搜索
+					// 'OR'   用于并集搜索（目前不仅适用于其他的搜索内容还可以用于解决ctrr_rsrmD_data字段的时间范围搜索的问题）
+					// 'other'   用于搜索 create_time 与 update_time
+				}
+				searchKeyWordsJson.ADN = _this.searchKeyWords.value.split('@')
+				searchKeyWordsJson.OR = []
+				searchKeyWordsJson.other = {
+					create_time: _this.dataCreate.value,
+					update_time: _this.dataUpdate.value
+				}
+				console.log(searchKeyWordsJson);
+				// 删除数组中的空元素
+				for(let i = 0; i < searchKeyWordsJson.ADN.length; i++){
+					if(searchKeyWordsJson.ADN[i] == ''){
+						searchKeyWordsJson.ADN.splice(i, 1)
+						i--;
+					}
+				}
+
+				for(let key in searchFormPre){
+					if(searchFormPre[key].value != '' && searchFormPre[key].value != undefined){
+						if(searchFormPre[key].ctrr_rsrm_type == 6){
+							/*  
+								对时间类型字段进行进一步处理
+								date-picker 中已将value-format格式设置为"yyyy/M/d/H/m/s"
+								因此，处理该字符串变得十分简单，规则为：
+								1.由于数据表的数据结构特殊因此无法用常规的时间比对方式进行时间条件搜索，因此只能将时间范围按年、月、天、时、分秒拆开进行一个个的模糊搜索
+								2.数据格式规定为2020/6/1 
+								注：十年之内的搜索条件最多不会超过225个
+							*/
+							let arr = _this.hangdleStart_end_time(searchFormPre[key].value[0], searchFormPre[key].value[1], searchFormPre[key].ctrr_rsrm_id)
+							searchKeyWordsJson.OR = searchKeyWordsJson.OR.concat(arr)
+						}else{
+							searchKeyWordsJson.ADN.push(searchFormPre[key].ctrr_rsrm_id+'":"'+ searchFormPre[key].value)
+						}
+					}
+				}
+				const data = {
+					ctrr_rsrm_id_l2: _this.now_ctrr_rsrm_id_l2,
+					getNextLevelData: 1,
+					searchKeyWordsJson: searchKeyWordsJson,
+					pagination: _this.pagination
+					// get有长度限制，所以下面用post请求，有趣的是居然可以接收多级json的请求参数
+				}
+				$.ajax({
+					type:'POST'
+					,data:data
+					,url:'rotaSituationRecord'
+					,success:function(res){
+						console.log(res);
+						// 搜索成功
+						_this.tabsLoading = false;
+						// console.log(res)
+						// return
+						let tableData = res.tableData;
+						_this.pagination = res.pagination;
+						// 将返回数据处理成tableData所需的数据格式
+						_this.tableData = []
+						_this.errFieldMsg = {}
+						// 加载table
+						const levelThreeList = levelOneList[_this.levelOneList_index].children[_this.levelTwoList_index].children
+						_this.lastTableData = []
+						for(let i = 0; i < tableData.length; i++){
+							// JSON.parse 解析json字符串时，遇换行符报错用.replace(/\n/g,"\\\\n").replace(/\r/g,"\\r")将换行符替代掉
+							_this.tableData.push(JSON.parse(tableData[i].ctrr_rsrmD_data.replace(/\n/g,"\\\\n").replace(/\r/g,"\\r")))
+							// 刷新用于冲突检测的 lasttabledata 数据
+							_this.lastTableData.push(JSON.parse(tableData[i].ctrr_rsrmD_data.replace(/\n/g,"\\\\n").replace(/\r/g,"\\r")))
+							// 补充缺失的三级字段
+							// 将缺失的三级字段补充回去
+							let levelOneList = _this.levelOneList
+							for(let j = 0; j < levelThreeList.length; j++){
+								const ctrr_rsrm_idForKey = levelThreeList[j].ctrr_rsrm_id
+								if(!_this.tableData[i].hasOwnProperty(ctrr_rsrm_idForKey)){
+									// 重设tableData数组响应式
+									_this.$set(_this.tableData[i], ctrr_rsrm_idForKey, '')
+								}
+								// 重设errFieldMsg对象响应式
+								_this.$set(_this.errFieldMsg, i + '_' + ctrr_rsrm_idForKey, '')
+							}
+							_this.tableData[i]['ctrr_rsrmD_id'] = tableData[i].ctrr_rsrmD_id
+						}
+						
+						// _this.$refs.multipleTable.doLayout();
+						// 加载tableKey，用于构造table表格列的结构
+						let tableKey = []
+						let levelTwoList = levelOneList[_this.levelOneList_index].children[_this.levelTwoList_index].children
+
+						for(let i = 0; i < levelTwoList.length; i++){
+							tableKey.push({
+								key:levelTwoList[i].ctrr_rsrm_id.toString(),
+								label:levelTwoList[i].ctrr_rsrm_name,
+								ctrr_rsrm_tips:levelTwoList[i].ctrr_rsrm_tips,
+								ctrr_rsrm_is_needed:levelTwoList[i].ctrr_rsrm_is_needed,
+								ctrr_rsrm_is_key: levelTwoList[i].ctrr_rsrm_is_key
+							})
+						}
+						// 列数不足时会报错，这里做一下处理，列数不足初始设计时，将列数等于所获取的数据的列数
+						(_this.columNum <= tableKey.length) || (_this.columNum = tableKey.length)
+						_this.tableKey = tableKey
+						if(tableData.length === 0){
+							// 此处才判断是否存在数据的原因是希望无论是否有无数据都至少把table的表格model先加载出来
+							// 这样在第一次新增数据的时候才能正常实现数据响应式
+							showTs(1,'暂无数据',500)
+						} else {
+							showTs(1,'加载成功',500)
+						}
+					},
+					error:function(e){
+						showTs(0, '服务器错误，请联系管理查看控制台报错信息', 5000)
+						console.log('【服务器错误】：' + e)
+					}
+				})
+			},
+			// 快捷搜索，获取最近新增数据
+			handleGetLatelyAdd(timeRange){
+				const _this = this
+				const end = new Date();
+				const start = new Date();
+				switch(timeRange){
+					case 'today':
+						start.setTime(start.getTime() - 3600 * 1000 * 24 );
+						break
+					case 'thisWeek':
+						start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+						break
+					case 'thisMonth':
+						start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+						break
+					default:
+						break
+				}
+				let sy = start.getFullYear()
+				let sm = ( start.getMonth() + 1 > 9 ? start.getMonth() + 1 : '0' + (start.getMonth() + 1) )
+				let sd = ( start.getDate()  > 9 ? start.getDate()  : '0' + (start.getDate() ) )
+				let sh = ( start.getHours()  > 9 ? start.getHours()  : '0' + (start.getHours() ) )
+				let smin = ( start.getMinutes()  > 9 ? start.getMinutes()  : '0' + (start.getMinutes() ) )
+				let ss =  ( start.getSeconds()  > 9 ? start.getSeconds()  : '0' + (start.getSeconds() ) )
+				let startStr = sy + '-' + sm + '-' + sd + ' ' + sh + ':' + smin + ':' + ss
+				let ey = end.getFullYear()
+				let em = ( end.getMonth() + 1 > 9 ? end.getMonth() + 1 : '0' + (end.getMonth() + 1) )
+				let ed = ( end.getDate()  > 9 ? end.getDate()  : '0' + (end.getDate() ) )
+				let eh = ( end.getHours()  > 9 ? end.getHours()  : '0' + (end.getHours() ) )
+				let emin = ( end.getMinutes()  > 9 ? end.getMinutes()  : '0' + (end.getMinutes() ) )
+				let es =  ( end.getSeconds()  > 9 ? end.getSeconds()  : '0' + (end.getSeconds() ) )
+				let endStr = ey + '-' + em + '-' + ed + ' ' + eh + ':' + emin + ':' + es
+				_this.dataCreate.value = [startStr, endStr]
+				_this.search()
+			},
+			resetSearch(ctrr_rsrm_id_l2){
+				const _this = this;
+				// 重置formJson
+				for(let key in _this.formJson[ctrr_rsrm_id_l2]){
+					_this.formJson[ctrr_rsrm_id_l2][key].value = ''
+				}
+				// 重置searchKeyWords
+				_this.searchKeyWords.value = '';
+				// 重置dataCreate
+				_this.dataCreate.value = '';
+				// 重置dataUpdate
+				_this.dataUpdate.value = '';
+			},
+			handleAdd(ctrr_rsrm_id_l2){
+				const _this = this;
+				// let thisTimeFormAddJson = JSON.parse(JSON.stringify(_this.formAddJson[ctrr_rsrm_id_l2]))
+				const thisTimeFormAddJson = {}
+				let ctrr_rsrm_is_keyData = {} // 保存主键，用于对数据项进行查重
+				let isErrMsg = 0;
+				for(const key in _this.formAddJson[ctrr_rsrm_id_l2]){
+					if (
+						_this.formAddJson[ctrr_rsrm_id_l2][key].value !== '' 
+						&& _this.formAddJson[ctrr_rsrm_id_l2][key].value !== undefined 
+						&& _this.formAddJson[ctrr_rsrm_id_l2][key].value !== null 
+						&& _this.formAddJson[ctrr_rsrm_id_l2][key].value !== NaN
+					){
+						thisTimeFormAddJson[key] = _this.formAddJson[ctrr_rsrm_id_l2][key].value
+					} else if( _this.formAddJson[ctrr_rsrm_id_l2][key].ctrr_rsrm_is_needed === 1 ){
+						// 必填字段却没有填的将报错
+						_this.formAddJson[ctrr_rsrm_id_l2][key].errMsg = '必填字段'
+						isErrMsg++
+					} else {
+						_this.formAddJson[ctrr_rsrm_id_l2][key].value = _this.formAddJson[ctrr_rsrm_id_l2][key].value
+					}
+					// 主键字段数据数据处理
+					if( _this.formAddJson[ctrr_rsrm_id_l2][key].ctrr_rsrm_is_key ){
+						ctrr_rsrm_is_keyData = _this.formAddJson[ctrr_rsrm_id_l2][key]
+					} 
+				}
+				const thisTimeFormAddJsonStr = JSON.stringify(thisTimeFormAddJson)
+				if(thisTimeFormAddJsonStr == "{}"){
+					layer.msg('请填入数据', { time: 1000 })
+					return
+				}else if(isErrMsg){
+					// 字段还有错误信息时返回
+					layer.msg('部分字段格式还有问题，请检查', { time: 1000 })
+					return
+				}else{
+					const data = {
+						ctrr_rsrm_id_l2:ctrr_rsrm_id_l2
+						,ctrr_rsrmD_data:thisTimeFormAddJsonStr
+						,ctrr_rsrm_is_keyData: ctrr_rsrm_is_keyData
+					}
+					$.ajax({
+						type:'POST'
+						,data:data
+						,url:'addRotaSituationRecord'
+						,success:function(res){
+							const code = res.code
+							const msg = res.msg
+							if(code === 1) {
+								showTs(1,msg,500)
+								// 新增成功后，需要更新本地数据
+								thisTimeFormAddJson['ctrr_rsrmD_id'] = res.ctrr_rsrmD_id
+								// 向已有数组的开始位置（即索引为0）的位置添加元素
+								_this.tableData.unshift(JSON.parse(JSON.stringify(thisTimeFormAddJson)))
+								_this.lastTableData.push(JSON.parse(JSON.stringify(thisTimeFormAddJson)))
+								const _this = this;
+							} else if(code === 0) {
+								showTs(0,msg,3000)
+							} else {
+								showTs(0,'未知错误：'+res+'请联系管理员',5000)
+							}
+						}
+					})
+
+				}
+			},
+			handleEdit(props, fieldConstructure, fieldVal){
+				// fieldConstructure 字段结构
+				// fieldVal 字段值
+				const _this = this;
+				const row = JSON.parse(JSON.stringify(props.row)) // 行数据 如果这里不深拷贝一下，下面【去掉空格】的处理将会影响表格的数据响应式效果
+				const index = props.$index // 行数据索引
+				let keyData = ''
+				let isNeededKey; // 保存必填字段的id
+				this.errFieldMsg[index + '_' + fieldConstructure.key] = ""
+				// 检测用户是否还存在未处理的错误字段
+				for (const k in this.errFieldMsg) {
+					if (this.errFieldMsg[k] !== '') {
+						app.$notify({
+							title: '操作失败',
+							message: '请先修改已存在的错误提示',
+							type: 'error',
+							duration: 3000
+						})
+						return
+					}
+				}
+
+				// 禁止字段传入特殊值
+				if (fieldVal === false 
+					|| (typeof(fieldVal) === "number" && isNaN(fieldVal))) {
+					this.errFieldMsg[index + '_' + fieldConstructure.key] = "请勿输入特殊值字符！"
+					showTs(0, '请勿输入特殊值字符', 3000)
+					return
+				}
+				// 传入值与null/undefined有关系的时候
+				if (
+					fieldVal === undefined || fieldVal === null ||
+					// 输入字符串时候，判断字符串中是否包含特殊字段
+					(typeof(fieldVal) === "string" && 
+					(fieldVal.indexOf('undefined') !== -1 || fieldVal.indexOf('null') !== -1))
+				) 
+				{
+					/** 数据响应 **/
+					fieldVal = ''
+					props.row[fieldConstructure.key] = fieldVal
+					row[fieldConstructure.key] = fieldVal
+					/** 数据响应 **/
+					this.errFieldMsg[index + '_' + fieldConstructure.key] = "undefined与null被转化为空值"
+					showTs(0, 'undefined与null被转化为空值', 3000)
+				}
+				// 校验必填字段规则：trim()函数用于去掉字符串的头尾空格，除了可以判断一个空值的情况，还可用于判断多个纯空格的情况
+				if (fieldVal.trim() === '' && fieldConstructure.ctrr_rsrm_is_needed) {
+					showTs(0, '['+fieldConstructure.label + ']为必填字段，请重新编辑', 3000)
+					this.errFieldMsg[index + '_' + fieldConstructure.key] = "必填字段不能为空"
+					return
+				}
+				// 构造主键字段数据
+				if (fieldConstructure.ctrr_rsrm_is_key !== 1) {
+					// 如果当前编辑的不是主键字段，则遍历检测出数据中的主键字段
+					for (let i = 0; i < _this.tableKey.length; i++) {
+						if (_this.tableKey[i].ctrr_rsrm_is_key === 1) {
+							isNeededKey = _this.tableKey[i].key
+							if ( row[_this.tableKey[i].key] !== '' ) {
+								keyData = '"'+ _this.tableKey[i].key+'":"' + row[_this.tableKey[i].key] + '"'
+							}
+							break //主键只有一个，if进入一次即可跳出整个循环
+						}
+					}
+				} else if (fieldVal !== '') {
+					// 如果当前编辑的就是主键字段且不为空，则直接构造参数
+					isNeededKey = fieldConstructure.key
+					keyData = '"'+fieldConstructure.key+'":"' + fieldVal + '"'
+				}
+				
+				// 去掉所有空值
+				for(let key in row){
+					if(row[key] === ''){
+						delete row[key]
+					}
+				}
+
+				let jsonData = JSON.parse(JSON.stringify(row)) // 暂存行数据
+				const ctrr_rsrmD_id = jsonData.ctrr_rsrmD_id 
+				//删掉ctrr_rsrmD_id，并构造json字符串用于数据库保存
+				delete jsonData.ctrr_rsrmD_id;
+				const ctrr_rsrmD_data = JSON.stringify(jsonData)
+				//删掉ctrr_rsrmD_id，并构造json字符串用于冲突检测
+				let jsonLastData = JSON.parse(JSON.stringify(_this.lastTableData[index])) // 暂存行数据
+				// 临时保存用户最近一次编辑的数据
+				_this.tempData = JSON.parse(ctrr_rsrmD_data)
+				delete jsonLastData.ctrr_rsrmD_id;
+				const last_ctrr_rsrmD_data = JSON.stringify(jsonLastData)
+				const data = {
+					ctrr_rsrmD_id: ctrr_rsrmD_id,
+					ctrr_rsrmD_data: ctrr_rsrmD_data,
+					last_ctrr_rsrmD_data: last_ctrr_rsrmD_data,
+					// 主键字段
+					keyData: keyData
+				}
+				$.ajax({
+					type:"POST"
+					,data:data
+					,url:'editRotaSituationRecord'
+					,success:function(res){
+						const code = res.code
+						const msg = res.msg
+						if(code === 1){
+							_this.$notify({
+								title: '操作成功',
+								message: msg,
+								type: 'success'
+							})
+							_this.lastTableData[index] = JSON.parse(JSON.stringify(row))
+							_this.tempDataShow = false;
+						} else if(code === -1){
+							// 主键检测发现重复
+							_this.$notify({
+								title: '操作失败',
+								message: msg,
+								type: 'error'
+							})
+							_this.errFieldMsg[index + '_' + isNeededKey] = msg
+						} else if(code === 0){
+							_this.$notify({
+								title: '操作失败，请刷新页面',
+								message: msg,
+								type: 'error'
+							})
+						} else{
+							_this.$notify({
+								title: '操作失败',
+								message: '发生未知错误，请联系管理员',
+								type: 'error',
+								duration: 0
+							})
+							_this.tempDataShow = false;
+						}
+					}
+				})
+			},
+			handleDelete(index, row){
+				// 删除行数据
+				const _this = this
+				_this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning'
+				}).then(() => {
+					_this.tableLoading = true;
+					$.ajax({
+						type:"GET"
+						,url:"deleteRotaSituationRecord"
+						,data:'ctrr_rsrmD_id='+row.ctrr_rsrmD_id
+						,success:function(res){
+							if(res == 1){
+								showTs(1,'删除成功',500)
+								_this.tableLoading = false;
+								_this.tableData.splice(index, 1);
+							}else{
+								console.log(res)
+								showTs(0,'发生未知错误：'+res+'请联系管理员',5000)
+							}
+						}
+					})
+				}).catch(() => {
+					showTs(1,'取消删除',500)
+				});
+			},
+			getTreeCheckedNodes(){
+				const _this = this
+				let keyForImport = []  // 导入excel时所需的key，分为两级第一级表名（对应excel中的sheet），第二级字段
+				const checkedNodes = _this.$refs.treeForImportExcel.getCheckedNodes(true) // 选中的表格
+				for(let i = 0; i < checkedNodes.length; i++){
+					checkedNodes[i].children = _this.l2_to_l3_allFiled[checkedNodes[i].ctrr_rsrm_id]
+					keyForImport.push(checkedNodes[i])
+				}
+				return keyForImport;
+			},
+			handlExportFile(tableData){
+				// 导出excel
+				const _this = this
+				const excelKey = []
+				const excelData = []
+				for(let i = 0; i < _this.tableKey.length; i++ ){
+					excelKey.push(_this.tableKey[i].label)
+				}
+				for(let i = 0; i < _this.tableData.length; i++ ){
+					let arr = []
+					for(let j = 0; j < _this.tableKey.length; j++ ){
+						arr.push(_this.tableData[i][_this.tableKey[j].key] || '')
+					}
+					excelData.push(arr)
+				}
+				layui.use(['table'], function(){
+					const table = layui.table
+					let name = new Date()
+					table.exportFile(excelKey, excelData, 'xls', name.toDateString()); //默认导出 xls
+				})
+			},
+			handlImportFile(){
+				const _this = this
+				_this.$confirm('即将开始导入，请确保导入文件 < 1M 且数据不要与现有数据重复，数据比较多时，处理时间会比较久', '提示', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning'
+				}).then(() => {
+					const keyForImport = _this.getTreeCheckedNodes()
+					if(keyForImport.length === 0){
+						showTs(0, '请选择需要导入的表格', 1000)
+						return
+					}
+					_this.keyForImport = keyForImport
+					$('#importdOneExcel').click()					
+				}).catch(() => {
+					showTs(1,'已取消',500)
+				});
+			},
+			// 生成大值班 注：由于大值班一期不做管理功能，因此当前尽量把逻辑集中在这个函数内
+			handlGetADutySummary(){
+				// 大值班规则
+				// 
+				// 待跟进故障：结束时间（督办获取）为空的数据
+				// 已消除的故障：结束时间（督办获取）在用户选定的时间范围内的数据
+				// 
+				const _this = this;
+				_this.tabsLoading = true;
+				if(!_this.dutySummaryTimeRange){
+					_this.$notify({
+						title: "时间范围选择有误",
+						type: 'error',
+						message: '请确认时间范围选择是否正确~',
+						position: 'bottom-right'
+					})
+				_this.tabsLoading = false;
+				}else{
+					const timeRangeArr = _this.hangdleStart_end_time(_this.dutySummaryTimeRange[0], _this.dutySummaryTimeRange[1])
+					$.ajax({
+						type: 'POSt',
+						url: 'getDutySummary',
+						data: {
+							timeRangeArr: timeRangeArr
+						},
+						success:function(res){
+							const code = res.code
+							const msg = res.msg
+							if (code === 0) {
+								showTs(0, msg, 2000)
+								return
+							}
+							let incompletedData = []
+							let completedData = []
+							const constructField = ['开始时间', '故障描述', '故障原因', '处理进展', '结束时间（督办获取）', '业务网络', '是否引起SDH倒换', '是否引起倒换']
+							// 业务类型，既业务网络字段
+							const bussinessTypeArr = ['国际光传送网', '国际政企专网', '铁通国际传输网', '一干PTN', '一干SDH']
+							// head 的 total 数据
+							const total = {incompletedData: 0, completedData: 0}
+							// 国际光传送网数据  switching - 引起倒换次数
+							const gjgcsw = {incompletedData: 0, completedData: 0, switching: 0}
+							// 国际政企专网数据  switching - 引起倒换次数
+							const gjzqzw = {incompletedData: 0, completedData: 0, switching: 0}
+							// 铁通国际传输网数据  switching - 引起倒换次数
+							const ttgjcsw = {incompletedData: 0, completedData: 0, switching: 0}
+							// 一干PTN数据  switching - 引起倒换次数
+							const ygptn = {incompletedData: 0, completedData: 0, switching: 0}
+							// 一干SDH数据  switching - 引起倒换次数
+							const ygsdh = {incompletedData: 0, completedData: 0, switching: 0}
+
+							// 上班次遗留故障数据
+							const lastFault = {incompletedData: 0, completedData: 0}
+							let constructFieldName_id = {}
+							// 构造 constructFieldName_id 
+							for(const key in _this.l2_to_l3_allFiled){
+								constructFieldName_id[key] = {}
+								for(const keykey in _this.l2_to_l3_allFiled[key]){
+									for(let i = 0; i < constructField.length; i++){
+										if(constructField[i] == _this.l2_to_l3_allFiled[key][keykey].ctrr_rsrm_name){
+											constructFieldName_id[key][constructField[i]] = keykey
+										}
+									}
+								}
+							}
+							
+							// 将不同表格数据取出放在一起
+							for(let i = 0; i < res.incompletedData.length; i++){
+								for(let j = 0; j < res.incompletedData[i].length; j++){
+									let incompletedData_item = JSON.parse(JSON.stringify(res.incompletedData[i][j]));
+									incompletedData_item.ctrr_rsrmD_data = JSON.parse(incompletedData_item.ctrr_rsrmD_data.replace(/\n/g,"")) // 去掉回车符号
+									incompletedData.push(incompletedData_item)
+								}
+							}
+							for(let i = 0; i < res.completedData.length; i++){
+								for(let j = 0; j < res.completedData[i].length; j++){
+									let completedData_item = JSON.parse(JSON.stringify(res.completedData[i][j]));
+									completedData_item.ctrr_rsrmD_data = JSON.parse(completedData_item.ctrr_rsrmD_data.replace(/\n/g,"")) // 去掉回车符号
+									completedData.push(completedData_item)
+								}
+							}
+
+							// 按开始时间升序：快速排序
+							// 解析：快速排序是对冒泡排序的一种改进，第一趟排序时将数据分成两部分，一部分比另一部分的所有数据都要小。然后递归调用，在两边都实行快速排序。
+							function quickSort(arr){
+								if(arr.length < 1){
+									return arr;
+								}
+								let pivotIndex = Math.floor(arr.length / 2)
+								let pivot = arr.splice(pivotIndex, 1)[0]
+								let left = []
+								let right = []
+								for(let i = 0; i < arr.length; i++){
+									let d1 = new Date(arr[i].ctrr_rsrmD_data[constructFieldName_id[arr[i].ctrr_rsrm_id_l2]['开始时间']])
+									let d2 = new Date(pivot.ctrr_rsrmD_data[constructFieldName_id[pivot.ctrr_rsrm_id_l2]['开始时间']])
+									if(d1 < d2){
+										left.push(arr[i])
+									}else{
+										right.push(arr[i])
+									}
+								}
+								return quickSort(left).concat([pivot], quickSort(right))
+							}
+							const incompletedDataSort = quickSort(incompletedData)
+							const completedDataSort = quickSort(completedData)
+							total.incompletedData = incompletedDataSort.length
+							total.completedData = completedDataSort.length
+							// 拼接字段
+							_this.dutySummary.incompletedData = '\n待跟进故障如下：\n'
+							for(let i = 0; i < incompletedDataSort.length; i++){
+								let startDate = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[0]]]
+								let startDateFormate
+								// 判断开始时间是否符合格式
+								if(_this.dateFormatReg.test(startDate)){
+									// 上班次遗留故障·未消除
+									// 构造班次的开始时间
+									const banciStarTimeArr = _this.dutySummaryTimeRange[0].split('/')
+									const banciStarTime = banciStarTimeArr[0] 
+										+ '/' + (banciStarTimeArr[1] > 9 ? banciStarTimeArr[1] : '0'+banciStarTimeArr[1])
+										+ '/' + (banciStarTimeArr[2] > 9 ? banciStarTimeArr[2] : '0'+banciStarTimeArr[2])
+										+ ' ' + (banciStarTimeArr[3] > 9 ? banciStarTimeArr[3] : '0'+banciStarTimeArr[3])
+										+ ':' + (banciStarTimeArr[4] > 9 ? banciStarTimeArr[4] : '0'+banciStarTimeArr[4])
+										+ ':' + (banciStarTimeArr[5] > 9 ? banciStarTimeArr[5] : '0'+banciStarTimeArr[5])
+										console.log(startDate,banciStarTime,startDate < banciStarTime,);
+									if(startDate < banciStarTime){
+										lastFault.incompletedData++
+									}
+									startDate = new Date(startDate)
+									startDateFormate = (startDate.getMonth()+1) + '月' + startDate.getDate() + '日' + startDate.getHours() + ':' + (startDate.getMinutes() > 9 ? startDate.getMinutes() : '0' + startDate.getMinutes()) + '，'
+								}else{
+									startDateFormate = startDate + '，'
+								}
+								const faultDescription = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[1]]] || '暂无故障描述'
+								const faultCause = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[2]]] || '暂无故障原因'
+								const progress = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[3]]] || '暂无进展'
+								const bussinessType = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[5]]] || ''
+								const isSwitching = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[6]]] || incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[7]]]
+								// 统计开头数据
+								switch (bussinessType) {
+									case bussinessTypeArr[0]:
+										gjgcsw.incompletedData++;
+										isSwitching == '是' && gjgcsw.switching++
+										break;
+									case bussinessTypeArr[1]:
+										gjzqzw.incompletedData++;
+										isSwitching == '是' && gjzqzw.switching++
+										break;
+									case bussinessTypeArr[2]:
+										ttgjcsw.incompletedData++;
+										isSwitching == '是' && ttgjcsw.switching++
+										break;
+									case bussinessTypeArr[3]:
+										ygptn.incompletedData++;
+										isSwitching == '是' && ygptn.switching++
+										break;
+									case bussinessTypeArr[4]:
+										ygsdh.incompletedData++;
+										isSwitching == '是' && ygsdh.switching++
+										break;
+									default:
+										break;
+								}
+								_this.dutySummary.incompletedData += (i+1) + '、'
+								// 开始时间
+								_this.dutySummary.incompletedData += startDateFormate
+								// 故障描述
+								_this.dutySummary.incompletedData += faultDescription
+								// 故障原因
+								_this.dutySummary.incompletedData += '\n故障原因：'
+								_this.dutySummary.incompletedData += faultCause
+								// 处理进展
+								_this.dutySummary.incompletedData += '\n处理进展：'
+								_this.dutySummary.incompletedData +=  progress
+								_this.dutySummary.incompletedData += '\n'
+							}
+							_this.dutySummary.completedData = '\n已消除故障如下：\n'
+							lastFault.completedData = completedDataSort.length
+							for(let i = 0; i < lastFault.completedData; i++){
+								let startDate = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[0]]]
+								let startDateFormate
+								// 判断开始时间是否符合格式
+								if(_this.dateFormatReg.test(startDate)){
+									startDate = new Date(startDate)
+									startDateFormate = (startDate.getMonth()+1) + '月' + startDate.getDate() + '日' + startDate.getHours() + ':' + (startDate.getMinutes() > 9 ? startDate.getMinutes() : '0' + startDate.getMinutes()) + '，'
+								}else{
+									startDateFormate = startDate + '，'
+								}
+								const faultDescription = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[1]]] || '暂无故障描述'
+								const faultCause = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[2]]] || '暂无故障原因'
+								const progress = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[3]]] || '暂无进展'
+								const bussinessType = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[5]]] || ''
+								const isSwitching = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[6]]] || completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[7]]]
+								
+								// 统计开头数据
+								switch (bussinessType) {
+									case bussinessTypeArr[0]:
+										gjgcsw.completedData++;
+										isSwitching == '是' && gjgcsw.switching++
+										break;
+									case bussinessTypeArr[1]:
+										gjzqzw.completedData++;
+										isSwitching == '是' && gjzqzw.switching++
+										break;
+									case bussinessTypeArr[2]:
+										ttgjcsw.completedData++;
+										isSwitching == '是' && ttgjcsw.switching++
+										break;
+									case bussinessTypeArr[3]:
+										ygptn.completedData++;
+										isSwitching == '是' && ygptn.switching++
+										break;
+									case bussinessTypeArr[4]:
+										ygsdh.completedData++;
+										isSwitching == '是' && ygsdh.switching++
+										break;
+									default:
+										break;
+								}
+								_this.dutySummary.completedData += (i+1) + '、'
+								// 开始时间
+								_this.dutySummary.completedData += startDateFormate
+								// 故障描述
+								_this.dutySummary.completedData += faultDescription
+								// 故障原因
+								_this.dutySummary.completedData += '\n故障原因：'
+								_this.dutySummary.completedData += faultCause
+								// 处理进展
+								_this.dutySummary.completedData += '\n处理进展：'
+								_this.dutySummary.completedData +=  progress
+								_this.dutySummary.completedData += '\n'
+							}
+
+							// 开头数据
+							_this.dutySummary.head = '本班次共发生一干传输网故障' + (total.completedData + total.incompletedData)
+								+ '起。跟踪上班次遗留故障' + (lastFault.incompletedData + lastFault.completedData)
+								+ '起。\n其中，国际光传送网故障' + (gjgcsw.completedData + gjgcsw.incompletedData)
+								+ '起（引起相关SDH系统倒换' + gjgcsw.switching
+								+ '起）；\n国际政企专网故障' + (gjzqzw.completedData + gjzqzw.incompletedData)
+								+ '起（引起相关SDH系统倒换' + gjzqzw.switching
+								+ '起）；\n铁通国际传输网故障' + (ttgjcsw.completedData + ttgjcsw.incompletedData)
+								+ '起（引起相关SDH系统倒换' + ttgjcsw.switching
+								+ '起）；\n一干PTN故障' + (ygptn.completedData + ygptn.incompletedData)
+								+ '起（引起相关SDH系统倒换' + ygptn.switching
+								+ '起）；\n一干SDH故障' + (ygsdh.completedData + ygsdh.incompletedData)
+								+ '起（引起相关SDH系统倒换' + ygsdh.switching
+								+ '起；\n截至目前，已消除' + lastFault.completedData
+								+ '起，待跟进' + total.incompletedData + '起。' // 总结信息
+
+							// 记录本次大值班数据
+							$.ajax({
+								url:'../customer/addDutySummary',
+								type:'post',
+								data:{
+									dutySummary: _this.dutySummary.head + _this.dutySummary.incompletedData + _this.dutySummary.completedData 
+								},
+								success:function(res){
+									console.log(res)
+									if(res !== 1){
+										showTs(0, '奥欧，后台记录本次大值班数据时发生错误，本次大值班可能未被记录在数据库，请让管理员瞄一下~', 10000)
+									}
+								},
+								error:function(e){
+									showTs(0, '奥欧，后台记录本次大值班数据时发生错误，本次大值班可能未被记录在数据库，请让管理员瞄一下~', 10000)
+									console.log(e)
+								}
+							})
+							// 成功
+							_this.tabsLoading = false;
+						},
+						error: function(e){
+							showTs(0, '获取大值班出错了，请联系管理员', 10000)
+							console.log(e)
+						}
+					})
+					// console.log(arr)
+				}
+				// console.log(_this.dutySummaryTimeRange)
+			},
+			handleCopy(){
+				const _this = this;
+				let dutySummaryTxt = document.getElementById('dutySummaryTxt')
+				dutySummaryTxt.focus()
+				dutySummaryTxt.select()
+				if(document.execCommand('copy')){
+					document.execCommand('copy')
+					showTs(1, '复制成功', 1000)
+				}else{
+					showTs(0, '被浏览器禁用，复制失败，请更换浏览器~', 2000)
+				}
+			},
+			// 我要待跟进数据
+			handlGetincompletedData(){
+				const _this = this;
+				_this.resetSearch(_this.now_ctrr_rsrm_id_l2)
+				_this.search()
+			},
+			// 切换页签时
+			handleSizeChange(pageSize) {
+				const _this = this
+				_this.pagination.pageSize = pageSize
+				_this.search()
+			},
+			handleCurrentChange(currentPage) {
+				const _this = this
+				_this.pagination.currentPage = currentPage
+				_this.search()
+			},
+			// 将开始时间和结束时间（督办获取）进行切割用于区间搜索
+			hangdleStart_end_time(startdate, enddate, ctrr_rsrm_id=''){
+				// startdate yyyy/M/d/H/m/s
+				// enddate yyyy/M/d/H/m/s
+				// ctrr_rsrm_id 字段id
+				let arr = []
+				startdate = startdate.split('/')
+				enddate = enddate.split('/')
+
+				// startdateStr,enddateStr用于拼接字符串
+				let startdateStr = []
+				let enddateStr = []
+				// 字符串转数字类型
+				for(let i = 0; i < startdate.length; i++){
+					startdate[i] = Number(startdate[i])
+					enddate[i] = Number(enddate[i])
+					startdateStr[i] = startdate[i]
+					enddateStr[i] = enddate[i]
+					startdateStr[i] = startdate[i] > 9 ? startdate[i] : '0' + startdate[i]
+					enddateStr[i] = enddate[i] > 9 ? enddate[i] : '0' + enddate[i]
+				}
+				function getYRange(startdate, enddate){
+					if(startdate[0] != enddate[0]){
+						for(let i = (startdate[0] + 1) ; i < enddate[0]; i++){
+							arr.push(i)
+						}
+					}
+				}
+				function getMRange(startdate, enddate){
+					if(startdate[0] == enddate[0]){
+						for(let i = (startdate[1] + 1) ; i < enddate[1]; i++){
+							const M = i > 9 ? i : '0' + i
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + M)
+						}
+					}else{
+						for( let i = (startdate[1] + 1) ; i <= 12; i++ ){
+							const M = i > 9 ? i : '0' + i
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + M)
+						}
+						for(let i = (enddate[1] - 1); i >= 1; i--){
+							const M = i > 9 ? i : '0' + i
+							arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + M)
+						}
+					}
+				}
+				function getDRange(startdate, enddate){
+					if(startdate[0] == enddate[0] && startdate[1] == enddate[1]){
+						for(let i = (startdate[2] + 1); i < enddate[2]; i++){
+							const D = i > 9 ? i : '0' + i
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + D)
+						}
+					}else{
+						for(let i = (startdate[2]+1); i <= 31; i++){
+							const D = i > 9 ? i : '0' + i
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + D)
+						}
+						for(let i = 1; i < enddate[2]; i++){
+							const D = i > 9 ? i : '0' + i
+							arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + D)
+						}
+					}
+				}
+				function getHRange(startdate, enddate){
+					if(startdate[0] == enddate[0] && startdate[1] == enddate[1] && startdate[2] == enddate[2]){
+						for(let i = (startdate[3] + 1); i < enddate[3]; i++){
+							let H = i > 9 ? i : '0' + i.toString();
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + H)
+						}
+					}else{
+						for(let i = (startdate[3]+1); i <= 24; i++){
+							let H = i > 9 ? i : '0' + i.toString();
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + H)
+						}
+						for(let i = 1; i < enddate[3]; i++){
+							let H = i > 9 ? i : '0' + i.toString();
+							arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + enddateStr[2] + ' ' + H)
+						}
+					}
+				}
+				function getminRange(startdate, enddate){
+					if(startdate[0] == enddate[0] && startdate[1] == enddate[1] && startdate[2] == enddate[2] && startdate[3] == enddate[3]){
+						for(let i = (startdate[4] + 1); i < enddate[4]; i++){
+							let min = i > 9 ? i : '0' + i;
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + min)
+						}
+					}else{
+						for(let i = (startdate[4]+1); i < 60; i++){
+							let min = i > 9 ? i : '0' + i;
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + min)
+						}
+						for(let i = 1; i < enddate[4]; i++){
+							let min = i > 9 ? i : '0' + i;
+							arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + enddateStr[2] + ' ' + enddateStr[3] + ':' + min)
+						}
+						
+					}
+				}
+				function getSRange(startdate, enddate){
+					if(startdate[0] == enddate[0] && startdate[1] == enddate[1] && startdate[2] == enddate[2] && startdate[3] == enddate[3] && startdate[4] == enddate[4]){
+						for(let i = (startdate[5] + 1); i < enddate[5]; i++){
+							let S = i > 9 ? i : '0' + i;
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + startdateStr[4] + ':' + S)
+						}
+					}else{
+						for(let i = (startdate[5]+1); i < 60; i++){
+							let S = i > 9 ? i : '0' + i;
+							arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + startdateStr[4] + ':' + S)
+						}
+						for(let i = 1; i < enddate[5]; i++){
+							let S = i > 9 ? i : '0' + i;
+							arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + enddateStr[2] + ' ' + enddateStr[3] + ':' + enddateStr[4] + ':' + S)
+						}
+						
+					}
+				}
+				// 构造年份
+				getYRange(startdate, enddate)
+				// 构造月份
+				getMRange(startdate, enddate)
+				// 构造日份
+				getDRange(startdate, enddate)
+				// 构造小时
+				getHRange(startdate, enddate)
+				// 构造分钟
+				getminRange(startdate, enddate)
+				// 构造秒钟
+				getSRange(startdate, enddate)
+				// 最后包括区间的两端点
+				arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + startdateStr[4] + ':' + startdateStr[5])
+				arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + enddateStr[2] + ' ' + enddateStr[3] + ':' + enddateStr[4] + ':' + enddateStr[5])
+				return arr;
+			},
+			// 不可关闭错误报告
+			handleCloseDrawer(){
+				// 不用写任何代码，当drawer调用这个函数的时候，只要不做任何处理，就不会关闭drawer
+				const _this = this
+				_this.$notify({
+					title: "提示",
+					type: 'warning',
+					message: '请按错误报告内容修改并刷新页面缓存后，重新提交',
+					position: 'bottom-right',
+					duration: 2000
+				})
+			}
+		},
+		computed: {
+			// 对于任何复杂逻辑，你都应当使用计算属性
+		},
+		// 不要在选项 property 或回调上使用箭头函数，
+		// 比如 created: () => console.log(this.a) 或 vm.$watch('a', newValue => this.myMethod())。
+		// 因为箭头函数并没有 this，this 会作为变量一直向上级词法作用域查找，直至找到为止，
+		// 经常导致 
+		// Uncaught TypeError: Cannot read property of undefined 
+		// 或 Uncaught TypeError: this.myMethod is not a function 之类的错误。
+		beforeCreate:function(){
+			// 初始化：事件&生命周期
+		},
+		created:function(){
+			// 初始化：注入&校验
+			const _this = this;
+		},
+		beforeMount:function(){
+		},
+		mounted:function(){
+			// 创建vm.$el 并用其替换"el" 
+			// 挂载完毕
+			const _this = this;
+		},
+		beforeUpdate:function(){
+			// 当data被修改时
+		},
+		updated: function () {
+			// 虚拟dom重新渲染并应用更新
+			const _this = this;
+		},
+		beforeDestroy:function(){
+			// 当调用vm.$destroy()函数时
+		},
+		destroy:function(){
+			// 解除绑定销毁子组件以及事件监听器
+			// 销毁完毕 
+		}
+	})
+
+	// 数据导入
+	$('#importdOneExcel').change(function(e) {
+		// 导入文件外部信息判断，内部数据处理交给多线程处理
+		app.tabsLoading = true
+
+		let files = e.target.files;
+		const fileSize = (files[0].size/1024)/2014
+		if(fileSize > 1){
+			showTs(0, '导入文件请勿超过1M', 2000)
+			$('#importdOneExcel').val('')
+			$('#importdOneExcel')[0].files[0] = undefined
+			app.tabsLoading = false
+			return
+		}
+		// 为空时不做处理
+		if(files[0] == undefined){
+			showTs(0, '空文件', 5000)
+			app.tabsLoading = false
+			return
+		}
+		// 判断文件后缀
+		if(files[0].name.split('.').pop() == 'xls' || files[0].name.split('.').pop() == 'xlsx'){
+			// submitKey = 1;	
+			let fileReader = new FileReader();
+			let errorReport = []  // 错误报告：检索中如果没有的sheet以及字段名存入其中
+			let neededFiledErrMsg = [] // 必填字段错误报告
+			let isNeededDataErrMsg = []// 必填字段数据错误报告  注：与neededFiledErrMsg区别，一个是判断字段是否存在，一个是字段存在进一步判断字段下的数据是否存在
+			let select_switch_fieldErrMsg = [] // 下拉框值与开关值错误报告
+			let timeErrMsg = [] // 时间格式错误报告
+			const h = app.$createElement;
+			let excel_to_sqlData; // 最终处理好的数据
+			app.tabsLoadingTxt = '正在读取文件'
+			fileReader.onload = function(ev) {
+				// 创建子线程，将导入数据放到后台处理
+				let worker = new Worker('__JS__/rotaSituationRecordImportExcel.js');
+				try {
+					let data = ev.target.result;
+					// step0 初始化
+					app.tabsLoadingTxt = '数据初始化中'
+					worker.postMessage({step: 0, data:{
+						workbook: XLSX.read(data, {
+							type: 'binary',
+							// raw: false,
+							cellDates: true//将日期存储为类型d（true）（默认为n(false)）
+						}),// 以二进制流方式读取得到整份excel表格对象,
+						keyForImport: app.keyForImport
+					}});
+				} catch (e) {
+					showTs(0, '文件类型不正确', 2000)
+					console.log('文件类型不正确');
+					return;
+				}
+				
+				// 实时监听子线程返回数据
+				worker.onmessage = function (response) {
+					const res = response
+					switch(res.data.step){
+						case 1:
+							// step1
+							worker.postMessage({step:1})
+							break;
+						case 2:
+							// step2
+							errorReport = errorReport.concat(res.data.data.errorReport)
+							// app.tabsLoadingTxt = '正在翻译表格中日期格式数据'
+							worker.postMessage({step: 2, data: {
+								dateFormatReg: app.dateFormatReg // 时间格式正则表达式
+							}})
+							break;
+						case 3:
+							// step3
+							// app.tabsLoadingTxt = '正在检查必填字段'
+							errorReport = errorReport.concat(res.data.data.errorReport)
+							worker.postMessage({step: 3})
+							break;
+						case 4:
+							// step4
+							// app.tabsLoadingTxt = '开始全量遍历导入数据'
+							errorReport = errorReport.concat(res.data.data.errorReport)
+							neededFiledErrMsg = res.data.data.neededFiledErrMsg
+							worker.postMessage({step: 4})
+							break;
+						case 5:
+							isNeededDataErrMsg = res.data.data.isNeededDataErrMsg
+							select_switch_fieldErrMsg = res.data.data.select_switch_fieldErrMsg
+							timeErrMsg = res.data.data.timeErrMsg
+							excel_to_sqlData = res.data.data.excel_to_sqlData
+							
+							// 返回所有类型字段格式问题报告
+							if(
+								neededFiledErrMsg.length !== 0
+								|| isNeededDataErrMsg.length !== 0
+								|| select_switch_fieldErrMsg.length !== 0
+								|| timeErrMsg.length !== 0
+							){
+								// exportRaw('错误报告', neededFiledErrMsg.concat(isNeededDataErrMsg, select_switch_fieldErrMsg, timeErrMsg))
+								if (neededFiledErrMsg.length !== 0) {
+									// 先导出错误报告 
+									const DTo2D = []
+									for (let i = 0; i < neededFiledErrMsg.length; i++) {
+										// 一维数组转为二维数组
+										DTo2D.push([neededFiledErrMsg[i]]);
+									}
+									exportRaw('错误报告_缺失的必须字段', ['缺失的必须字段'], DTo2D)
+									app.errorReport['缺失如下必须字段'] = neededFiledErrMsg.slice(0, 5000)
+								}
+								if (isNeededDataErrMsg.length !== 0) {
+									// 先导出错误报告 
+									const DTo2D = []
+									for (let i = 0; i < isNeededDataErrMsg.length; i++) {
+										// 一维数组转为二维数组
+										DTo2D.push([isNeededDataErrMsg[i]]);
+									}
+									exportRaw('错误报告_必填字段存在的空值情况', ['必填字段存在的空值情况'], DTo2D)
+									app.errorReport['必填字段存在的空值情况'] = isNeededDataErrMsg.slice(0, 5000)
+								}
+								if (select_switch_fieldErrMsg.length !== 0) {
+									// 先导出错误报告 
+									const DTo2D = []
+									for (let i = 0; i < select_switch_fieldErrMsg.length; i++) {
+										// 一维数组转为二维数组
+										DTo2D.push([select_switch_fieldErrMsg[i]]);
+									}
+									exportRaw('错误报告_下拉框与开关值问题', ['下拉框与开关值问题'], DTo2D)
+									app.errorReport['下拉框与开关值问题'] = select_switch_fieldErrMsg.slice(0, 5000)
+								}
+								if (timeErrMsg.length !== 0) {
+									// 先导出错误报告 
+									const DTo2D = []
+									for (let i = 0; i < timeErrMsg.length; i++) {
+										// 一维数组转为二维数组
+										DTo2D.push([timeErrMsg[i]]);
+									}
+									exportRaw('错误报告_时间字段格式问题', ['时间字段格式问题'], DTo2D)
+									app.errorReport['时间字段格式问题'] = timeErrMsg.slice(0, 5000)
+								}
+								app.isShowErrorReportDrawer = true
+								// 格式有问题直接return禁止本次导入
+								return
+							}
+							let msgHtml;
+							let msgHtml_item;
+							if (errorReport.length === 0) {
+								msgHtml_item = [h('span', { style: 'color: black'}, '导入数据整理完毕！没有发现问题。请开始导入'), h('br', null, '')]
+							}else{
+								msgHtml_item = [h('span', { style: 'color: black'}, '【导入数据存在如下问题】'), h('br', null, '')]
+								for(let i = 0; i < errorReport.length; i++){
+									msgHtml_item.push(h('span', null, (i+1) + '、' +errorReport[i]), h('br', null, ''))
+								}
+							}
+
+							msgHtml =  h('div', { style: 'color: red;max-height: 500px; overflow: scroll'}, msgHtml_item)
+							let confirmButtonText = '数据没问题开始导入'
+							errorReport.length !== 0 && (confirmButtonText = '虽然表格有问题，依然确认提交')
+							
+							// 由于 php max_input_lets变量默认表单最多提交字段不能超过一千，
+							// 因此如果数据量过多需要对数据进行分段上传
+							let excel_to_sqlData2DArr = []
+							if(excel_to_sqlData.length > 10000){
+								showTs(0, '这也太多数据了，为了服务器的身心健康，请小量多次上次', 5000)
+								$('#importdOneExcel').val('')
+								$('#importdOneExcel')[0].files[0] = undefined
+								app.tabsLoading = false
+								return
+							}else if(excel_to_sqlData.length > 200){
+								// 一维数组转二维数组
+								while(excel_to_sqlData.length > 0){
+									// 每两百条数据分隔一下
+									excel_to_sqlData2DArr.push(excel_to_sqlData.splice(0, 200))
+								}
+							}else{
+								excel_to_sqlData2DArr.push(excel_to_sqlData)
+							}
+							app.$msgbox({
+								title: '处理结果与导入确认',
+								message: msgHtml,
+								showCancelButton: true,
+								confirmButtonText: confirmButtonText,
+								cancelButtonText: '取消',
+								beforeClose: (action, instance, done) => {
+									errorReport.length !== 0 && (instance.confirmButtonText = '数据有问题可以直接在系统上进行编辑...')
+									if(errorReport.length > 10){
+										app.$notify({
+											title:'提示：错误太多啦',
+											message:'请根据错误报告修改导入表格，修改好后请刷新页面清理缓存重新导入数据',
+											type:'error',
+											position: 'bottom-right',
+											showClose: false,
+											duration: 0
+										})
+										return
+									}
+									if (action === 'confirm') {
+										instance.confirmButtonLoading = true;
+										instance.confirmButtonText = '正在提交...';
+										let importErrMsg = {
+											is_key_errMsg: [],
+											is_import_errMsg: []
+										};; // 保存分段请求后返回参数的参数
+										for(let i = 0; i < excel_to_sqlData2DArr.length; i++){
+											$.ajax({
+												type: 'POST',
+												async: false, // 同步请求
+												data: { 
+													excelData: excel_to_sqlData2DArr[i],
+													import: 1
+												},
+												url: 'addRotaSituationRecord',
+												success:function(res){
+													const code = res.code
+													const msg = res.msg
+													if (code === -1) {
+														for (let i = 0; i < res.is_key_errMsg.length; i++) {
+															let str = '【' + app.levelTwoList[res.is_key_errMsg[i].ctrr_rsrm_id_l2].ctrr_rsrm_name + '】表格：'
+															const ctrr_rsrmD_dataToJson = JSON.parse(res.is_key_errMsg[i].ctrr_rsrmD_data)
+															for (const k in ctrr_rsrmD_dataToJson) {
+																str += app.levelThree[k].ctrr_rsrm_name + '：' + ctrr_rsrmD_dataToJson[k] + '；'
+															}
+															importErrMsg.is_key_errMsg.push([str])
+														}
+														for (let i = 0; i < res.is_import_errMsg.length; i++) {
+															importErrMsg.is_import_errMsg.push(res.is_import_errMsg[i])
+														}
+													} else if (code === 0) {
+														showTs(0, msg, 2000)
+													}
+												},
+												error:function(e){
+													showTs(0, '出错了，截个图联系下管理员吧！错误信息：'+e.responseText, 10000)
+													console.log(e)
+													return
+												}
+											})
+										}
+										if(importErrMsg.is_key_errMsg.length === 0 && importErrMsg.is_import_errMsg.length === 0){
+											// 导入成功时
+											done();
+											instance.confirmButtonLoading = false;
+											showTs(1, '导入成功！刷新页面即可加载最新数据', 5000)
+											$('#importdOneExcel').val('')
+											$('#importdOneExcel')[0].files[0] = undefined
+											app.tabsLoading = false
+										}else{
+											if (importErrMsg.is_key_errMsg.length !== 0) {
+												showTs(0, '导入时发现重复数据，请检查', 10000)
+												exportRaw('重复数据', ['导入时发现主键字段重复的数据项如下，请修改后重新导入'], importErrMsg.is_key_errMsg)
+											}
+											if (importErrMsg.is_import_errMsg.length !== 0) {
+												showTs(0, '部分数据导入时发生了错误，请联系管理员，让他教你打开浏览器控制台（按F12）查看本次报错信息！', 10000)
+												console.log(importErrMsg);
+											}
+											$('#importdOneExcel').val('')
+											$('#importdOneExcel')[0].files[0] = undefined
+											console.log(importErrMsg);
+										}
+									} else {
+										done();
+									}
+									
+									// 关闭Worker子线程
+									worker.terminate();
+								}
+							}).then(action => {
+							}).catch(action => {
+								// 取消导入时
+								showTs(1, '已取消', 500)
+								$('#importdOneExcel').val('')
+								$('#importdOneExcel')[0].files[0] = undefined
+								app.tabsLoading = false
+							});
+							break;
+						case -1:
+							// 返回处理中的进度消息
+							app.tabsLoadingTxt = res.data.msg
+							break;
+					}
+				};
+			}
+			// 以二进制方式打开文件
+			fileReader.readAsBinaryString(files[0]);
+		}else{
+			showTs(0, '文件类型不正确', 5000)
+			$('#importdOneExcel').val('')
+			$('#importdOneExcel')[0].files[0] = undefined
+			app.tabsLoading = false
+			return
+		}
+	})
+
+	function exportRaw(name, excelKey, excelData) {
+		// excelData -> array
+		layui.use(['table'], function(){
+			const table = layui.table
+			table.exportFile(excelKey, excelData, 'xls', name); //默认导出 xls
+		})
+	}
+	/**
+	 * 管理内存 —— （手工）解除引用
+	 * 确保占用最少的内存可以让页面获得更好的性能
+	 * 而优化内存占用的最佳方式，就是为执行中的代码只保存必要的数据，
+	 * 一旦数据不再有用，最好通过将其值设置为null来释放其引用 —— 这个做法叫做接触引用
+	 * 不过解除引用并不意味着自动回收该值所占用的内存。
+	 * 解除引用的真正作用是让值脱离执行环境，以便垃圾收集器下次运行时将其回收
+	 * 不过下面有一些还是会继续用到，比如换页的时候还会用到一些变量，所以暂时就不用接触引用了
+	 */
+	// levelOneList = null
+	// tableDataBySQL = null
+	// pagination = null
+	// levelThree = null
+	// tableData = null
+	// lastTableData = null
+	// treeForImportData = null
+	// l2_to_l3_allFiled = null
+	// formJson = null
+	// tableKey = null
+	// app = null
+</script>

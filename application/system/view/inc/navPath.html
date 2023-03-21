@@ -1,0 +1,69 @@
+<div class="layui-breadcrumb" style="z-index:1000;left:200px;top: 0px;padding: 0px">
+	<div style="margin: auto 15px;width:100%;min-width: 250px">
+		<div class="klogo" style="position: relative;background: transparent;border: none;display:inline-block;z-index: 1000;width: 30px;height: 30px;overflow: hidden;z-index: 100;">
+			<a href="javascript:void(0)" style="background: transparent" onclick="expandLeftNav();"><i class="fa fa-bars" style="color: #cccccc"></i></a>
+		</div>
+		<div style="position: absolute;display: inline-block;min-width: 500px">
+			<i class="fa fa-home"></i>
+			<a href="javascript:void(0)"><cite>首页</cite></a>
+
+			{notempty name="$navPath.twoRuleInfo"}
+			{if condition="$navPath.twoRuleInfo.rule == 'null'"}
+			<a><cite>{$navPath.twoRuleInfo.rule_name}</cite></a>
+			{else/}
+			<a href='{:url("@".$navPath["twoRuleInfo"]["rule"])}'>{$navPath.twoRuleInfo.rule_name}</a>
+			{/if}
+			{/notempty}
+
+			{notempty name="$navPath.threeRuleInfo"}
+			{if condition="$navPath.threeRuleInfo.rule == 'null'"}
+			<a><cite>{$navPath.threeRuleInfo.rule_name}</cite></a>
+			{else/}
+			<a href='{:url("@".$navPath["threeRuleInfo"]["rule"])}'>{$navPath.threeRuleInfo.rule_name}</a>
+			{/if}
+			{/notempty}
+
+			{notempty name="$navPath.fourRuleInfo"}
+			{if condition="$navPath.fourRuleInfo.rule == 'null'"}
+			<a><cite>{$navPath.fourRuleInfo.rule_name}</cite></a>
+			{else/}
+			<a href='{:url("@".$navPath["fourRuleInfo"]["rule"])}'>{$navPath.fourRuleInfo.rule_name}</a>
+			{/if}
+			{/notempty}
+		</div>
+	</div>
+</div>
+<div style="position: relative;float: right;top: 0px;z-index: 1001;">
+	<ul class="layui-nav" style="background-color: transparent;color: black;">
+		<li class="layui-nav-item" style="line-height: 34px;">
+			{$adminInfo.admin_account}
+			<dl class="layui-nav-child" id="layoutDiv" style="margin: -20px 0px 0px -30px ">
+				<dd>
+					<a href="{:url('@system/logout')}"><i class="fa fa-sign-out" aria-hidden="true"></i> 退出</a>
+				</dd>
+			</dl>
+		</li>
+	</ul>
+</div>
+<script>
+$(function(){
+	function IsPC() {
+		let userAgentInfo = navigator.userAgent;
+		let Agents = ["Android", "iPhone",
+					"SymbianOS", "Windows Phone",
+					"iPad", "iPod"];
+		let flag = true;
+		for (let v = 0; v < Agents.length; v++) {
+			if (userAgentInfo.indexOf(Agents[v]) > 0) {
+				flag = false;
+				break;
+			}
+		}
+		return flag;
+	 }
+	 //如果不是pc端，则每次加载自动收起菜单栏
+	 if(!IsPC()){ 
+		$('.klogo a').click()
+	 }
+})
+</script>

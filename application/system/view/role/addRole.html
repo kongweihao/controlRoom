@@ -1,0 +1,107 @@
+<link rel="stylesheet" href="__CSS__/system/role.css" />
+<div class="layui-body" style="left:200px;">
+	<blockquote class="layui-elem-quote" style="margin:15px 15px 0 15px;">角色是一定操作权限的集合，属于该角色的管理员拥有该角色的权限！</blockquote>
+	<div class="layui-tab-content">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>添加角色</legend>
+		</fieldset>
+		<form class="layui-form" action="{:url('@system/addRole')}" method="post">
+			<div class="layui-form-item">
+				<label class="layui-form-label">角色名称</label>
+				<div class="layui-input-inline">
+					<input type="text" name="role_name" value="{$data.role_name}" placeholder="角色名称" class="layui-input" required="required" maxlength="30">
+				</div>
+				<div class="layui-form-mid layui-word-aux star">必填</div>
+			</div>
+			<div class="layui-form-item rulesWrap">
+				<label class="layui-form-label">角色权限</label>
+				<div class="rulesBlock">
+					{volist name="ruleList" id="vo"}
+					{if condition="$vo.parent_id == 0"}
+					<div class="rule-Item">
+						<div class="left">
+							{in name="$vo.id" value="$data.rule_ids"}
+							<input type="checkbox" name="rule_ids[]" value="{$vo.id}" lay-skin="primary" title="{$vo.rule_name}" lay-filter="firstLevelRule" checked="checked">
+							{else/}
+							<input type="checkbox" name="rule_ids[]" value="{$vo.id}" lay-skin="primary" title="{$vo.rule_name}" lay-filter="firstLevelRule">
+							{/in}
+						</div>
+						<div class="right">
+							{volist name="ruleList" id="svo"}
+							{if condition="$svo.parent_id == $vo.id"}
+							<div class="rule-block">
+								<div class="secondLevelRule">
+									{in name="$svo.id" value="$data.rule_ids"}
+									<input type="checkbox" name="rule_ids[]" value="{$svo.id}" lay-skin="primary" title="{$svo.rule_name}" lay-filter="secondLevelRule" checked="checked">
+									{else/}
+									<input type="checkbox" name="rule_ids[]" value="{$svo.id}" lay-skin="primary" title="{$svo.rule_name}" lay-filter="secondLevelRule">
+									{/in}
+								</div>
+								<div class="inputs">
+								{volist name="ruleList" id="tvo"}
+								{if condition="$tvo.parent_id == $svo.id"}
+									{in name="$tvo.id" value="$data.rule_ids"}
+									<input type="checkbox" name="rule_ids[]" value="{$tvo.id}" lay-skin="primary" title="{$tvo.rule_name}" checked="checked">
+									{else/}
+									<input type="checkbox" name="rule_ids[]" value="{$tvo.id}" lay-skin="primary" title="{$tvo.rule_name}">
+									{/in}
+								{/if}
+								{/volist}
+								</div>
+							</div>
+							{/if}
+							{/volist}
+						</div>
+					</div>
+					{/if}
+					{/volist}
+				</div>
+			</div>
+			<div class="layui-form-item layui-form-text">
+				<label class="layui-form-label">角色说明</label>
+				<div class="layui-input-inline">
+					<textarea placeholder="请输入角色说明" name="remark" class="layui-textarea" maxlength="255">{$data.remark}</textarea>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">状态</label>
+				<div class="layui-input-block">
+					{if condition="$data.status == 1 || $data.status ==null"}
+					<input type="checkbox" name="status" value="1" lay-skin="switch" lay-filter="status" lay-text="正常|禁用" checked>
+					{else/}
+					<input type="checkbox" name="status" value="1" lay-skin="switch" lay-filter="status" lay-text="正常|禁用">
+					{/if}
+				</div>
+			</div>
+			<div class="layui-form-item submit-item">
+				<div class="layui-input-block">
+					<button class="layui-btn" lay-submit="" lay-filter="demo1">立即提交</button>
+					<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+<script>
+	layui.use(['form'], function(){
+		var form = layui.form;
+		//监听一级权限
+		form.on('checkbox(firstLevelRule)', function(data){
+			if(this.checked == true){	
+				$(this).parents('.rule-Item').find('input').prop('checked',true);
+			}else{
+				$(this).parents('.rule-Item').find('input').prop('checked',false);
+			}
+			form.render();//重新渲染样式
+		});
+		//监听二级权限，选择子级权限，应当选中父级权限
+		form.on('checkbox(secondLevelRule)', function(data){
+			if(this.checked == true){	
+				$(this).parents('.rule-block').find('input').prop('checked',true);
+			}else{
+				$(this).parents('.rule-block').find('input').prop('checked',false);
+			}
+			form.render();//重新渲染样式
+		});
+	});
+</script>

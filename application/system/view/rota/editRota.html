@@ -1,0 +1,184 @@
+<div class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px">
+		<p>- 您拥有高级权限，修改班表信息将直接生效</p>
+		<p>- 如果下拉选项没有可选，则是该岗位没有分配人员，请到人员信息库中为相关人员分配岗位（既岗位类别）</p>
+		<p>- 不可修改历史班表数据</p>
+	</blockquote>
+	<form id="form" class="layui-form layui-input-inline" action="{:url('@system/rotaList')}" method="post">
+		<div style="text-align: center;padding: 10px;">
+			<div class="layui-inline" style="padding-left: 30px;"> 
+				<span>选择日期</span>
+			</div>
+			<div class="layui-inline" style="padding-left: 30px;"> 
+				<input type="text" class="layui-input" id="rotaList_timestamp">
+			</div>
+		</div>	
+	</form>
+	<!-- 值班表 -->
+	<div style="padding:15px">
+		<table id="rotaListTable" lay-filter="rotaList_table"></table>
+	</div>
+</div>
+<!--  优化table 中的select样式 -->
+<style>
+	.layui-table .layui-form-select input{
+		height: 36px;
+		border: none;
+	}
+	/* 使下拉框只能向下弹出 */
+	.layui-table .layui-form-selectup dl {
+		top: 42px;
+		bottom: unset;
+	}
+</style>
+<!-- 加载各个岗位人员下拉列表 -->
+<!-- for 循环有问题，因此采用volist -->
+{volist name="thisMon_monitorPost" id="vo" empty="暂时没有数据" }
+<script type="text/html" id="selectTxt{$vo['monitor_post_name']}">
+	<!-- let ziduan = {$vo['monitorPost_type']}; -->
+	<div class="layui-form-item">
+		<div class="layui-input">
+			<select lay-verify="required" lay-filter="select_gay" postName="{$vo['monitor_post_name']}" timeStamp="{{d.time_stamp}}" oldGuy="{{d.{$vo['monitor_post_name']}}}" {{ d.is_active == 1 ? '' : 'disabled' }} >
+			<!-- -1表示原始值 -->
+				<option value="-1" selected>{{d.{$vo['monitor_post_name']}}}</option>
+				{volist name="monitorPost_gay[$vo['monitorPost_type']]" id="mpg" }
+				<option value="{$mpg.name}">{$mpg.name}</option>
+				{/volist}
+			</select>
+	 	</div>
+	</div>
+</script>
+{/volist}
+<script>
+	// console.log(navigator)
+	// console.log("{$adminInfo.admin_account}")
+	layui.use(['table','laydate'], function(){
+		let time_stamp = "{$time_stamp}";
+		
+		// 值班表表头
+		let cols_rotaList = [{field:'time_stamp',title: '日期', fixed: 'left', minWidth:100}];
+		cols_rotaList.push({
+			field: "week",
+			title: "星期",
+			minWidth:140,
+		})
+		let i = 0;
+		let cols_style = '';
+		"{for start='0' end='$thisMon_monitorPost_len'}"
+		if("{$thisMon_monitorPost[$i]['is_night']}" == 1){
+			if("{$thisMon_monitorPost[$i]['is_day']}" == 0){
+				cols_style = 'background-color: #eee';
+			}else{
+				cols_style = 'background-color: #ccc';
+			}
+		}	
+		cols_rotaList.push({
+			field: "{$thisMon_monitorPost[$i]['monitor_post_name']}",
+			title: "{$thisMon_monitorPost[$i]['monitor_post_name']}",
+			minWidth:200, 
+			align: 'center',
+			templet:"#selectTxt{$thisMon_monitorPost[$i]['monitor_post_name']}",
+			style:cols_style
+		})
+		// console.log("{$thisMon_monitorPost[$i]['monitorPost_type']}")
+		cols_style = ''
+		"{/for}"
+
+		let table = layui.table
+		,form = layui.form;
+		table.render({
+			elem: '#rotaListTable'
+			,height: 400
+			,url: 'editRota' //数据接口
+			,size: 'lg'
+			,where: { 
+				rotaList: 1
+				,time_stamp: time_stamp
+			}//接口的其他参数
+			// ,method: 'post' // 默认get
+			,page: false //开启分页
+			// ,defaultToolbar: ['add', 'filter', 'exports', 'print']
+			// ,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+			// ,totalRow: true //开启合计行
+			,request: {
+				// pageName: 'page' //页码的参数名称，默认：page
+				// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+			}
+			,response: {
+				// statusName: 'code' //规定数据状态的字段名称，默认：code
+				// ,statusCode: 1 //规定成功的状态码，默认：0
+				// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+				// countName: 'total' //规定数据总数的字段名称，默认：count
+				// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+			}
+			,parseData: function(res){ //res 即为原始返回的数据
+				console.log(res)
+			}
+			,cols: [cols_rotaList]
+			,done: function(res, curr, count){
+				//由于layui 设置了超出隐藏，所以这里改变下，以兼容操作按钮的下拉菜单
+				//把这句加上，就可以显示了
+				$(".layui-table-cell").css('overflow', 'visible'); 
+
+				// form.render() // 再次渲染表格
+				showTs(1,'加载成功',500)
+			}
+		});
+
+		// 当前班表所属时间戳
+		//按月搜索值班表功
+		let laydate = layui.laydate;
+		let dateInit = "{$time_stamp}";
+		//执行一个laydate实例
+		laydate.render({
+			elem: '#rotaList_timestamp' //指定元素
+			,value: dateInit
+			,format:'yyyyMM'
+			,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+			,type: 'month'
+			,done: function(value, date, endDate){
+				if(value == ''){
+					return
+				}
+				let y = date.year;
+				let m = date.month;
+				m = m > 9 ? m : '0' + m;
+				time_stamp = y.toString() + m.toString();
+				location.href = "{:url('@system/editRota')}?time_stamp=" + time_stamp ;
+			}
+		});
+	
+		//监听下拉选择框 
+		form.on('select(select_gay)', function(data){
+			if(data.value == -1 || data.elem.attributes.oldguy.value == data.value){
+				// -1表示没有改变
+				return
+			}
+			params = {}
+			params['rota_time_stamp'] = data.elem.attributes.timestamp.value//时间戳
+			params['monitor_post_name'] = data.elem.attributes.postname.value//岗位名
+			params['guy_be_replaced'] = data.elem.attributes.oldguy.value//被替换的人
+			params['replacement'] = data.value//替换者
+			params['operation_account'] = "{$adminInfo.admin_account}"//操作者
+			params['equipment'] = navigator.platform//用户设备
+			params['operation_guy'] = "{$adminMemberName}"//操作人，操作账号关联的人员信息
+			$.ajax({
+				url: 'updateRota'
+				,data: params
+				,type:'post'
+				,success:function(res){
+					if(res == 1){
+						layer.msg(data.elem.attributes.timestamp.value+' —【'+data.elem.attributes.postname.value+'】：'+data.elem.attributes.oldguy.value+' -> '+data.value)
+						showTs(1, '修改成功', 500)
+					}else if(res == -1){
+						showTs(0, '发现冲突：该岗位已被某位管理员修改了，请刷新获取最新班表再尝试换班，详情可在换班记录中查看', 10000)
+					}else if(res == 0){
+						showTs(0, '不允许修改历史班表', 2000)
+					}else{
+						showTs(0, '修改失败：未知错误', 2000)
+					}
+				}
+			})
+		}); 
+	});
+</script>

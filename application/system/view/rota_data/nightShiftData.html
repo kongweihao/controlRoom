@@ -1,0 +1,168 @@
+<div class="layui-body" style="padding: 15px;">
+	<!-- <blockquote class="layui-elem-quote layui-wran-color" style="margin-bottom: 20px;">xxx</blockquote> -->
+	<blockquote class="layui-elem-quote" style="margin-bottom: 20px;">
+		<p>— 夜班数据统计</p>
+		<p>— 为防止加载时长过长，日期范围请勿超过6个月</p>
+	</blockquote>	
+	<form class="layui-form" style="margin-top: 60px;">
+		<div class="layui-form-item">
+			<div class="layui-inline">
+				<label class="layui-form-label" style="width: 90px;">日期</label>
+				<div class="layui-inline">
+					<input type="text" name="time_stamp_range" class="layui-input" id="time_stamp_range_id" placeholder=" - " style="display: inline-block; width: 160px">
+					<button class="layui-btn" lay-submit lay-filter="searchShiftRecord" style="margin-left: 10px">搜索</button>
+				</div>
+			</div>
+			<!-- <div class="layui-inline">
+				<label class="layui-form-label" style="width: 90px;">姓名</label>
+				<div class="layui-inline">
+					<input type="text" name="member_name" class="layui-input" placeholder="支持模糊搜索">
+				</div>
+			</div>
+			<div class="layui-inline">
+				<label class="layui-form-label" style="width: 90px;">选择岗位</label>
+				<div class="layui-inline" style="width: 182px;">
+					<select name="monitor_post_name" lay-filter="monitorPostList_search" >
+						<option value="" selected>-- 全部岗位 --</option>
+						{volist name="monitorPostList" id="vo"}
+						<option value="{$vo.post_name}">{$vo.post_name}</option>
+						{/volist}
+					</select>
+				</div>
+			</div> 
+			<div class="layui-input-block" style="margin: 10px 0 0; text-align: center;">
+				<div class="layui-inline searchBtn" style="width: 130px;">
+					<button class="layui-btn" lay-submit lay-filter="searchShiftRecord">搜索</button>
+				</div>
+			</div> -->
+		</div>
+	</form>
+	<table id="shiftRecordTable" lay-filter="nightShiftData_table"  style="clear: both;"></table>
+</div>
+<script>	
+	let rotaDataSearchform; // 将form表单提取到公共环境
+	layui.use(['table', 'laydate'], function(){
+		let table = layui.table
+		,form = layui.form
+		,laydate = layui.laydate;
+		rotaDataSearchform = form;
+		let now = new Date();
+		let nowY = now.getFullYear()
+		let nowM = now.getMonth() + 1
+		let nowD = 23
+		
+		let lastY = nowY
+		let lastM = now.getMonth()
+		let lastD = nowD + 1; 
+		let lastDMAX= new Date(lastY,lastM,0).getDate()//获取上个月最后一天
+		lastM == 0 ? (--lastY && (lastM = 12)) : lastM
+		lastD > lastDMAX ? lastDMAX : lastD;//如果lastD的值超过上个月最后一天的，那么就取上个月最后一天即可
+		// console.log(lastDay)
+		let time_stamp_range_str = lastY + '' + (lastM > 9 ? lastM : '0' + lastM) + '' + (lastD > 9 ? '' + lastD : '0' + lastD) + ' ~ ' + nowY + '' + (nowM > 9 ? '' + nowM : '0' + nowM) + '' + (nowD > 9 ? '' + nowD : '0' + nowD)
+		// 加载table
+		let params =  { 
+				getList: 1
+				,time_stamp_range: time_stamp_range_str.split(' ~ ')
+			}
+		getListTableRender(table, params)
+		
+		//监听头工具栏事件
+		table.on('toolbar(nightShiftData_table)', function(obj){
+			let checkStatus = table.checkStatus(obj.config.id)
+			,data = checkStatus.data; //获取选中的数据
+			switch(obj.event){
+			case 'add':
+				layer.msg('批量添加功能暂不开放~')
+			break;
+			case 'update':
+				layer.msg('批量修改功能暂不开放~')
+			break;
+			case 'delete':
+				layer.msg('批量删除功能暂不开放~')
+			break;
+			};
+		});
+		 //日期时间范围
+		 laydate.render({
+			elem: '#time_stamp_range_id'
+			,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+			,format:'yyyyMMdd'
+			,value: time_stamp_range_str
+			,range: '~'
+		});
+		// 提交搜索条件
+		form.on('submit(searchShiftRecord)', function(data){
+			// 开始时间大于结束时间时
+			data.field['getList'] = 1;
+			data.field['time_stamp_range'] = data.field['time_stamp_range'].split(' ~ ')
+			if (data.field['time_stamp_range'][1] - data.field['time_stamp_range'][0] > 600) {
+				showTs(0, '时间范围请勿超过6个月', 2000)
+				return false;
+			}
+			// console.log(data.field['time_stamp_range'])
+			getListTableRender(table, data.field)
+			// console.log(data.elem) //被执行事件的元素DOM对象，一般为button对象
+			// console.log(data.form) //被执行提交的form对象，一般在存在form标签时才会返回
+			// console.log(data.field) //当前容器的全部表单字段，名值对形式：{name: value}
+			return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+		});
+	});
+		
+	function getListTableRender(table, params){
+		$.ajax({
+			url: 'nightShiftData',
+			type: 'get',
+			data: params,
+			success: function (res) {
+				table.render({
+					elem: '#shiftRecordTable'
+					,height: 500
+					,url: 'nightShiftData' //数据接口
+					// ,initSort:{field:'member_name', type:'asc'}
+					// ,limit: 1000//每页显示的条数（默认：10）。值务必对应 limits 参数的选项。注意：优先级低于 page 参数中的 limit 参数
+					,where: params//接口的其他参数
+					// ,method: 'post' // 默认get
+					// ,page: true //开启分页
+					,defaultToolbar: ['add', 'filter', 'exports', 'print']
+					,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+					,totalRow: true //开启合计行
+					,request: {
+						// pageName: 'page' //页码的参数名称，默认：page
+						// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+					}
+					,response: {
+						// statusName: 'code' //规定数据状态的字段名称，默认：code
+						// ,statusCode: 1 //规定成功的状态码，默认：0
+						// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+						// countName: 'total' //规定数据总数的字段名称，默认：count
+						// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+					}
+					// layuitable 表格中时间导出excel是科学计数法
+					// 因为，从数据库中查的时间数据是时间戳，所以，在excel中时间表示为科学计数法。
+
+					// 用模板引擎来格式化时间，只是格式table中的数据，而源数据并没有改变。
+
+					// 通过parseData将传过来的源数据格式为想要的格式，导出时就不会显示科学计数法了。
+					,parseData:function(res){
+							// let data = res.data;
+							// for(index in data){
+							// let date = data[index].create_time;
+							// let time = new Date(date);
+							// data[index].create_time= time.getFullYear() + "-" + (time.getMonth() + 1) + "-" + time.getDate();
+							// }
+					}
+					// ,cols: [[
+					// 	{field: 'member_name', title: '姓名'},
+					// 	{field: '20210923', title: '23'}
+					// ]]
+					,cols: [res.col_arr]
+					,done: function(res, curr, count){
+						console.log(res);
+						showTs(1,'加载成功',500)
+					}
+				});
+			}
+		})
+	}
+		
+</script>

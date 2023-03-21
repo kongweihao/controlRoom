@@ -1,0 +1,68 @@
+<style>
+	#adminHeadImg{
+		display: inline-block;
+		margin-left: 15px;
+	}
+	#adminHeadImg>img{
+		height: 40px;
+	}
+</style>
+<div class="layui-body" style="left:200px;">
+	<div class="layui-tab-content">
+		<!-- 目前仅用于密码修改——没必要做的太复杂 -->
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>密码修改</legend>
+		</fieldset>
+		<form class="layui-form" action="{:url('@system/personalInformation')}" enctype="multipart/form-data" method="post">
+			<div class="container">
+				<input type="text" name="editPassword" value="1" hidden class="layui-input">
+				<div class="layui-form-mid layui-word-aux">原密码</div>
+				<div class="layui-input-inline">
+					<!-- autocomplete="new-password" 阻止浏览器自动填充密码 -->
+					<input type="password" lay-verify="required" name="admin_password_old" value="" autocomplete="new-password" placeholder="" class="layui-input">
+				</div>
+			</div>
+			<div class="container">
+				<input type="text" name="editPassword" value="1" hidden class="layui-input">
+				<div class="layui-form-mid layui-word-aux">新密码</div>
+				<div class="layui-input-inline">
+					<!-- autocomplete="new-password" 阻止浏览器自动填充密码 -->
+					<input type="password" lay-verify="required" name="admin_password" value="" autocomplete="new-password" placeholder="" class="layui-input">
+				</div>
+			</div>
+			<div class="container">
+				<div class="layui-form-mid layui-word-aux">确认密<br>码</div>
+				<div class="layui-input-inline">
+					<input type="password" lay-verify="required|confirmPass" value="" placeholder="" class="layui-input" autocomplete="off">
+				</div>
+			</div>
+			<div class="container" pane="">
+				<div class="layui-input-inline" style="width:50%">
+					<button class="layui-btn" lay-submit="" lay-filter="demo" style="width:88px">立即提交</button>
+				</div>
+				<div class="layui-form-mid layui-word-aux" style="width:38px"></div>
+			</div>
+		</form>
+	</div>
+</div>
+<style>
+	.layui-input-inline{
+		width:90%;
+		margin:10px;
+	}
+	.layui-form-mid layui-word-aux{
+
+	}
+</style>
+<script>
+	layui.use(['table','form','laypage'], function(){
+		let form = layui.form;
+		form.verify({
+			confirmPass:function(value){
+				if($('input[name=admin_password]').val() !== value)
+					return '两次密码输入不一致！';
+			}
+		});
+	})
+
+</script>

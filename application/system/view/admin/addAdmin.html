@@ -1,0 +1,164 @@
+<style>
+	#adminHeadImg{
+		display: inline-block;
+		margin-left: 15px;
+	}
+	#adminHeadImg>img{
+		height: 40px;
+	}
+</style>
+<div class="layui-body" style="left:200px;">
+	<div class="layui-tab-content">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>添加管理员</legend>
+		</fieldset>
+		<form class="layui-form" action="{:url('@system/addAdmin')}" method="post">
+			<div class="container">
+				<div class="layui-form-mid layui-word-aux star">必填</div>
+
+				<!--<label class="layui-form-label">帐号</label>-->
+				<div class="layui-input-inline">
+					<input type="text" name="admin_account" value="{$data.admin_account}" placeholder="管理员帐号" class="layui-input" required="required" maxlength="30">
+				</div>
+			</div>
+			<div class="container">
+				<div class="layui-input-inline" style="padding-top: 8px">
+					<div class="layui-form-mid layui-word-aux" style="width:38px">角色</div>
+					<div class="layui-input-inline" style="width:50%">
+						{volist name="roleList" id="vo"}
+						{in name="$vo.id" value="$data.role_ids"}
+						<input type="checkbox" name="role_ids[]" value="{$vo.id}" lay-skin="primary" title="{$vo.role_name}" checked="checked">
+						{else/}
+						<input type="checkbox" name="role_ids[]" value="{$vo.id}" lay-skin="primary" title="{$vo.role_name}">
+						{/in}
+						{/volist}
+					</div>
+				</div>
+			</div>
+			<div class="container">
+				<div class="layui-form-mid layui-word-aux star">必填</div>
+
+				<!--<label class="layui-form-label">密码</label>-->
+				<div class="layui-input-inline">
+					<input type="password" name="admin_password" value="{$data.admin_password}" placeholder="请输入密码" class="layui-input" autocomplete="new-password" required="required">
+				</div>
+			</div>
+			<div class="container">
+				<div class="layui-form-mid layui-word-aux star">必填</div>
+
+				<!--<label class="layui-form-label">确认密码</label>-->
+				<div class="layui-input-inline">
+					<input type="password" name="admin_confirm_password" value="{$data.admin_password}" placeholder="请输入确认密码" class="layui-input" autocomplete="off" required="required">
+				</div>
+			</div>
+			<div class="container">
+				<div class="layui-input-inline">
+
+					<div class="layui-form-mid layui-word-aux" style="width:38px">状态</div>
+					<div class="layui-input-inline" style="width:50%">
+						{if condition="$data.status == 1 || $data.status ==null"}
+						<input type="checkbox" name="status" value="1" lay-skin="switch" lay-filter="status" lay-text="正常|禁用" checked>
+						{else/}
+						<input type="checkbox" name="status" value="1" lay-skin="switch" lay-filter="status" lay-text="正常|禁用">
+						{/if}
+					</div>
+				</div>
+			</div>
+
+			<div class="container">
+				<!--<label class="layui-form-label">姓名</label>-->
+				<div class="layui-input-inline">
+					<input type="text" name="admin_fullname" value="{$data.admin_fullname}" placeholder="管理员姓名" class="layui-input" maxlength="30">
+				</div>
+				<div class="layui-form-mid layui-word-aux" style="width:38px"></div>
+
+			</div>
+			<div class="container">
+				<!--<label class="layui-form-label">手机号码</label>-->
+				<div class="layui-input-inline">
+					<input type="text" name="admin_phone" value="{$data.admin_phone}" placeholder="管理员手机号码" class="layui-input" maxlength="11">
+				</div>
+				<div class="layui-form-mid layui-word-aux" style="width:38px"></div>
+
+			</div>
+<!-- 
+			<div class="container" pane="">
+				<div class="layui-form-mid layui-word-aux" style="width:38px">头像</div>
+
+				<div class="layui-input-inline" style="width:50%">
+					<input type="hidden" name="admin_head" value="{$data.admin_head}" />
+					<label for="upload_admin_head" class="myUploadBtn">上传头像</label>
+					<input type="file" name="upload_admin_head" id="upload_admin_head" class="layui-upload-file">
+					<div id="adminHeadImg">
+						{notempty name="$data.admin_head"}
+						<img src="{$data.admin_head}" alt="" />
+						{/notempty}
+					</div>
+				</div>
+
+			</div> -->
+			<div class="container">
+				<div class="layui-form-mid layui-word-aux" style="width: 40px;">关联监控人员</div>
+
+				<!--<label class="layui-form-label">帐号</label>-->
+				<div class="layui-input-inline">
+					<select name="member_id" id="">
+						<option value="">请选择要管理的监控人员，非必选</option>
+						{volist name="monitorList" id="vo"}
+						<option value="{$vo.id}">{$vo.name}</option>
+						{/volist}
+					</select>
+
+				</div>
+			</div>
+			<div class="container" pane="">
+				<div class="layui-input-inline" style="width:50%">
+					<button class="layui-btn" lay-submit="" lay-filter="demo1" style="width:88px">立即提交</button>
+				</div>
+				<div class="layui-form-mid layui-word-aux" style="width:38px"></div>
+			</div>
+		</form>
+	</div>
+</div>
+<style>
+	.layui-input-inline{
+		width:90%;
+		margin:10px;
+	}
+	.layui-form-mid layui-word-aux{
+
+	}
+</style>
+<script>
+	console.log('{$monitorList}')
+	layui.use(['upload','form'], function(){
+		var upload = layui.upload;
+		
+		//上传管理员头像
+		upload.render({
+			elem: '#upload_admin_head',
+			url: "{:url('@system/uploadAdminHead')}",
+			done: function(data, index, upload){ //上传后的回调
+				if(data.isok==true){
+					$("#adminHeadImg").html('<img src="'+data.imgPath+'" />');
+					$("[name=admin_head]").val(data.imgPath);
+				}else if(data.isok==false){
+					showTs(0,data.msg,3000);
+				}else{
+					showTs(0,'网络异常，请稍候再试',3000);
+				}
+			} 
+		});		
+	});
+//	$(document).ready(function () {
+//        function panduan() {
+//            var isMobile = /Mobile/i.test(navigator.userAgent);
+//            if(isMobile){
+//                var w = $(window).width()*0.9;
+//				$('.layui-form .layui-form-item').css({'width':w+'!important'})
+//            }else {
+//
+//            }
+//        }
+//    })
+</script>

@@ -1,0 +1,207 @@
+<div class="layui-body" style="padding: 15px;">
+	<!-- <blockquote class="layui-elem-quote layui-wran-color" style="margin-bottom: 20px;">xxx</blockquote> -->
+	<blockquote class="layui-elem-quote" style="margin-bottom: 20px;">
+		<p>— 支持模糊搜索</p>
+		<p>— 默认显示最近一个月的换班记录</p>
+		<p>— 除了【换班时间】与【岗位】之外，其他均为模糊搜索</p>
+	</blockquote>
+	<!-- 搜索 -->
+	<div class="layui-collapse" >
+		<div class="layui-colla-item">
+		  <h2 class="layui-colla-title">搜索面板</h2>
+		  <div class="layui-colla-content">
+			<form class="layui-form" style="margin-top: 60px;">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label" style="width: 90px;">换班时间</label>
+						<div class="layui-inline" style="width: 300px;">
+							<input type="text" name="create_time_range" class="layui-input" id="create_time_range_id" placeholder=" - ">
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label" style="width: 90px;">班表日期</label>
+						<div class="layui-inline">
+							<input type="text" name="time_stamp_range" class="layui-input" id="time_stamp_range_id" placeholder=" - ">
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label" style="width: 90px;">操作人</label>
+						<div class="layui-inline">
+							<input type="text" name="operation_guy" class="layui-input" >
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label" style="width: 90px;">接班人</label>
+						<div class="layui-inline">
+							<input type="text" name="replacement" class="layui-input" >
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label" style="width: 90px;">原班人</label>
+						<div class="layui-inline">
+							<input type="text" name="guy_be_replaced" class="layui-input" >
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label" style="width: 90px;">操作账号</label>
+						<div class="layui-inline">
+							<input type="text" name="operation_account" class="layui-input" >
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label" style="width: 90px;">操作设备</label>
+						<div class="layui-inline">
+							<input type="text" name="equipment" class="layui-input" >
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label" style="width: 90px;">选择岗位</label>
+						<div class="layui-inline" style="width: 182px;">
+							<select name="monitor_post_name" lay-filter="monitorPostList_search" >
+								<option value="" selected>-- 全部岗位 --</option>
+								{volist name="monitorPostList" id="vo"}
+								<option value="{$vo.post_name}">{$vo.post_name}</option>
+								{/volist}
+							</select>
+						</div>
+					</div>
+					<div class="layui-input-block" style="margin: 10px 0 0; text-align: center;">
+						<div class="layui-inline searchBtn" style="width: 130px;">
+							<button class="layui-btn" lay-submit lay-filter="searchShiftRecord">查询</button>
+						</div>
+					</div>
+				</div>
+			</form>
+		  </div>
+		</div>
+	</div>
+	<table id="shiftRecordTable" lay-filter="shiftRecordList_table"  style="clear: both;"></table>
+</div>
+<script>	
+	let rotaDataSearchform;//将form表单提取到公共环境
+	layui.use(['table', 'laydate'], function(){
+		let table = layui.table
+		,form = layui.form
+		,laydate = layui.laydate;
+		rotaDataSearchform = form;
+		let now = new Date();
+		let nowY = now.getFullYear()
+		let nowM = now.getMonth() + 1
+		let nowD = now.getDate() + 1
+		
+		let lastY = nowY
+		let lastM = now.getMonth() 
+		let lastD = nowD; 
+		let lastDMAX= new Date(lastY,lastM,0).getDate()//获取上个月最后一天
+		lastM == 0 ? (--lastY && (lastM = 12)) : lastM
+		lastD > lastDMAX ? lastDMAX : lastD;//如果lastD的值超过上个月最后一天的，那么就取上个月最后一天即可
+		// console.log(lastDay)
+		let create_time_range_str = lastY+'-'+lastM+'-'+lastD+' 00:00:00 ~ '+nowY+'-'+nowM+'-'+nowD+' 00:00:00'
+		// 加载table
+		let params =  { 
+				getList: 1
+				,create_time_range: create_time_range_str.split(' ~ ')
+			}
+		getListTableRender(table, params)
+		
+		//监听头工具栏事件
+		table.on('toolbar(shiftRecordList_table)', function(obj){
+			let checkStatus = table.checkStatus(obj.config.id)
+			,data = checkStatus.data; //获取选中的数据
+			switch(obj.event){
+			case 'add':
+				layer.msg('批量添加功能暂不开放~')
+			break;
+			case 'update':
+				layer.msg('批量修改功能暂不开放~')
+			break;
+			case 'delete':
+				layer.msg('批量删除功能暂不开放~')
+			break;
+			};
+		});
+		 //日期时间范围
+		 laydate.render({
+			elem: '#create_time_range_id'
+			,type: 'datetime'
+			,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+			,value: create_time_range_str
+			,range: '~'
+		});
+		 laydate.render({
+			elem: '#time_stamp_range_id'
+			,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+			,format:'yyyyMMdd'
+			,range: '~'
+		});
+		// 提交搜索条件
+		form.on('submit(searchShiftRecord)', function(data){
+			// 开始时间大于结束时间时
+			data.field['getList'] = 1;
+			data.field['create_time_range'] = data.field['create_time_range'].split(' ~ ')
+			data.field['time_stamp_range'] = data.field['time_stamp_range'].split(' ~ ')
+			// console.log(data.field['time_stamp_range'])
+			getListTableRender(table, data.field)
+			// console.log(data.elem) //被执行事件的元素DOM对象，一般为button对象
+			// console.log(data.form) //被执行提交的form对象，一般在存在form标签时才会返回
+			// console.log(data.field) //当前容器的全部表单字段，名值对形式：{name: value}
+			return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+		});
+	});
+		
+	function getListTableRender(table, params){
+		table.render({
+			elem: '#shiftRecordTable'
+			,height: 500
+			,url: 'shiftRecordList' //数据接口
+			,initSort:{field:'create_time', type:'desc'}
+			// ,limit: 1000//每页显示的条数（默认：10）。值务必对应 limits 参数的选项。注意：优先级低于 page 参数中的 limit 参数
+			,where: params//接口的其他参数
+			// ,method: 'post' // 默认get
+			,page: true //开启分页
+			,defaultToolbar: ['add', 'filter', 'exports', 'print']
+			,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+    		,totalRow: true //开启合计行
+			,request: {
+				// pageName: 'page' //页码的参数名称，默认：page
+				// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+			}
+			,response: {
+				// statusName: 'code' //规定数据状态的字段名称，默认：code
+				// ,statusCode: 1 //规定成功的状态码，默认：0
+				// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+				// countName: 'total' //规定数据总数的字段名称，默认：count
+				// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+			}
+			// layuitable 表格中时间导出excel是科学计数法
+			// 因为，从数据库中查的时间数据是时间戳，所以，在excel中时间表示为科学计数法。
+
+			// 用模板引擎来格式化时间，只是格式table中的数据，而源数据并没有改变。
+
+			// 通过parseData将传过来的源数据格式为想要的格式，导出时就不会显示科学计数法了。
+			,parseData:function(res){
+					// let data = res.data;
+					// for(index in data){
+					// let date = data[index].create_time;
+					// let time = new Date(date);
+					// data[index].create_time= time.getFullYear() + "-" + (time.getMonth() + 1) + "-" + time.getDate();
+					// }
+			}
+			,cols: [[//表头
+			// 格子没对齐，找了半天原因发现是在table.render中的cols参数多了一个"," 不细心一点真看不出来，第一行开头不能多一个','
+			// {field:'sr_id', title: 'ID', sort:true, fixed:'left', minWidth:'100'},
+			{field:'operation_guy', title: '操作人',sort:true, minWidth:'100'}
+			,{field:'create_time', title: '换班时间',sort:true, minWidth:'180'}
+			,{field:'rota_time_stamp', title: '班表日期',sort:true, minWidth:'130'} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+			,{field:'monitor_post_name', title: '接替岗位',sort:true, minWidth:'150'}
+			,{field:'guy_be_replaced', title: '原班人',sort:true, minWidth:'130'}
+			,{field:'replacement', title: '接班人',sort:true, minWidth:'150'}
+			,{field:'equipment', title: '操作设备',sort:true, minWidth:'130'}
+			,{field:'operation_account', title: '操作账号',sort:true, minWidth:'150'}
+			]]
+			,done: function(res, curr, count){
+				showTs(1,'加载成功',500)
+			}
+		});}
+		
+</script>

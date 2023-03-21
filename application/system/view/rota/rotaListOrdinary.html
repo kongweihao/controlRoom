@@ -1,0 +1,303 @@
+<div id="app" class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px">
+		<p>- 星号代表该班次含换班记录</p>
+	</blockquote>
+	<div style="text-align: center;">
+		<form id="form" class="layui-form layui-input-inline" action="{:url('@system/rotaList')}" method="post">
+			<div class="layui-inline" style="margin-left: 15px;" >
+				<el-date-picker
+				v-model="time_stamp"
+				type="month"
+				value-format="yyyyMM"
+				@change="handleChangeMonth"
+				placeholder="选择月">
+				</el-date-picker>
+			</div>
+			<br>
+			<el-button type="primary" @click="handleReduceMonth" style="margin: 15px 15px 0 15px;" >上一月</el-button>
+			<el-button type="primary" @click="handleAddMonth">下一月</el-button>
+		</form>
+	</div>
+	<!-- 值班表 -->
+	<div style="padding:15px">
+		<table id="rotaListTable" lay-filter="rotaList_table"></table>
+		<!-- 表格工具栏模板： -->
+		<script type="text/html" id="toolbarDemo">
+		<div class="layui-btn-container">
+			<button id="showAllData" class="layui-btn layui-btn-sm" lay-event="showAll">{{isMobile() ? '完整' : '显示完整班表'}}</button>
+			<button id="showPersonData" class="layui-btn layui-btn-sm" lay-event="showPersonData">{{isMobile() ? '我的' : '仅显示我的岗位列表'}}</button>
+			<button class="layui-btn layui-btn-sm" lay-event="update">换班</button>
+		</div>
+		</script>
+	</div>
+	<div style="text-align: center;">
+		<form id="form" class="layui-form layui-input-inline" action="{:url('@system/rotaList')}" method="post">
+			<el-button v-loading="isExportLoading" @click="handleDownload(cols_data,cols_monitorPostList,true)">导出班表</el-button>
+			<el-button v-loading="isExportLoading" @click="handleDownload(cols_data,cols_monitorPostList,false)">导出班表（带换班记录）</el-button>
+		</form>
+	</div>
+</div>
+<script>
+	const app = new Vue({
+		el: '#app',
+		data() {
+			return {
+				time_stamp: "{$time_stamp}",
+				isExportLoading: false,
+				cols_monitorPostList: [], //值班表表头数据，从下面layUI模板中获取
+				cols_data: [], //值班表表身数据，从下面layUI模板中获取
+			}
+		},
+		methods: {
+			// 导出班表
+			handleDownload(data, th, is_hide_shift_change){	
+				console.log(data, th, is_hide_shift_change)
+				/* 通用导出数据  需要引入 xlsx.core.js
+				* data：数据
+				*  格式：[
+						{
+							title1:'',
+							title2:'',
+							title3:'',
+							title4:'',
+							title5:'',
+							title6:'',
+						},
+						{
+							title1:'',
+							title2:'',
+							title3:'',
+							title4:'',
+							title5:'',
+							title6:'',
+						},
+					]
+				* th：表头
+				* 	格式： ["title1", "title2","title3","title4","title5","title6"]
+				* is_show_shift_change: 导出是否显示换班记录 布尔值
+				* filename：导出表格名称
+				*/
+				const _this = this
+				this.isExportLoading = true
+				// 浏览器导出需要几秒钟，这里设置三秒内禁止重复导出，下面其他代码都瞬间执行无法设置loading
+				setInterval(function(){
+					_this.isExportLoading = false
+				}, 3000)
+				let filename = this.time_stamp+"班表";
+			　　exportData(data, th, filename);
+				function exportData(data, th, filename) {
+					let deferred = $.Deferred();
+					data = data || [];
+					th = th || [];
+					if (data.length === 0 || th.length === 0) {
+			　　　　　　　console.log("缺少数据");
+						deferred.reject();
+						return;
+					}
+					filename = filename || '数据导出';
+					filename += '.xlsx';
+					let loadedData = [];
+					let i = 0;
+					loadedData.push(th);
+					for (i = 0; i < data.length; ++i) {
+						let item = data[i];
+						let obj = [];
+						for(let j = 0; j < th.length; j++) {
+							let str = item[th[j]]
+							// is_hide_shift_change 是否隐藏换班记录
+							if(is_hide_shift_change && str.indexOf('<') != -1) {
+								str = str.slice(0,str.indexOf('<'));
+							}
+							obj.push(str)
+						}
+						loadedData.push(obj);
+					}
+					initFile();
+
+					function initFile() {
+						let wb = XLSX.utils.book_new(),
+							ws = XLSX.utils.aoa_to_sheet(loadedData);
+						XLSX.utils.book_append_sheet(wb, ws, "sheet1");
+						XLSX.writeFile(wb, filename, {
+							compression: true
+						});
+						deferred.resolve();
+
+					}
+					return deferred.promise();
+				}
+
+			},
+			// 上一月
+			handleReduceMonth(){
+				let y = Number(this.time_stamp.substring(0,4))
+				let m = Number(this.time_stamp.substring(4,7))
+				if(--m == 0) {
+					m = 12
+					y--
+				}
+				if(m < 10){
+					m = '0'+m
+				}else {
+					m = String(m)
+				}
+				this.time_stamp = y+m
+				this.handleChangeMonth()
+			},
+			// 下一月
+			handleAddMonth(){
+				let y = Number(this.time_stamp.substring(0,4))
+				let m = Number(this.time_stamp.substring(4,7))
+				if(++m == 13) {
+					m = 1
+					y++
+				}
+				if(m < 10){
+					m = '0'+m
+				}else {
+					m = String(m)
+				}
+				this.time_stamp = y+m
+				this.handleChangeMonth()
+			},
+			// 加载选中月
+			handleChangeMonth(){
+				if(this.time_stamp  == ''){
+					return
+				}
+				location.href = "{:url('@system/rotaListOrdinary')}?time_stamp=" + this.time_stamp;
+			},
+			// 判断是否移动端
+			isMobile(){
+				let userAgentInfo = navigator.userAgent;
+				let Agents = ['Android','iPhone','SymbianOS','Windows Phone']
+				let getArr = Agents.filter(i => userAgentInfo.includes(i))
+				return getArr.length ? true : false
+			}
+		}
+	})
+	layui.use(['table','laydate'], function(){
+		let time_stamp = "{$time_stamp}";
+		// 模板表头
+		app.cols_monitorPostList = ['日期'];
+		"{for start='0' end='$monitorPostList_len'}"
+		app.cols_monitorPostList.push("{$monitorPostList[$i]['post_name']}")
+		"{/for}"
+		// 值班表表头
+		let cols_rotaList = [{field:'time_stamp',title: '日期', fixed: 'left', width:100}];
+		cols_rotaList.push({
+			field: "week",
+			title: "星期",
+			width:100,
+		})
+		let cols_style = '';
+		"{for start='0' end='$thisMon_monitorPost_len'}"
+		if("{$thisMon_monitorPost[$i]['is_night']}" == 1){
+			if("{$thisMon_monitorPost[$i]['is_day']}" == 0){
+				cols_style = 'background-color: #eee';
+			}else{
+				cols_style = 'background-color: #ccc';
+			}
+		}
+		cols_rotaList.push({
+			field: "{$thisMon_monitorPost[$i]['monitor_post_name']}",
+			title: "{$thisMon_monitorPost[$i]['monitor_post_name']}",
+			width:120,
+			hide: "{$thisMon_monitorPost[$i]['hide']}",
+			style:cols_style
+		})
+		cols_style = ''
+		"{/for}"
+		let table = layui.table
+		,form = layui.form;
+
+		let options = {
+			elem: '#rotaListTable'
+			,toolbar: '#toolbarDemo' // 表格工具栏目标
+			,height: 500
+			,url: 'rotaListOrdinary' //数据接口
+			,where: { 
+				rotaList: 1
+				,time_stamp: time_stamp
+			}//接口的其他参数
+			// ,method: 'post' // 默认get
+			,page: false //开启分页
+			// ,defaultToolbar: ['add', 'filter', 'print']
+			// ,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+			// ,totalRow: true //开启合计行
+			,request: {
+				// pageName: 'page' //页码的参数名称，默认：page
+				// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+			}
+			,response: {
+				// statusName: 'code' //规定数据状态的字段名称，默认：code
+				// ,statusCode: 1 //规定成功的状态码，默认：0
+				// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+				// countName: 'total' //规定数据总数的字段名称，默认：count
+				// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+			}
+			,parseData: function(res){ //res 即为原始返回的数据
+				// 为了导出班表
+				app.cols_data = res.data
+				for(let i = 0; i < app.cols_data.length; i++) {
+					app.cols_data[i]['星期'] = app.cols_data[i].week
+					app.cols_data[i]['日期'] = app.cols_data[i].time_stamp
+				}
+				// console.log(res)
+			}
+			,cols: [cols_rotaList]
+			,done: function(res, curr, count){
+				showTs(1,'加载成功',500)
+			}
+		}
+		// 开始渲染表格
+		table.render(options);
+
+		//监听头工具栏事件
+		table.on('toolbar(rotaList_table)', function(obj){
+			let checkStatus = table.checkStatus(obj.config.id)
+			,data = checkStatus.data; //获取选中的数据
+			switch(obj.event){
+			case 'update':
+				let form = $("<form>");   //定义一个form表单 
+			    form.attr('method','post');  
+			    form.attr('action','editRotaOrdinary');  
+				let input1 = $("<input>")
+				input1.attr({'name': 'time_stamp', value: '{$time_stamp}'});
+				let input2 = $("<input>")
+				input2.attr({'name': 'adminId', value: '{$adminInfo.id}'});
+				$(form).append(input1, input2);
+			    $('body').append(form);  //将表单放置在web中  
+			    form.submit();  //表单提交  
+				// window.location = 'editRotaOrdinary?time_stamp={$time_stamp}'
+				// console.log("{$time_stamp}")
+				// layer.msg('批量修改功能暂不开放~')
+				break;
+			case 'showAll':
+				for (let i = 0; i < cols_rotaList.length; i++) {
+					cols_rotaList[i].hide = false
+				}
+				options.cols = [cols_rotaList]
+				table.reload('rotaListTable', options, false)
+				break;
+			case 'showPersonData': 
+				location.reload()
+				break;
+			};
+		});
+
+		// 鼠标悬停提示
+		let tips;
+		$('#showPersonData').on({
+			mouseenter:function(){
+				tips =layer.tips('非值班同事默认显示完整班表', '#showPersonData',{tips: 1})
+				// tips的配置型，即位置[1上；2右；3下；4左, 字体颜色]
+			},
+			mouseleave:function(){
+				layer.close(tips);
+			}
+		});
+		// 默认打开全部班表
+		$('#showAllData').click()
+	});
+</script>

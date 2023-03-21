@@ -1,0 +1,334 @@
+<div class="layui-body">
+	<blockquote class="layui-elem-quote layui-wran-color" style="margin: 15px;">
+		<p>- 选择好要修改的岗位后，点击提交按钮统一提交，提交过后无法撤销请谨慎操作</p>
+	</blockquote>
+	<form id="form" class="layui-form layui-input-inline" style="width: 100%;" action="{:url('@system/editRotaOrdinary')}" method="post">
+		<div style="padding: 10px;width: 100%;">
+			<div class="layui-inline" style="padding-left: 30px;">
+				<span>选择日期</span>
+			</div>
+			<div class="layui-inline" style="padding-left: 30px;">
+				<input type="text" class="layui-input" id="rotaList_timestamp">
+			</div>
+			<div class="layui-inline" style="float: right;">
+				<div class="layui-btn shift_rota_submit">提交</div>
+			</div>
+		</div>
+	</form>
+	<!-- 值班表 -->
+	<div style="padding:15px">
+		<table id="rotaListTable"></table>
+	</div>
+	<blockquote class="layui-elem-quote" style="margin:15px">
+		<p>- 不可修改历史班表数据</p>
+		<p>- 每位值班同事只能修改自己对应岗位的班表信息</p>
+		<p>- 暂不支持夜白连上</p>
+		<p>- <span class="layui-btn layui-btn-primary">白班</span>
+			<span class="layui-btn layui-btn-primary" style="background-color:#eee;">夜班</span>
+			<span class="layui-btn layui-btn-primary" style="background-color:#ccc;">24h</span>
+		</p>
+		<p>- <span class="layui-btn layui-btn-primary" style="background-color:#71cdff;color:white;border:none">冻结</span>
+			（重要保障时期上报值班表后，对应班次将被管理员冻结。）</p>
+	</blockquote>
+</div>
+<!--  优化table 中的select样式 -->
+<style>
+	.layui-table .layui-form-select input{
+		height: 36px;
+		border: none;
+	}
+	/* 使下拉框只能向下弹出 */
+	.layui-table .layui-form-selectup dl {
+		top: 42px;
+		bottom: unset;
+	}
+</style>
+<!-- 加载各个岗位人员下拉列表 -->
+<!-- for 循环有问题，因此采用volist -->
+{volist name="thisMon_monitorPost" id="vo" empty="暂时没有数据" }
+<script type="text/html" id="selectTxt{$vo['monitor_post_name']}">
+	<!-- let ziduan = {$vo['monitorPost_type']}; -->
+	<div class="layui-form-item">
+		<div class="layui-input">
+			{{#  if(d.{$vo['monitor_post_name']}.is_frozen === 1){ }}
+				<!-- is_frozen：冻结 -->
+				<span style="background-color: #71cdff;display: inline-block;width:100%;height:100%;line-height:36px;color:white">{{d.{$vo['monitor_post_name']}.name || '无'}}</span>
+			{{#  } }} 
+			{{#  if(d.{$vo['monitor_post_name']}.is_frozen === 0){ }}
+				<!-- 仅当 d.is_active == 1 && d.{$vo['post_name'].is_active == 1 为真时，则表示该选择框可以操作-->
+				<!-- is_frozen：是否冻结  is_active：是否禁用-->
+				<select lay-verify="required" lay-filter="select_gay" postName="{$vo['monitor_post_name']}" 
+				timeStamp="{{d.time_stamp}}" oldGuy="{{d.{$vo['monitor_post_name']}.name}}" 
+				{{ d.is_active == 1 && d.{$vo['monitor_post_name']}.is_active == 1 ? '' : 'disabled' }}>
+				<!-- -1表示原始值 -->
+					<option value="-1" selected>{{d.{$vo['monitor_post_name']}.name || '无'}}</option>
+					<option value="{$adminMember.name}">{$adminMember.name}</option>
+				</select>
+			{{#  } }} 
+	 	</div>
+	</div>
+</script>
+{/volist}
+<script>
+	// 保存换班全局数据
+	layui.use(['table','laydate'], function(){
+		let time_stamp = "{$time_stamp}";
+		
+		// 值班表表头
+		let cols_rotaList = [{field: 'time_stamp',title: '日期', fixed: 'left', width: 100}];
+		cols_rotaList.push({
+			field: "week",
+			title: "星期",
+			width: 100,
+		})
+		let i = 0;
+		let cols_style = '';
+		// 只需给夜班上表格背景色
+		"{for start='0' end='$thisMon_monitorPost_len'}"
+		if("{$thisMon_monitorPost[$i]['is_night']}" == 1){
+			if("{$thisMon_monitorPost[$i]['is_day']}" == 0){
+				cols_style = 'background-color: #eee';
+			} else {
+				cols_style = 'background-color: #ccc';
+			}
+			// console.log("{$thisMon_monitorPost[$i]['is_frozen']}");
+			// if( "{$thisMon_monitorPost[$i]['is_frozen']}"== 1){
+			// 	cols_style = 'background-color: red';
+			// } 
+		}
+		cols_rotaList.push({
+			field: "{$thisMon_monitorPost[$i]['monitor_post_name']}",
+			title: "{$thisMon_monitorPost[$i]['monitor_post_name']}",
+			width: 200, 
+			align: 'center',
+			templet: "#selectTxt{$thisMon_monitorPost[$i]['monitor_post_name']}",
+			hide: "{$thisMon_monitorPost[$i]['hide']}",
+			style: cols_style
+		})
+		// console.log("{$thisMon_monitorPost[$i]['monitorPost_type']}")
+		cols_style = ''
+		"{/for}"
+		let table = layui.table
+		,form = layui.form;
+		table.render({
+			elem: '#rotaListTable'
+			,height: 400
+			,url: 'editRotaOrdinary' //数据接口
+			,size: 'lg'
+			,where: { 
+				rotaList: 1
+				,time_stamp: time_stamp
+				,adminId: "{$adminInfo.id}"
+			}//接口的其他参数
+			// ,method: 'post' // 默认get
+			,page: false //开启分页
+			// ,defaultToolbar: ['add', 'filter', 'exports', 'print']
+			// ,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+			// ,totalRow: true //开启合计行
+			,request: {
+				// pageName: 'page' //页码的参数名称，默认：page
+				// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+			}
+			,response: {
+				// statusName: 'code' //规定数据状态的字段名称，默认：code
+				// ,statusCode: 1 //规定成功的状态码，默认：0
+				// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+				// countName: 'total' //规定数据总数的字段名称，默认：count
+				// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+			}
+			,parseData: function(res){ //res 即为原始返回的数据
+				console.log(res)
+			}
+			,cols: [cols_rotaList]
+			,done: function(res, curr, count){
+				//由于layui 设置了超出隐藏，所以这里改变下，以兼容操作按钮的下拉菜单
+				//把这句加上，就可以显示了
+				$(".layui-table-cell").css('overflow', 'visible'); 
+
+				// form.render() // 再次渲染表格
+				showTs(1,'加载成功',500)
+			}
+		});
+
+		// 当前班表所属时间戳
+		//按月搜索值班表功
+		let laydate = layui.laydate;
+		let dateInit = "{$time_stamp}";
+		//执行一个laydate实例
+		laydate.render({
+			elem: '#rotaList_timestamp' //指定元素
+			,value: dateInit
+			,format:'yyyyMM'
+			,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+			,type: 'month'
+			,done: function(value, date, endDate){
+				if(value == ''){
+					return
+				}
+				let y = date.year;
+				let m = date.month;
+				m = m > 9 ? m : '0' + m;
+				time_stamp = y.toString() + m.toString();
+				location.href = "{:url('@system/editRotaOrdinary')}?adminId={$adminInfo.id}&time_stamp=" + time_stamp ;
+			}
+		});
+	
+		//监听下拉选择框 
+		form.on('select(select_gay)', function(data){
+			if(data.value == -1 || data.elem.attributes.oldguy.value == data.value){
+				// -1表示没有改变
+				$(data.othis[0].parentNode).attr('shifRotaSelectedCell', '')
+				data.othis[0].parentNode.style.backgroundColor = ''
+				return
+			}
+
+			// 给修改的select附上一个自定义属性，提交的时候，统一识别该属性是否存在即可判断，用户修改的是那些内容
+			$(data.othis[0].parentNode).attr('shifRotaSelectedCell', 'shifRotaSelectedCell')
+			data.othis[0].parentNode.style.backgroundColor = 'yellow'
+		}); 
+	});
+	$('.shift_rota_submit').click(function(){
+		let shifRotaSelectedCellArr = $("div[shifRotaSelectedCell*='shifRotaSelectedCell']");
+		shifRotaSelectedCellArrLen = $("div[shifRotaSelectedCell*='shifRotaSelectedCell']").length;
+
+		if(shifRotaSelectedCellArrLen == 0){
+			layer.msg('没有修改内容')
+			return
+		}
+		let shift_rota_data =[];
+		let layerOpenContent = ''
+		layerOpenContent += '<div style="padding: 50px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;">亲！确认接替以下岗位吗？<br><br>'
+		for(let i = 0; i< shifRotaSelectedCellArrLen; i++){
+			params = {}
+			params['rota_time_stamp'] = shifRotaSelectedCellArr[i].children[0].attributes.timestamp.value//时间戳
+			params['monitor_post_name'] = shifRotaSelectedCellArr[i].children[0].attributes.postname.value//岗位名
+			params['guy_be_replaced'] = shifRotaSelectedCellArr[i].children[0].attributes.oldguy.value//被替换的人
+			params['replacement'] = shifRotaSelectedCellArr[i].children[0].value//替换者
+			params['operation_account'] = "{$adminInfo.admin_account}"//操作者
+			params['operation_guy'] = "{$adminMemberName}"//操作人，操作账号关联的人员信息
+			params['equipment'] = navigator.platform//用户设备
+			layerOpenContent += (i+1) + '、' + params['rota_time_stamp'] + '：【' + params['monitor_post_name'] + '】  原班表 — ' +  (params['guy_be_replaced'] || '无') + '，接班人 — ' + params['replacement'] + '<br><br>'
+			shift_rota_data.push(params)
+		}
+		
+		layerOpenContent += '确认接替后无法修改请谨慎操作'
+		layer.open({
+			type: 1
+			,title: '换班提示' //不显示标题栏
+			// ,closeBtn: false
+			// ,area: ['600px;','80%']
+			,shade: 0.8
+			,id: 'LAY_updateRota' //设定一个id，防止重复弹出
+			,moveType: 1 //拖拽模式，0或者1
+			,content: layerOpenContent
+			,btn: ['确认', '取消']
+			,btnAlign: 'c'
+			,success: function(layero){
+				var btn = layero.find('.layui-layer-btn');
+				btn.find('.layui-layer-btn0').click(function(){
+					$.ajax({
+						url: 'updateRotaOrdinary'
+						,data: {
+							data: shift_rota_data
+						}
+						,type:'post'
+						,success:function(res){
+							console.log(res);
+							if(res == 0){
+								showTs(0, '历史班表数据无法修改', 2000)
+							}else if(res == -1){
+								showTs(0, '记录换班记录时服务器居然崩溃了，请联系管理员', 2000)
+							}else if(res == -2){
+								showTs(0, '更新班表时服务器居然崩溃了，请联系管理员', 2000)
+							}else if(res.code == 1){
+								let resMes = ''
+								let shiftSuccess = res.msg['shiftSuccess']//换班成功的情况
+								resMes += '<div style="padding: 50px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;">操作成功！下面这几个班被你抢到啦：<br><br>'
+								for(let i = 0; i< shiftSuccess.length; i++){
+									resMes += (i+1) + '、' + shiftSuccess[i]['time_stamp'] + '：【' + shiftSuccess[i]['monitor_post_name'] + '】<br><br>'
+								}
+								// 换班成功
+								layer.open({
+									type: 1
+									,title: '换班成功' 
+									// ,closeBtn: false
+									// ,area: ['600px;','80%']
+									,shade: 0.8
+									,id: 'LAY_shiftAllSuccess' //设定一个id，防止重复弹出
+									,moveType: 1 //拖拽模式，0或者1
+									,content: resMes
+									,btn: ['确认', '取消']
+									,btnAlign: 'c'
+									,success: function(layero){
+										var btn = layero.find('.layui-layer-btn');
+										btn.find('.layui-layer-btn0').click(function(){
+											// 服务优化：返回rotalist页面
+											window.location = 'rotaListOrdinary';
+										})
+									}
+								})
+							}else if(res.code == 2 ){
+								let resMes = ''
+								let shiftSuccess = res.msg['shiftSuccess'] // 换班成功的情况
+								let shiftFailArr = res.msg['shiftFail'] // 换班失败的情况
+								let isNightAndDayArr = res.msg['isNightAndDay'] // 夜白连上的情况
+								console.log(isNightAndDayArr);
+								
+								if (isNightAndDayArr.length) {
+									// 发现夜白连上
+									resMes += '<div style="padding: 50px; line-height: 22px; background-color: #fff; color: red; font-weight: 300;">亲！以下班次存在夜白连上的情况：<br><br>'
+									for(let i = 0; i< isNightAndDayArr.length; i++){
+										resMes += (i+1) + '、' + isNightAndDayArr[i]['time_stamp'] + '：【' + isNightAndDayArr[i]['monitor_post_name'] + '】与昨晚夜班<br><br>'
+									}
+									resMes += '</div>'
+								}
+								
+								if (shiftFailArr.length) {
+									// 发现冲突
+									resMes += '<div style="padding: 50px; line-height: 22px; background-color: #fff; color: red; font-weight: 300;">亲！在你考虑换班的时候，你选择的这几个班被人趁机抢走了：<br><br>'
+									for(let i = 0; i< shiftFailArr.length; i++){
+										resMes += (i+1) + '、' + shiftFailArr[i]['time_stamp'] + '：【' + shiftFailArr[i]['monitor_post_name'] + '】  刚刚（'+shiftFailArr[i]['update_time']+'）已被【' +  shiftFailArr[i]['nowGuy'] + '】抢走！<br><br>'
+									}
+									if(shiftSuccess.length != 0){
+										resMes += '不过放心，下面的班我已经帮你抢到啦：<br><br>'
+										for(let i = 0; i< shiftSuccess.length; i++){
+											resMes += (i+1) + '、' + shiftSuccess[i]['time_stamp'] + '：【' + shiftSuccess[i]['monitor_post_name'] + '】<br><br>'
+										}
+									}
+									resMes += '如仍要接替该班次，请先沟通联系并刷新页面后再重新修改！</div>'
+								}
+								layer.open({
+									type: 1
+									,title: '存在部分换班失败的情况' //不显示标题栏
+									// ,closeBtn: false
+									// ,area: ['600px;','80%']
+									,shade: 0.8
+									,id: 'LAY_shiftFail' //设定一个id，防止重复弹出
+									,moveType: 1 //拖拽模式，0或者1
+									,content: resMes
+									,btn: ['确认', '取消']
+									,btnAlign: 'c'
+								})
+							} else {
+								layer.open({
+									type: 1
+									,title: '好像有点问题' //不显示标题栏
+									// ,closeBtn: false
+									// ,area: ['600px;','80%']
+									,shade: 0.8
+									,id: 'LAY_other' //设定一个id，防止重复弹出
+									,moveType: 1 //拖拽模式，0或者1
+									,content: res
+									,btn: ['确认', '取消']
+									,btnAlign: 'c'
+								})
+							}
+						}
+					})
+				});
+			}
+		}); 
+		// console.log($("div[shifRotaSelectedCell*='shifRotaSelectedCell']"))
+		// console.log(shift_rota_data)
+	})
+</script>

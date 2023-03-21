@@ -1,0 +1,337 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>年假配额管理</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<!-- 搜索面板 -->
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="账号" prop="admin_account">
+						<el-input
+						v-model="searchForm.admin_account"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="姓名" prop="admin_fullname">
+						<el-input
+						v-model="searchForm.admin_fullname"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+						<el-button @click="isShowSearch = !isShowSearch">收起</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<!-- 库存列表 -->
+			<el-table
+			:data="annualLeaveManagementList"
+			max-height="400"
+			show-summary
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="admin_account"
+				label="账号"
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="alm_num_of_holidays"
+				label="年假配额"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						<el-span class="el-icon-minus" @click="editAnofhNum(scope.row, 'minus')" style="cursor: pointer;"></el-span>
+						<el-input v-model.number="scope.row.alm_num_of_holidays" @change="handleEdit(scope.row, 'alm_num_of_holidays')" style="width:65px;text-align:center;margin: auto 5px"></el-input>
+						<el-span class="el-icon-plus" @click="editAnofhNum(scope.row, 'plus')" style="cursor: pointer;"></el-span>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="alm_num_of_holidays_Available"
+				label="余额"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="admin_fullname"
+				label="姓名"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 500]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script>
+const annualLeaveManagementList = {:json_encode($annualLeaveManagementList)};
+const pagination = {
+				current_page: annualLeaveManagementList.current_page,
+				last_page: annualLeaveManagementList.last_page,
+				per_page: annualLeaveManagementList.per_page,
+				total: annualLeaveManagementList.total
+			};
+let app = new Vue({
+	el: '#app',
+	data() {
+		let checkImNum = (rule, value, callback) => {
+			if (value < 0) {
+				callback(new Error('必须≥0'));
+			} else {
+				callback();
+			}
+		};
+		return {
+			isShowSearch: false, // 打开搜索面板
+			searchForm: {
+				admin_account: '',
+				admin_fullname: '',
+				create_time: [],
+				update_time: []
+			},
+			annualLeaveManagementList: annualLeaveManagementList.data,
+			pagination: pagination,
+			addForm: {
+				admin_account: '',
+				alm_num_of_holidays: '',
+				admin_fullname: '',
+			},
+			addRules: {
+				admin_account: [
+					{ required: true, message: '不能为空', trigger: 'blur' },
+				],
+				alm_num_of_holidays: [
+					{ validator: checkImNum, trigger: 'blur' },
+					{ required: true, message: '不能为空', trigger: 'blur' },
+					{ type: 'number', message: '必须为数字值'}
+				],
+				admin_fullname: [
+					{ required: true, message: '不能为空', trigger: 'blur' },
+				]
+			}
+		}
+	},
+	methods: {
+		search(){
+			const _this = this;
+			$.ajax({
+				url:'annualLeaveManagementList',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					_this.annualLeaveManagementList = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					
+								_this.$message({
+									type: 'error',
+									message: '发生错误，请刷新一下'
+								});
+				}
+			})
+		},
+		resetForm(formName){
+			this.$refs[formName].resetFields();
+			if (formName === 'searchForm') {
+				this.search()
+			}
+		},
+		handleAdd(formName) {
+			const _this = this;
+ 			this.$refs[formName].validate((valid) => {
+				if (valid) {
+					$.ajax({
+						url:'addannualLeaveManagementList',
+						data: _this.addForm,
+						type: 'post',
+						success: function (res) {
+							const code = res.code
+							const msg = res.msg
+							if (code === 0){
+								_this.$message({
+									type: 'info',
+									message: msg
+								});
+							} else if (code > 0){
+								_this.$message({
+									type: 'success',
+									message: msg
+								});
+							} else {
+								_this.$message({
+									type: 'error',
+									message: '操作失败，请刷新重试：' + msg
+								});
+							}
+						},
+						error: function (err) {
+							console.log(err);
+							_this.$message({
+								type: 'error',
+								message: '未知错误，请联系管理员'
+							});
+						}
+					})
+				} else {
+					console.log('error submit!!');
+					return false;
+				}
+			});
+		},
+		handleEdit(row, key){
+			const _this = this;
+			row['key'] = key
+			$.ajax({
+				url: 'editannualLeaveManagementList',
+				type: 'post',
+				data: row,
+				success: function (res) {
+					const code = res.code
+					const msg = res.msg
+					if (code === 0){
+						_this.$message({
+							type: 'info',
+							message: msg
+						});
+					} else if (code > 0){
+						_this.$message({
+							type: 'success',
+							message: msg
+						});
+						row['alm_num_of_holidays_Available'] = res.alm_num_of_holidays_Available
+					} else {
+						_this.$message({
+							type: 'error',
+							message: '操作失败，请刷新重试：' + msg
+						});
+					}
+				},
+				error: function (err) {
+					_this.$message({
+							type: 'error',
+							message: '发生未知错误，请刷新重试'
+						});
+				}
+			})
+		},
+		editAnofhNum(row, type) {
+			const _this = this;
+			row['alm_num_of_holidays'] = parseInt(row['alm_num_of_holidays'])
+			if (type === 'minus') {
+				row['alm_num_of_holidays']--
+			} else if (type === 'plus') {
+				row['alm_num_of_holidays']++
+			} else {
+				
+						_this.$message({
+							type: 'error',
+							message: '出现未知错误，请联系管理员，错误信息：编辑物资数量时发生函数参数错误' 
+						});
+			}
+			_this.handleEdit(row, 'alm_num_of_holidays')
+		},
+		handleDelete(row) {
+			const _this = this;;
+			this.$confirm('此操作将永久删除物资【' + row.admin_account + '】 是否继续?', '提示', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning',
+					center: true
+				}).then(() => {
+					$.ajax({
+						url: 'deleteannualLeaveManagementList',
+						type: 'post',
+						data: {im_id:row.im_id},
+						success: function (res) {
+							const code = res.code
+							const msg = res.msg
+							if (code === 0){
+								_this.$message({
+									type: 'info',
+									message: msg
+								});
+							} else if (code > 0){
+								_this.$message({
+									type: 'success',
+									message: '删除成功!'
+								});
+								location.reload()
+							} else {
+								_this.$message({
+									type: 'error',
+									message: '操作失败，请刷新重试：' + msg
+								});
+							}
+						},
+						error: function (err) {
+							_this.$message({
+							type: 'error',
+							message: '发生未知错误，请刷新重试'
+						});
+						}
+					})
+				}).catch(() => {
+					this.$message({
+						type: 'info',
+						message: '已取消删除'
+					});
+				});
+		},
+		// pagination时
+		handleSizeChange(per_page){
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page){
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		},
+		handleClose(done) {
+			this.$confirm('确认关闭？')
+				.then(_ => {
+					done();
+				})
+          .catch(_ => {});
+      	}
+	}
+})
+</script>

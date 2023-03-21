@@ -1,0 +1,842 @@
+<div class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>- 值班信息设计为三个级别：第一级为分类、第二级为表格、第三级为字段</p>
+		<p>- 这里可以直接修改值班信息的当前结构~</p>
+		<p>- 只能禁用不可删除，删除会影响到历史数据，如有特殊情况，可联系开发者删除</p>
+		<p>- 列表中可以直接进行简单的数据编辑，如果要进行复杂编辑请点击编辑按钮</p>
+		<p>- 大值班总结必须字段（不可修改）：【故障描述】、【开始时间】、【结束时间】、【业务网络】、【故障原因】、【处理进展】</p>
+	</blockquote>
+	<div id="app" style="padding: 15px;" v-show="isAppShow">
+		<el-tabs type="border-card">
+			<el-tab-pane label="值班信息结构管理">
+				<template slot="title">
+					<el-button type="primary">值班信息管理列表</el-button>
+				</template>
+				<el-alert title="【开始时间】、【结束时间】用于定义数据是否待跟进状态，属于重要字段，不可修改" :closable="false" type="warning" style="margin-bottom: 10px;"></el-alert>
+				<template>
+					<el-table
+					:data="tableData"
+					v-loading="tableLoading"
+					v-show="isShowTable"	
+					style="width: 100%;margin-bottom: 20px;"
+					row-key="ctrr_rsrm_id"
+					border
+					lazy
+					size="mini"
+					highlight-current-row="true"
+					:load="loadLevelTwoOrThree"
+					max-height="600"
+					:tree-props="{children: 'children', hasChildren: 'hasChildren'}">
+						<el-table-column
+						fixed
+						prop="ctrr_rsrm_name"
+						label="名称"
+						sortable
+						show-overflow-tooltip
+						header-align="center">
+							<!-- <template slot-scope="scope">
+								<el-tooltip v-show="scope.row.ctrr_rsrm_type == 4" placement="top">
+									<div slot="content">此类型字段不可修改名称</div>
+									<el-input disabled size="small" style="width: 80%;" v-model="scope.row.ctrr_rsrm_name"></el-input> 
+								</el-tooltip>
+								<el-form v-else>
+									<el-form-item
+									prop="ctrr_rsrm_name"
+									:rules="[
+										{ required: true, message: '名称不能为空'},
+									]">
+										<el-input size="small" style="width: 80%;" v-model="scope.row.ctrr_rsrm_name" placeholder="请输入内容" @change="scope.row.ctrr_rsrm_name !== '' && handleEdit(scope.row.ctrr_rsrm_id, {ctrr_rsrm_name: scope.row.ctrr_rsrm_name})"></el-input> 
+									</el-form-item>
+								</el-form>
+							</template> -->
+						</el-table-column>
+						<el-table-column
+						prop="ctrr_rsrm_tips"
+						label="字段tips"
+						sortable
+						align="center">
+						</el-table-column>
+						<el-table-column
+						prop="ctrr_rsrm_level"
+						sortable
+						label="级别"
+						align="center"
+						width="70">
+						</el-table-column>
+						<el-table-column
+						prop="ctrr_rsrm_sort"
+						sortable
+						label="排序"
+						align="center"
+						width="70">
+							<template slot-scope="scope">
+								<el-form>
+									<el-form-item
+									prop="ctrr_rsrm_sort"
+									:rules="[
+										{ required: true, message: 'tips:排序不能为空'},
+									]">
+										<el-input 
+										size="mini" 
+										v-model="scope.row.ctrr_rsrm_sort" 
+										placeholder="请输入内容" 
+										@change="scope.row.ctrr_rsrm_sort !== '' && handleEdit(scope.row.ctrr_rsrm_id, {ctrr_rsrm_sort: scope.row.ctrr_rsrm_sort})"
+										></el-input> 
+									</el-form-item>
+								</el-form>
+							</template>
+						</el-table-column>
+						<el-table-column
+						prop="ctrr_rsrm_type"
+						sortable
+						label="类型"
+						align="center"
+						width="110">
+							<template slot-scope="scope">
+								<el-input v-show="scope.row.ctrr_rsrm_type == 1" disabled size="mini" value='文本类型'></el-input> 
+								<el-switch v-show="scope.row.ctrr_rsrm_type == 2"  size="mini" active-text="" inactive-text="开关" ></el-switch>
+								<el-select  v-show="scope.row.ctrr_rsrm_type == 3" disabled  size="mini" placeholder="下拉框"></el-select>
+								<span v-show="scope.row.ctrr_rsrm_type == 6" class="el-icon-date">&nbsp;&nbsp;&nbsp;时间选择器（单个）</span>
+							</template>
+						</el-table-column>
+						<el-table-column
+						prop="ctrr_rsrm_valueFortype"
+						sortable
+						label="类型值"
+						align="center">
+						</el-table-column>
+						<el-table-column
+						prop="ctrr_rsrm_is_needed"
+						label="是否主键"
+						width="130"
+						align="center">
+							<template slot-scope="scope">
+								<el-span v-if="parseInt(scope.row.ctrr_rsrm_level) !== 3">非字段</el-span>
+								<el-span v-else>{{ scope.row.ctrr_rsrm_is_key ? '是' : '否' }}</el-span>
+							</template>
+						</el-table-column>
+						<el-table-column
+						prop="ctrr_rsrm_valueFortype"
+						sortable
+						label="类型值"
+						align="center">
+						</el-table-column>
+						<el-table-column
+						prop="ctrr_rsrm_is_needed"
+						label="是否必填字段"
+						width="130"
+						align="center">
+							<template slot-scope="scope">
+								<el-switch 
+								v-show="parseInt(scope.row.ctrr_rsrm_level) > 2" 
+								v-model="scope.row.ctrr_rsrm_is_needed" 
+								active-text="是"
+								inactive-text="否" 
+								active-color="#13ce66"
+								inactive-color="#ff4949"
+								:active-value="1"
+								:inactive-value="0"
+								@change="handleEdit(scope.row.ctrr_rsrm_id, {ctrr_rsrm_is_needed: scope.row.ctrr_rsrm_is_needed},scope.row.ctrr_rsrm_is_fixed)">
+								</el-switch>
+								<el-span v-else>非字段</el-span>
+							</template>
+						</el-table-column>
+						<el-table-column
+						prop="ctrr_rsrm_is_active"
+						sortable
+						label="状态"
+						align="center"
+						width="120">
+						<template slot-scope="scope">
+							<!-- active-value和inactive-value的值分别是字符串的1和0,如果你赋值为数字类型的 1 或 0是无法正常工作的，若赋值为数值类型，需这样写： :active-value-->
+							<el-switch 
+							v-model="scope.row.ctrr_rsrm_is_active" 
+							active-text="启"
+							inactive-text="禁" 
+							active-color="#13ce66"
+							inactive-color="#ff4949"
+							:active-value="1"
+							:inactive-value="0"
+							@change="handleEdit(scope.row.ctrr_rsrm_id, {ctrr_rsrm_is_active: scope.row.ctrr_rsrm_is_active},scope.row.ctrr_rsrm_is_fixed)">
+							</el-switch>
+						</template>
+						</el-table-column>
+						<el-table-column
+						fixed="right"
+						label="操作"
+						align="center"
+						width="90">
+						  <template slot-scope="scope">
+							<!-- 编辑弹窗 -->
+							<el-button type="text" size="mini" @click="showEditFrame(scope.$index, scope.row)" slot="reference" style="color: rgb(142, 194, 255);">编辑</el-button>
+							<el-tooltip placement="top">	
+								<div slot="content">【危险操作】仅限开发者</div>
+								<el-button
+								type="text"
+								size="mini"
+								type="danger"
+								@click="handleDelete(scope.$index, scope.row)"
+								style="color: orangered;margin-left: 10px;">删除</el-button>
+							</el-tooltip>
+						  </template>
+						</el-table-column>
+					</el-table>
+				</template>
+				
+				<!-- 编辑页面 -->
+				<template>
+					<blockquote v-show="isShowEditFrame" class="layui-elem-quote" style="margin:15px;">
+						<p>- 为不影响历史数据，只开放以下字段的编辑功能</p>
+					</blockquote>
+					<el-form v-show="isShowEditFrame" ref="formEdit" :model="formEdit" label-width="" style="width:100%;display: inline-block;text-align: center;overflow: auto;height: 400px;">
+						<el-form-item 
+							v-show="formEdit.ctrr_rsrm_type != 4"
+							label="名称"
+							style="width: auto;display: inline-block;">
+							<el-input v-model="formEdit.ctrr_rsrm_name" name="ctrr_rsrm_name"></el-input>
+						</el-form-item>
+						<el-form-item 
+						v-else
+						prop="ctrr_rsrm_name"
+						label="名称"
+						style="width: auto;display: inline-block;">
+						<el-input disabled v-model="formEdit.ctrr_rsrm_name" name="ctrr_rsrm_name"></el-input>
+					</el-form-item>
+					<br>
+					<el-form-item v-show="parseInt(formEdit.ctrr_rsrm_level) > 2" label="字段tips" style="width: auto;display: inline-block;">
+						<el-input v-model="formEdit.ctrr_rsrm_tips" name="ctrr_rsrm_tips" aria-placeholder="填写字段提示/格式要求等"></el-input>
+					</el-form-item>
+					<br>
+					<el-form-item label="排序" style="width: auto;display: inline-block;">
+						<el-input v-model="formEdit.ctrr_rsrm_sort" name="ctrr_rsrm_sort"></el-input>
+					</el-form-item>
+					<br>
+					<el-form-item v-show="parseInt(formEdit.ctrr_rsrm_level) > 2" label="是否必填" style="width: auto;display: inline-block;">
+						<el-switch 
+							v-model="formEdit.ctrr_rsrm_is_needed" 
+							name="ctrr_rsrm_is_needed"
+							active-text="是"
+							inactive-text="否" 
+							active-color="#13ce66"
+							inactive-color="#ff4949"
+							:active-value="1"
+							:inactive-value="0">
+						</el-switch>
+					</el-form-item>
+					<br>
+					<el-form-item  label="状态" style="width: auto;display: inline-block;">
+						<el-switch 
+							v-model="formEdit.ctrr_rsrm_is_active" 
+							name="ctrr_rsrm_is_active"
+							active-text="启"
+							inactive-text="禁" 
+							active-color="#13ce66"
+							inactive-color="#ff4949"
+							:active-value="1"
+							:inactive-value="0">
+						</el-switch>
+					</el-form-item>
+					<br>
+					<el-form-item v-show="parseInt(formEdit.ctrr_rsrm_level) > 2" label="选择类型" style="width: auto;display: inline-block;">
+						<el-select disabled v-model="formEdit.ctrr_rsrm_type" placeholder="请选择类型">
+							<el-option key="ctrr_rsrm_type" label="文本类型" :value="1"></el-option>
+							<el-option key="ctrr_rsrm_type" label="开关类型" :value="2"></el-option>
+							<el-option key="ctrr_rsrm_type" label="下拉框" :value="3"></el-option>
+							<el-option key="ctrr_rsrm_type" label="时间选择器（单个时间）" :value="6"></el-option>
+						</el-select>
+						<br>
+						<el-form v-show="formEdit.ctrr_rsrm_type == 2" :model="dynamicValidateFormForEdit" ref="dynamicValidateFormForEdit" style="width: 100%;display: inline-block;">
+							<el-form-item label="开值名称" style="display: inline-block;">
+								<el-input name="switch_active"  v-model="dynamicValidateFormForEdit.switch_active" ></el-input>
+							</el-form-item>
+							<br>
+							<el-form-item label="关值名称" style="display: inline-block;">
+								<el-input name="switch_inactive" v-model="dynamicValidateFormForEdit.switch_inactive" ></el-input>
+							</el-form-item>
+						</el-form>
+						<el-form v-show="formEdit.ctrr_rsrm_type == 3" :model="dynamicValidateFormForEdit" ref="dynamicValidateFormForEdit" style="width: 400px;display: inline-block;margin-top: 10px;">
+							<el-form-item
+								v-for="(option, index) in dynamicValidateFormForEdit.options"
+								:label="'下拉框选项' + index"
+								:key="option.key"
+								:prop="'options.' + index + '.value'"
+								:rules="{
+								required: true, message: '下拉框选项不能为空', trigger: 'blur'
+								}">
+								<el-input v-model="option.value" style="width:auto;padding-right:15px"></el-input>
+								<el-button @click.prevent="removeOptionForEdit(option)">删除</el-button>
+							</el-form-item>
+							<el-form-item>
+								<el-tooltip placement="top">
+								<div slot="content">可无限新增<br/>空值会被忽略</div>
+								<el-button @click="addOptionForEdit">新增选项</el-button>
+								</el-tooltip>
+							</el-form-item>
+						</el-form>
+					</el-form-item>
+					<el-form-item>
+																						<!-- 加号只是为了让两边都进行运算，加起来的值本身没有意义 -->
+						<el-button type="info"  @click="(isShowEditFrame = !isShowEditFrame) + (isShowTable = !isShowTable)">返回</el-button type="primary">
+						<el-button type="primary" @click="onSubmitForEdit()">提交</el-button>
+					</el-form>
+				</template>
+			</el-tab-pane>
+			<el-tab-pane label="新增" v-loading="formLoading">
+				<blockquote class="layui-elem-quote" style="margin:15px;">
+					<p>- 表格默认类型为：文本类型、类型值为：空</p>
+				</blockquote>
+				<el-form ref="form" :model="form" label-width="auto" style="width:100%;display: inline-block;text-align: center;">
+					<el-form-item 
+						label="名称"
+						prop="ctrr_rsrm_name"
+						:rules="[
+							{ required: true, message: '名称不能为空'},
+						]"
+						style="width: auto;display: inline-block;">
+						<el-input v-model="form.ctrr_rsrm_name" name="ctrr_rsrm_name"></el-input>
+					</el-form-item>
+					<br>
+					<el-form-item v-show="parseInt(form.ctrr_rsrm_level_code) > 2" label="字段tips" style="width: auto;display: inline-block;">
+						<el-input v-model="form.ctrr_rsrm_tips" name="ctrr_rsrm_tips" placeholder="填写字段提示/格式要求等"></el-input>
+					</el-form-item>
+					<br>
+					<el-form-item
+						prop="ctrr_rsrm_level_code"
+						:rules="[
+							{ required: true, message: '所属父级不能为空'},
+						]"
+						label="所属父级"
+						style="width: auto;display: inline-block;">
+						<el-select v-model="form.ctrr_rsrm_level_code" placeholder="请选择级别">
+							<el-option
+							v-for="item in ctrr_rsrm_level_data"
+							:key="item.ctrr_rsrm_level_code"
+							:label="item.ctrr_rsrm_name"
+							:value="item.ctrr_rsrm_level_code">
+								</el-option>
+						</el-select>
+					</el-form-item>
+					<br>
+					<el-form-item 
+						prop="ctrr_rsrm_sort"
+						:rules="[
+							{ required: true, message: '排序不能为空'},
+						]"
+						label="排序" 
+						style="width: auto;display: inline-block;">
+						<el-input v-model="form.ctrr_rsrm_sort" name="ctrr_rsrm_sort"></el-input>
+					</el-form-item>
+					<br>
+					<!-- 当设置为主键是，默认字段类型为【文本类型】 -->
+					<el-form-item v-show="parseInt(form.ctrr_rsrm_level_code) > 2" label="是否主键" style="width: auto;display: inline-block;">
+						<el-tooltip placement="top">
+							<div slot="content">既字段值是否唯一，如工单ID，<br>每张表格仅支持一个主键字段，<br>一旦创建，无法修改。</div>
+							<el-switch 
+								v-model="form.ctrr_rsrm_is_key" 
+								name="ctrr_rsrm_is_key"
+								active-text="是"
+								inactive-text="否" 
+								active-color="#13ce66"
+								inactive-color="#ff4949"
+								:active-value="1"
+								:inactive-value="0">
+							</el-switch>
+						</el-tooltip>
+					</el-form-item>
+					<br>
+					<el-form-item v-show="parseInt(form.ctrr_rsrm_level_code) > 2" label="是否必填" style="width: auto;display: inline-block;">
+						<el-switch 
+							v-model="form.ctrr_rsrm_is_needed" 
+							name="ctrr_rsrm_is_needed"
+							active-text="是"
+							inactive-text="否" 
+							active-color="#13ce66"
+							inactive-color="#ff4949"
+							:active-value="1"
+							:inactive-value="0">
+						</el-switch>
+					</el-form-item>
+					<br>
+					<el-form-item  label="状态" style="width: auto;display: inline-block;">
+						<el-switch 
+							v-model="form.ctrr_rsrm_is_active" 
+							name="ctrr_rsrm_is_active"
+							active-text="启"
+							inactive-text="禁" 
+							active-color="#13ce66"
+							inactive-color="#ff4949"
+							:active-value="1"
+							:inactive-value="0">
+						</el-switch>
+					</el-form-item>
+					<br>
+					<el-form-item label="选择类型" v-show="parseInt(form.ctrr_rsrm_level_code) > 2" style="width: auto;display: inline-block;">
+						<div>
+							<el-tooltip placement="top">
+								<div slot="content">一旦创建，无法修改</div>
+								<el-select v-model="form.ctrr_rsrm_is_key ? (form.ctrr_rsrm_type = 1) : form.ctrr_rsrm_type" placeholder="请选择级别" :disabled="form.ctrr_rsrm_is_key ? true: false">
+									<el-option key="ctrr_rsrm_type" label="文本类型" :value="1"></el-option>
+									<el-option key="ctrr_rsrm_type" label="开关类型" :value="2"></el-option>
+									<el-option key="ctrr_rsrm_type" label="下拉框" :value="3"></el-option>
+									<el-option key="ctrr_rsrm_type" label="时间选择器（单个时间）" :value="6"></el-option>
+								</el-select>
+							</el-tooltip>
+						</div>
+						<el-form v-show="form.ctrr_rsrm_type == 2" :model="dynamicValidateForm" ref="dynamicValidateForm" style="width: 100%;display: inline-block;">
+							<el-form-item label="开值名称" style="display: inline-block;">
+								<el-input name="switch_active"  v-model="dynamicValidateForm.switch_active" ></el-input>
+							</el-form-item>
+							<br>
+							<el-form-item label="关值名称" style="display: inline-block;">
+								<el-input name="switch_inactive" v-model="dynamicValidateForm.switch_inactive" ></el-input>
+							</el-form-item>
+						</el-form>
+						<el-form v-show="form.ctrr_rsrm_type == 3" :model="dynamicValidateForm" ref="dynamicValidateForm" style="width: 400px;display: inline-block;margin-top: 10px;">
+							<el-form-item
+								v-for="(option, index) in dynamicValidateForm.options"
+								:label="'下拉框选项' + index"
+								:key="option.key"
+								:prop="'options.' + index + '.value'"
+								:rules="{
+								required: true, message: '下拉框选项不能为空', trigger: 'blur'
+								}">
+								<el-input v-model="option.value" style="width:auto;padding-right:15px"></el-input>
+								<el-button @click.prevent="removeOption(option)">删除</el-button>
+							</el-form-item>
+							<el-form-item>
+								<el-tooltip placement="top">
+								<div slot="content">可无限新增<br/>空值会被忽略</div>
+								<el-button @click="addOption">新增选项</el-button>
+								</el-tooltip>
+							</el-form-item>
+						</el-form>
+					</el-form-item>
+					<el-form-item>
+						<el-button type="primary" @click="onSubmit('form')">提交</el-button>
+					</el-form-item>
+				</el-form>
+			</el-tab-pane>
+		</el-tabs>
+	</div>
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>- 二期功能，敬请期待：值班信息数据分析~</p>
+	</blockquote>
+	
+</div>
+<script>
+	// tp5输出多维数组给js使用的方式！！
+	let tableData = {:json_encode($rotaSituationRecordManagementList)};
+	const LevelOne_Two = {:json_encode($LevelOne_Two)};
+	const ctrr_rsrm_level_data = [
+		{
+			ctrr_rsrm_id:'',
+			ctrr_rsrm_name:'新建分类',
+			ctrr_rsrm_level:'1',
+			ctrr_rsrm_level_code:'1'
+		}
+	]
+	// 级别选择下拉框数据加载
+	for(let i = 0; i< LevelOne_Two.length; i++){
+		let item = LevelOne_Two[i].children;
+		ctrr_rsrm_level_data.push({
+			ctrr_rsrm_id: LevelOne_Two[i].ctrr_rsrm_id,
+			ctrr_rsrm_name: LevelOne_Two[i].ctrr_rsrm_name + '（我是表格属于这个分类）',
+			ctrr_rsrm_level:'2',	
+			ctrr_rsrm_level_code:'2_'+LevelOne_Two[i].ctrr_rsrm_id	
+		})
+		for(let j = 0; j< item.length; j++){
+			ctrr_rsrm_level_data.push({
+				ctrr_rsrm_id: item[j].ctrr_rsrm_id,
+				ctrr_rsrm_name:'—— ' + item[j].ctrr_rsrm_name + '（我是字段属于这张表格）',
+				ctrr_rsrm_level:'3',
+				ctrr_rsrm_level_code:'3_'+item[j].ctrr_rsrm_id
+			})
+		}
+	}
+	const app = new Vue({
+		el: '#app',
+		data() {
+			return {
+				tableData: tableData,
+				// form中级别下拉框的值
+				ctrr_rsrm_level_data: ctrr_rsrm_level_data,
+				form: {  //用于新增
+					ctrr_rsrm_name: '',
+					ctrr_rsrm_tips: '',
+					ctrr_rsrm_level: '',
+					ctrr_rsrm_level_code: '', // 新增字段时保存级别字段值，该值与ctrr_rsrm_level不一样
+					ctrr_rsrm_sort: 0,
+					ctrr_rsrm_type: 1,
+					ctrr_rsrm_is_key: 0,
+					ctrr_rsrm_is_needed: 0,
+					ctrr_rsrm_valueFortype:'',
+					ctrr_rsrm_is_active: 1,
+					ctrr_rsrm_parent_id:''
+				},
+				
+				formEdit: {  //用于编辑
+					ctrr_rsrm_name: '',
+					ctrr_rsrm_tips: '',
+					ctrr_rsrm_level: '',
+					ctrr_rsrm_sort: '',
+					ctrr_rsrm_type: '',
+					ctrr_rsrm_is_key: 0,
+					ctrr_rsrm_is_needed: 0,
+					ctrr_rsrm_valueFortype:'',
+					ctrr_rsrm_is_active: '',
+					ctrr_rsrm_parent_id:''
+				},
+				tableLoading: false,
+				isShowTable: true,
+				isAppShow: false,
+				formLoading: false,
+				isShowEditFrame: false,
+				// 【新增页面】选项数据
+				dynamicValidateForm: {
+					options: [{
+						value: ''
+					}],
+					switch_active:'',
+					switch_inactive:''
+				},
+				// 【编辑页面】选项数据
+				dynamicValidateFormForEdit: {
+					options: [{
+						value: ''
+					}],
+					switch_active:'',
+					switch_inactive:''
+				},
+			}	
+		},
+		mounted: function () {
+			const _this = this;
+			let timer = setTimeout(function(){
+				// 加载值班信息需要一点时间
+				_this.isAppShow = true;
+				clearTimeout(timer)
+			},1)
+		},
+		methods: {
+			loadLevelTwoOrThree(tree, treeNode, resolve) {
+				let data = {getNextLevel:1,ctrr_rsrm_parent_id:tree.ctrr_rsrm_id}
+				$.ajax({
+					type:'GET'
+					,data:data
+					,url:'rotaSituationRecordManagement'
+					,success:function(res){
+						resolve(res)
+					}
+				})
+			},
+			addOption() {
+				this.dynamicValidateForm.options.push({
+					value: '',
+					key: Date.now()
+				});
+			},
+			removeOption(item) {
+				var index = this.dynamicValidateForm.options.indexOf(item)
+				if (index !== -1) {
+					this.dynamicValidateForm.options.splice(index, 1)
+				}
+			},
+			addOptionForEdit() {
+				this.dynamicValidateFormForEdit.options.push({
+					value: '',
+					key: Date.now()
+				});
+			},
+			removeOptionForEdit(item) {
+				var index = this.dynamicValidateFormForEdit.options.indexOf(item)
+				if (index !== -1) {
+					this.dynamicValidateFormForEdit.options.splice(index, 1)
+				}
+			},
+			showEditFrame(index, row) {   // 打开编辑框
+				if(row.ctrr_rsrm_is_fixed == 1){
+					showTs(0,'重要字段，不可编辑',1000)
+					return false
+				}
+				const _this = this;
+				if(index !== undefined){
+					_this.formEdit = row;
+				}
+				// let ctrr_rsrm_level = _this.formEdit.ctrr_rsrm_level
+				let ctrr_rsrm_type = _this.formEdit.ctrr_rsrm_type
+				let ctrr_rsrm_parent_id = _this.formEdit.ctrr_rsrm_parent_id
+				// 下拉框类型
+				if(ctrr_rsrm_type == 3) {
+					let arr = _this.formEdit.ctrr_rsrm_valueFortype.split(',');
+					let arrLen = arr.length
+					_this.dynamicValidateFormForEdit.options =[]
+					for(let i = 0; i < arrLen; i++){
+						_this.dynamicValidateFormForEdit.options.push({
+							value: arr[i]
+						})
+					}
+				}
+				// 开关类型
+				if(ctrr_rsrm_type == 2) {
+					_this.dynamicValidateFormForEdit.switch_active = _this.formEdit.ctrr_rsrm_valueFortype.split(',')[0];					
+					_this.dynamicValidateFormForEdit.switch_inactive = _this.formEdit.ctrr_rsrm_valueFortype.split(',')[1];					
+				}
+				if(_this.isShowEditFrame == true){
+					_this.isShowEditFrame = false;
+					_this.isShowTable = true;
+				}else{
+					_this.isShowEditFrame = true;
+					_this.isShowTable = false;
+				}
+			},
+			onSubmit(formData) {
+				const _this = this;
+				this.$refs[formData].validate((valid) => {
+					if (valid) {
+						this.formLoading = true
+						if(parseInt(_this.form.ctrr_rsrm_level) <= 2){
+							// 如果是新增分类、表格以及字段类型数据清零
+							_this.form.ctrr_rsrm_type = 1;
+							_this.form.ctrr_rsrm_valueFortype = '';
+						}
+						let ctrr_rsrm_type = _this.form.ctrr_rsrm_type;
+						if(ctrr_rsrm_type == 2){
+							// 开关类型
+							if(_this.dynamicValidateForm.switch_active === '' ||  _this.dynamicValidateForm.switch_inactive === ''){
+								_this.formLoading = false;
+								showTs(0, '修改失败：不能存在空值，请检查', 2000)
+								return false
+							}
+							if(_this.dynamicValidateForm.switch_active == _this.dynamicValidateForm.switch_inactive){
+								_this.formLoading = false;
+								showTs(0, '修改失败：两个值不能相同', 2000)
+								return false
+							}
+							if(_this.dynamicValidateForm.switch_active.indexOf(',') != -1){
+								_this.formLoading = false;
+								showTs(0, '修改失败：值含有特殊字符‘,’请修改', 2000)
+								return false
+							}
+							if(_this.dynamicValidateForm.switch_inactive.indexOf(',') != -1){
+								_this.formLoading = false;
+								showTs(0, '修改失败：值含有特殊字符‘,’请修改', 2000)
+								return false
+							}
+							_this.form.ctrr_rsrm_valueFortype = _this.dynamicValidateForm.switch_active + ',' + _this.dynamicValidateForm.switch_inactive
+							if(ctrr_rsrm_type == 4){
+								_this.form.ctrr_rsrm_name = _this.form.ctrr_rsrm_valueFortype
+							}
+						}else if(ctrr_rsrm_type == 3){
+							// 下拉框类型
+							for(let i = 0; i < _this.dynamicValidateForm.options.length; i++){
+								for(let j = 0; j < _this.dynamicValidateForm.options.length; j++){
+									i != j || j++//排除自己和自己比较的情况
+									if(j >= _this.dynamicValidateForm.options.length){
+										break
+									}
+									if(_this.dynamicValidateForm.options[j].value.indexOf(',') != -1){
+										_this.formLoading = false;
+										showTs(0, '修改失败：下拉框选项中的值不能包含特殊字符‘,’', 2000)
+										return false
+									}
+									if(_this.dynamicValidateForm.options[i].value == _this.dynamicValidateForm.options[j].value){
+										_this.formLoading = false;
+										showTs(0, '修改失败：下拉框选项值不能相同', 2000)
+										return false
+									}
+								}
+							}
+							for(let i = 0; i < _this.dynamicValidateForm.options.length; i++){
+								if(_this.dynamicValidateForm.options[i].value != ''){
+									_this.form.ctrr_rsrm_valueFortype += _this.dynamicValidateForm.options[i].value + ','
+								}
+							}
+							// 去掉最后一个逗号
+							_this.form.ctrr_rsrm_valueFortype = _this.form.ctrr_rsrm_valueFortype.substring(0, _this.form.ctrr_rsrm_valueFortype.length - 1);
+						}
+						
+						if(_this.form.ctrr_rsrm_name == ''){
+							_this.formLoading = false;
+							showTs(0, '名称不能为空', 2000)
+							return false
+						}
+						
+						const ctrr_rsrm_level = _this.form.ctrr_rsrm_level_code.split('_')[0];
+						const ctrr_rsrm_parent_id = _this.form.ctrr_rsrm_level_code.split('_')[1];
+						_this.form.ctrr_rsrm_level = ctrr_rsrm_level;
+						_this.form.ctrr_rsrm_parent_id = ctrr_rsrm_parent_id;
+						delete _this.form.ctrr_rsrm_level_code;
+						$.ajax({
+							url:'addRotaSituationRecordManagement'
+							,type:'post'
+							,data:_this.form
+							,success:function(res){
+								const code = res.code
+								const msg = res.msg
+								if(code == 1){
+									showTs(1, msg, 500)
+									_this.form = {
+										ctrr_rsrm_name: '',
+										ctrr_rsrm_level: '',
+										ctrr_rsrm_sort: 0,
+										ctrr_rsrm_type: 1,
+										ctrr_rsrm_valueFortype:'',
+										ctrr_rsrm_is_active: 1,
+										ctrr_rsrm_parent_id:''
+									}
+									if(ctrr_rsrm_level < 3){
+										let timer = setTimeout(function(){
+											// 如果新增的是分类或表格则每次新增成功之后需要刷新页面
+											location.reload();
+											clearTimeout(timer)
+										},1000)
+									} else {
+										_this.formLoading = false
+									}
+								}else if(code == 0){
+									_this.formLoading = false
+									showTs(0, msg, 2000)
+								}else{
+									_this.formLoading = false
+									showTs(0, '修改失败：未知错误', 1000)
+								}
+							}
+							,error: function (err) {
+								console.log(err)
+								showTs(0, '发生未知错误，请刷新重试或联系管理员', 5000)
+							}
+						})
+					} else {
+						return false;
+					}
+				});
+			},
+			onSubmitForEdit(formData) {
+				const _this = this;
+				if(_this.formEdit.ctrr_rsrm_level == 3){
+					// 处理ctrr_rsrm_valueFortype值
+					switch( _this.formEdit.ctrr_rsrm_type ){
+						case 2:
+							_this.formEdit.ctrr_rsrm_valueFortype = _this.dynamicValidateFormForEdit.switch_active + ',' + _this.dynamicValidateFormForEdit.switch_inactive
+							break;
+						case 4:
+							_this.formEdit.ctrr_rsrm_valueFortype = _this.dynamicValidateFormForEdit.switch_active + ',' + _this.dynamicValidateFormForEdit.switch_inactive
+							_this.formEdit.ctrr_rsrm_name = _this.formEdit.ctrr_rsrm_valueFortype;
+							break;
+						case 3:
+							_this.formEdit.ctrr_rsrm_valueFortype = '';
+							
+							for(let i = 0 ; i < _this.dynamicValidateFormForEdit.options.length; i++){
+								if(_this.dynamicValidateFormForEdit.options[i].value !== ''){
+									_this.formEdit.ctrr_rsrm_valueFortype += _this.dynamicValidateFormForEdit.options[i].value.toString() + ','
+								}
+							}
+							if(_this.formEdit.ctrr_rsrm_valueFortype === ''){
+								 showTs(0,'下拉框选项不能为空',1000)
+								return false
+							}
+							// 去掉最后一个逗号
+							_this.formEdit.ctrr_rsrm_valueFortype = _this.formEdit.ctrr_rsrm_valueFortype.substring(0, _this.formEdit.ctrr_rsrm_valueFortype.length - 1);
+							break;
+						default:
+  							// 默认代码块
+					}
+				}else{
+					delete _this.formEdit.children
+				}	
+				let ctrr_rsrm_id = _this.formEdit.ctrr_rsrm_id
+				delete _this.formEdit.ctrr_rsrm_id
+				_this.handleEdit(ctrr_rsrm_id, _this.formEdit,_this.formEdit.ctrr_rsrm_is_fixed)
+			},
+			handleEdit(ctrr_rsrm_id, dataJson,ctrr_rsrm_is_fixed=0) {
+				// index : row 的index值
+				// ctrr_rsrm_id ：数据表中的id
+				// ctrr_rsrm_is_fixed : 是否重要字段，不过该参数默认为0，当修改重要字段顺序的时候，只需要使用该参数的默认值即可
+				// dataJson = {
+				// 		key ： 数据表中的字段
+				// 		value： 数据表中的字段值
+				// 	}
+				// for (let key in dataJson) {
+				// 	if(dataJson[key] === ''){
+				// 		showTs(0, '不能为空', 500)
+				// 	}
+				// 	// 如果是简单编辑的情况，只需判断第一个值是否为空
+				// 	break
+				// }
+				if(ctrr_rsrm_is_fixed == 1){
+					showTs(0,'重要字段不可禁用',500)
+					return
+				}
+				const _this = this;
+				// ES6 删掉了date.format 方法，已在layout.html中重写该方法
+				let update_time = new Date().Format('yyyy-MM-dd hh:mm:ss')
+				dataJson.update_time = update_time;
+				// return
+				let data = {
+					ctrr_rsrm_id:ctrr_rsrm_id
+					,dataJson:dataJson
+				}
+				$.ajax({
+					url:'editRotaSituationRecordManagement'
+					,type:'post'
+					,data:data
+					,success:function(res){
+						if (res == 1) {
+							showTs(1, '修改成功', 500)
+							// _this.isShowEditFrame = false;
+							// _this.isShowTable = true;
+							// 由于elementUI09年3月份存在一个树形表格关键字children与haschildren的row-key的bug，
+							// 因此每次复杂编辑之后只能重新加载一下页面bug才不会出现
+							if(_this.isShowEditFrame == true){
+								let timer = setTimeout(function(){
+									location.reload()
+								},100)
+							}
+						} else if (res.code === 0) {
+							showTs(0, res.msg, 500)
+						} else {
+							showTs(0, '修改失败', 500)
+						}
+					}
+				})
+			},
+			handleDelete(index,row) {
+				if(row.ctrr_rsrm_is_fixed == 1){
+					showTs(0,'重要字段，不可删除',1000)
+					return false
+				}
+				const _this = this
+				this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning'
+				}).then(() => {
+					_this.tableLoading = true;
+					$.ajax({
+						type:"POST"
+						,url:"deleteRotaSituationRecordManagement"
+						,data:'ctrr_rsrm_id='+row.ctrr_rsrm_id
+						,success:function(res){
+							if (res == 1) {
+								showTs(1,'删除成功',500)
+								_this.tableLoading = false;
+								let timer = setTimeout(function(){
+									location.reload()
+									clearTimeout(timer)
+								},100)
+							} else if (res.code === 0) {
+								showTs(0, res.msg, 2000)
+								_this.tableLoading = false;
+							} else {
+								showTs(0,'发生未知错误：'+res+'请联系管理员',5000)
+							}
+						}
+					})
+				}).catch(() => {
+					showTs(1,'取消删除',500)
+				});
+			}
+		},
+  
+	})
+</script>

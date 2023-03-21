@@ -1,0 +1,112 @@
+<div class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>- 一期只做一些简单的大值班管理，若后期确实需要一些复杂规则设计，再重新二期设计，因此现阶段暂时禁用编辑功能</p>
+		<p>- 当前只设定【ITMC光缆故障】、【ITMC其它故障】、【政企光缆故障】以及【政企其他故障】四个表格，二期再进行需求细化设计</p>
+		<p>-------------------------------------------------------</p>
+	
+		<p>- 本次完成：refactor(重构（即不是新增功能，也不是修改bug的代码变动）：新增交接班看板功能</p>
+		<p>- 本次解决bug：fix(修补bug)：</p>
+		<p>- todo：值班信息，新增二级表格的时候，默认新增一些初始重要字段（可设计部分可以修改、部分不可修改）：开始时间、结束时间、大值班字段等</p>
+		<p>- todo：可设置值班信息未展开时默认的前8个字段</p>
+		<p>- Todo：导入值班表时将值班长设置为必须导入数据</p>
+		<p>- Todo：交接班导出（当前进度，已完成除交接班内容外的其他字段的导出）</p>
+	</blockquote>
+	<div id="app" style="padding: 15px;">
+		<el-card class="box-card">
+			<div slot="header" class="clearfix">
+				<el-span class="el-icon-circle-check">请在下方勾选需要用于生成大值班总结的表格</el-span>
+			</div>
+			<el-input
+			placeholder="输入关键字进行过滤（区分大小写）"
+			v-model="treeFilterText">
+			</el-input>
+			<el-tree
+			:data="treeData"
+			show-checkbox
+			node-key="ctrr_rsrm_id"
+			:filter-node-method="filterNode"
+			:default-checked-keys="checked_L2_ids"
+			default-expand-all
+			ref="tree"
+			:props="defaultProps"
+			@check-change="handleUpdate"></el-tree>
+		</el-card>
+	</div>
+</div>
+<script type="module">
+	let getList_l1_l2 = {:json_encode($getList_l1_l2)};
+	let checked_L2s = {:json_encode($checked_L2s)};
+	let checked_L2_ids = []
+	for(let i = 0; i < checked_L2s.length; i++){
+		checked_L2_ids.push(checked_L2s[i].ctrr_rsrm_l2_id)
+	}
+	new Vue({
+		el: '#app',
+		data() {
+			return {
+				checked_L2_ids: checked_L2_ids,  // 已经被选中的二级表数组
+				treeFilterText: '',
+				treeData: getList_l1_l2,
+				defaultProps: { //树形组件属性自定义
+					label: 'ctrr_rsrm_name',
+					disabled: 'disableTreeCheckout'
+				}
+			}	
+		},
+		mounted: function () {
+			
+		},
+		watch: {
+			// 监控关键词过滤框数据变化
+			treeFilterText(val) {
+				this.$refs.tree.filter(val);
+			},
+		},
+		methods: {
+			// 根据搜索框，过滤树形组件
+			filterNode(value, data) {
+				if (!value) return true;
+				return data.ctrr_rsrm_name.indexOf(value) !== -1;
+			},
+			handleUpdate(val, isSelected){
+				const _this = this;
+				if(val.ctrr_rsrm_level == 2){
+					// type 1-新增数据 0-删除数据
+					const params = {
+						ctrr_rsrm_l2_id: val.ctrr_rsrm_id,
+						type: isSelected ? 1 : 0
+					}
+					const typeName =  isSelected ? '绑定' : '解绑'
+					$.ajax({
+						type:'POST',
+						url:'dutySummaryManagementUpdate',
+						data: params,
+						success:function(res){
+							if(res === 1){
+								_this.$notify({
+									title: val.ctrr_rsrm_name + typeName + '成功',
+									message: '【' + val.ctrr_rsrm_name + '】表，将为大值班总结提供数据支持',
+									type: 'success',
+									position: 'bottom-right'
+								})
+							}else{
+								_this.$notify({
+									title: typeName + '【'+val.ctrr_rsrm_name +'】表格的时候好像出错了，请联系管理员',
+									duration: 0,
+									type:'error',
+									position: 'bottom-right'
+								})
+							}
+						},
+						error:function(e){
+							showTs(0, '出错了，请联系管理员并查看控制台报错', 10000)
+							console.log(e)
+						}
+					})
+					// 仅对二级表做处理
+					console.log(val, isSelected, params)
+				}
+			}
+		}
+	})
+</script>

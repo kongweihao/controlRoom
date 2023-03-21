@@ -1,0 +1,312 @@
+<div class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>-人员评价管理</p>
+	</blockquote>
+	<div id="app" style="padding: 15px;">
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<el-button style="float: right;" @click="getNotFullScore">非满分</el-button>
+			<el-button style="float: right;" @click="getThereIsEvaluate">有评价的</el-button>
+			<el-button style="float: right;" @click="getAllEvaluate">所有数据</el-button>
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="评分" prop="score">
+						<el-input
+						@change="search"
+						v-model="searchForm.score[0]" style="width: 50px"></el-input>
+						<span>-</span>
+						<el-input
+						@change="search"
+						v-model="searchForm.score[1]" style="width: 50px"></el-input>
+					</el-form-item>
+					<el-form-item label="评价内容" prop="evaluate">
+						<el-tooltip content="也支持直接输入搜索">
+							<el-select
+								@change="search"
+								v-model="searchForm.evaluate"
+								filterable
+								allow-create
+								default-first-option
+								placeholder="请选择">
+								<el-option
+								v-for="item in evaluateOptions"
+								:key="item.value"
+								:label="item.label"
+								:value="item.value">
+								</el-option>
+							</el-select>
+						</el-tooltip>
+					</el-form-item>
+					<el-form-item label="班次日期" prop="time_stamp">
+						<template>
+							<div class="block">
+								<el-date-picker
+								v-model="searchForm.time_stamp"
+								type="daterange"
+								:picker-options="pickerOptions"
+								value-format="yyyyMMdd"
+								@change="search"
+								range-separator="至"
+								start-placeholder="开始日期"
+								end-placeholder="结束日期"
+								align="right">
+								</el-date-picker>
+							</div>
+						</template>
+					</el-form-item>
+					<el-form-item label="班次" prop="is_day_shift">
+						<el-select
+						@change="search"
+						v-model="searchForm.is_day_shift"
+						placeholder="请选择">
+							<el-option></el-option>
+							<el-option label="白班" :value="1"></el-option>
+							<el-option label="夜班" :value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="评论人" prop="reviewers">
+						<el-input
+						@change="search"
+						v-model="searchForm.reviewers"></el-input>
+					</el-form-item>
+					<el-form-item label="受评人" prop="appraisee">
+						<el-input
+						@change="search"
+						v-model="searchForm.appraisee"></el-input>
+					</el-form-item>
+					<el-form-item label="评论人岗位" prop="reviewers_post">
+						<el-input
+						@change="search"
+						v-model="searchForm.reviewers_post"></el-input>
+					</el-form-item>
+					<el-form-item label="受评人岗位" prop="appraisee_post">
+						<el-input
+						@change="search"
+						v-model="searchForm.appraisee_post"></el-input>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<el-divider>默认加载非满分以及有评语的数据</el-divider>
+			<el-table
+			class="taskTree"
+			:data="eoodpList"
+			max-height="400"
+			border
+			style="margin-top:15px">
+				<el-table-column
+				prop="score"
+				label="评分"
+				sortable
+				show-overflow-tooltip
+				align="center"></el-table-column>
+				<el-table-column
+				prop="time_stamp"
+				label="班次日期"
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="is_day_shift"
+				label="班次"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="props">
+						{{ props.row.is_day_shift ? '白班' : '夜班' }}
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="reviewers"
+				label="评论人"
+				show-overflow-tooltip
+				align="center"></el-table-column>
+				<el-table-column
+				prop="appraisee"
+				label="受评人"
+				show-overflow-tooltip
+				align="center"></el-table-column>
+				<el-table-column
+				prop="evaluate"
+				label="评论"
+				show-overflow-tooltip
+				align="center"></el-table-column>
+				<el-table-column
+				prop="reviewers_post"
+				label="评论人岗位"
+				show-overflow-tooltip
+				align="center"></el-table-column>
+				<el-table-column
+				prop="appraisee_post"
+				label="受评人岗位"
+				show-overflow-tooltip
+				align="center"></el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script type="module">
+	const eoodpList = {:json_encode($eoodpList)};
+	new Vue({
+		el: '#app',
+		data() {
+			return {
+				isShowSearch: false, // 打开搜索面板
+				searchForm: {
+					time_stamp: [],
+					is_day_shift: '',
+					reviewers: '',
+					appraisee: '',
+					score: [],
+					evaluate: '',
+					reviewers_post: '',
+					appraisee_post: '',
+				},
+				eoodpList: eoodpList.data,
+				pagination: {
+					per_page: eoodpList.per_page,
+					current_page: eoodpList.current_page,
+					total: eoodpList.total,
+				},
+				// 人员评价
+				colors: ['#99A9BF', '#F7BA2A', '#FF9900'],  // 等同于 { 2: '#99A9BF', 4: { value: '#F7BA2A', excluded: true }, 5: '#FF9900' }
+				pickerOptions: {
+					shortcuts: [{
+						text: '最近一周',
+						onClick(picker) {
+						const end = new Date();
+						const start = new Date();
+						start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+						picker.$emit('pick', [start, end]);
+						}
+					}, {
+						text: '最近一个月',
+						onClick(picker) {
+						const end = new Date();
+						const start = new Date();
+						start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+						picker.$emit('pick', [start, end]);
+						}
+					}, {
+						text: '最近三个月',
+						onClick(picker) {
+						const end = new Date();
+						const start = new Date();
+						start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+						picker.$emit('pick', [start, end]);
+						}
+					}]
+				},
+				evaluateOptions: [
+					{
+						value: '所有评价',
+						label: '所有评价'
+					},
+					{
+						value: '写了评价的',
+						label: '写了评价的'
+					},
+					{
+						value: '评价为空的',
+						label: '评价为空的'
+					},
+				],
+			}	
+		},
+		mounted () {
+			this.searchForm.score = [0, 4.5]
+			this.searchForm.evaluate = '写了评价的'
+			this.search()
+		},
+		methods: {
+			// 搜索
+			search(){
+				const _this = this;
+				// score评分范围规则 0~5之间且score[0] <= score[1]
+				_this.searchForm.score[0] = _this.searchForm.score[0] >= 0 && _this.searchForm.score[0] <= 5 ? parseFloat(_this.searchForm.score[0]) : 0
+				_this.searchForm.score[1] = _this.searchForm.score[1] >= 0 &&_this.searchForm.score[1] <= 5 ? parseFloat(_this.searchForm.score[1]) : 5
+				_this.searchForm.score[1] >= _this.searchForm.score[0] || (_this.searchForm.score[1] = 5)
+				$.ajax({
+					url:'evaluationOfOnDutyPersonnel',
+					type:'post',
+					data:{
+						isSearch: 1,
+						pagination: _this.pagination,
+						searchForm: _this.searchForm
+					},
+					success:function (res) {
+						const code = res.code
+						const msg = res.msg
+						const data = res.data
+						if (code === 1) {
+							_this.$notify({
+								title: '加载成功',
+								message: msg,
+								type: 'success',
+								duration: 500
+							})
+							_this.eoodpList = data.data
+							_this.pagination = {
+								current_page: data.current_page,
+								last_page: data.last_page,
+								per_page: data.per_page,
+								total: data.total
+							}
+						}
+					},
+					error:function(e){
+						console.log(e)
+						showTs(0, '发生错误，请刷新一下~', 10000)
+					}
+				})
+			},
+			// 重置
+			resetForm(formName){
+				this.$nextTick(()=>{
+					this.$refs[formName].resetFields();
+					this.search()
+                })   
+			},
+			// pagination时
+			handleSizeChange(per_page){
+				const _this = this;
+				_this.pagination.per_page = per_page
+				_this.search();
+			},
+			handleCurrentChange(current_page){
+				const _this = this;
+				_this.pagination.current_page = current_page
+				_this.search();
+			},
+			// 快捷搜索
+			// 获取非满分
+			getNotFullScore() {
+				this.searchForm.score = [0, 4.5]
+				this.search()			
+			},
+			// 获取有评价的
+			getThereIsEvaluate() {
+				this.searchForm.evaluate = '写了评价的'
+				this.search()		
+			},
+			// 默认加载所有数据
+			getAllEvaluate() {
+				this.resetForm('searchForm')		
+			}
+		},
+	})
+</script>

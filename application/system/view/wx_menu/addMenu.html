@@ -1,0 +1,335 @@
+<link rel="stylesheet" href="__CSS__/system/wxmenu.css" />
+<div class="layui-body" style="left:200px;">
+	<blockquote class="layui-elem-quote" style="margin:15px 15px 0 15px;">
+		温馨提示：自定义菜单所需素材，需先在微信公众平台编辑或上传。本系统无素材管理功能。
+	</blockquote>
+	<div class="layui-tab-content">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>添加微信自定义菜单</legend>
+		</fieldset>
+		<form class="layui-form" action="{:url('@system/addMenu')}" method="post" onsubmit="return checkForm(this);">
+			<div class="layui-form-item">
+				<label class="layui-form-label">菜单标题</label>
+				<div class="layui-input-inline">
+					<input type="text" name="wx_name" value="{$menuInfo.wx_name|default=''}" placeholder="自定义菜单标题" class="layui-input" required="required">
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">所属父级</label>
+				<div class="layui-input-inline">
+					<select name="parent_id">
+						<option value="0">一级菜单</option>
+						{volist name="oneLevelMenuList" id="vo"}
+						<option value="{$vo.id}">{$vo.wx_name}</option>
+						{/volist}
+					</select>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">动作类型</label>
+				<div class="layui-input-inline">
+					<input type="radio" name="type" value="view" title="跳转网页" lay-filter="type" checked="checked" >
+					<input type="radio" name="type" value="click" title="发送消息" lay-filter="type">
+					<input type="radio" name="type" value="miniprogram" title="跳转小程序 " lay-filter="type">
+					<input type="radio" name="type" value="c_click" title="自定义点击类型" lay-filter="type">
+				</div>
+			</div>
+			<div class="layui-form-item" id="appid_div" style="display:none;">
+				<label class="layui-form-label">小程序appid</label>
+				<div class="layui-input-inline">
+					<input type="text" name="appid" value="{$menuInfo.appid|default=''}" placeholder="小程序appid" class="layui-input">
+				</div>
+			</div>
+			<div class="layui-form-item" id="pagepath_div" style="display:none;">
+				<label class="layui-form-label">小程序path</label>
+				<div class="layui-input-inline">
+					<input type="text" name="pagepath" value="{$menuInfo.pagepath|default=''}" placeholder="小程序路径" class="layui-input">
+				</div>
+			</div>
+			<div class="layui-form-item" id="url_div">
+				<label class="layui-form-label">网页链接</label>
+				<div class="layui-input-inline">
+					<input type="url" name="url" value="{$menuInfo.url|default=''}" placeholder="如http://  注：view，miniprogram类型必须（不支持小程序的老版本客户端将打开本url）" class="layui-input">
+				</div>
+			</div>
+			<div class="layui-form-item" id="content_div" style="display:none;">
+				<label class="layui-form-label">菜单内容</label>
+				<div class="layui-input-inline">
+					<div class="contentWrap">
+						<div class="c-head">
+							<ul>
+								<li><input type="radio" name="res_type" value="news" title="图文消息" checked="checked" lay-filter="res_type"></li>
+								<li><input type="radio" name="res_type" value="image" title="图片" lay-filter="res_type"></li>
+								<li><input type="radio" name="res_type" value="text" title="文本" lay-filter="res_type"></li>
+							</ul>
+						</div>
+						<div class="c-body showContent newsAndImage_div">
+							<div class="select_div"></div>
+							<div class="clearBtn"><a href="javascript:void(0);" onclick="clearMaterial();">清空</a></div>
+							<div class="selectWrap">
+								<i class="fa fa-plus"></i>
+								<div>从素材库中选择</div>
+							</div>
+						</div>
+						<div class="c-body showContent text_div" style="display:none;">
+							<div class="text_div">
+								<div class="layui-form-item layui-form-text">
+									<textarea name="content" placeholder="请输入内容" class="layui-textarea">{$welcomeInfo.content}</textarea>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>	
+			<div class="layui-form-item" id="key_div" style="display:none;">
+				<label class="layui-form-label">菜单KEY值</label>
+				<div class="layui-input-inline">
+					<input type="text" name="key" value="{$menuInfo.key|default=''}" placeholder="click点击类型必须，不能填写中文" class="layui-input">
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">排序</label>
+				<div class="layui-input-inline">
+					<input type="text" name="sort" value="{$menuInfo.sort|default=''}" placeholder="排序" class="layui-input" autocomplete="off">
+				</div>
+			</div>
+			<div class="layui-form-item submit-item">
+				<div class="layui-input-block">
+					<button class="layui-btn">立即提交</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<!-- 素材弹窗 -->
+<div id="fodderModal">
+	<div class="contentWrap">
+		<div class="c-body">
+			
+		</div>
+	</div>
+	<div id="f-fenye"></div>
+</div>
+
+<script>
+	var laypage;
+	var fodderIndex;//素材弹窗
+	layui.use(['form','laypage'], function(){
+		var form = layui.form;
+		laypage= layui.laypage;
+		
+		//监听动作类型单选按钮
+		form.on('radio(type)', function(data){
+			var currType = this.value;
+			if(currType == 'view'){
+				$("#url_div").show();
+				$("#content_div").hide();
+				$("#key_div").hide();
+				$("#appid_div,#pagepath_div").hide();
+			}else if(currType == 'click'){
+				$("#url_div").hide();
+				$("#content_div").show();
+				$("#key_div").show();
+				$("#appid_div,#pagepath_div").hide();
+			}else if(currType == 'miniprogram'){
+				$("#url_div").show();
+				$("#appid_div,#pagepath_div").show();
+				$("#content_div").hide();
+				$("#key_div").hide();
+			}else if(currType == 'c_click'){
+				$("#url_div").hide();
+				$("#content_div").hide();
+				$("#key_div").show();
+				$("#appid_div,#pagepath_div").hide();
+			}
+		});
+		
+		//切换菜单内容单选按钮
+		var active_res_type = $("[name=res_type]:checked").val();
+		form.on('radio(res_type)',function(data){
+			res_type = $("[name=res_type]:checked").val();
+			if(res_type != active_res_type){
+				active_res_type = res_type;
+				if(res_type == 'text'){
+					$(".text_div").show();
+					$(".newsAndImage_div").hide();
+				}else{
+					$(".text_div").hide();
+					$(".newsAndImage_div").show();
+					$(".select_div").empty();
+					$(".selectWrap").show();
+					$("#fodderModal .c-body,#f-fenye").empty();
+				}
+			}
+		});
+		
+		//从素材库中选择
+		$(".selectWrap").click(function(){
+			$("#fodderModal .c-body").html('<div style="text-align:center;margin-top:30px;font-size:16px;">请稍等，正在加载中...</div>');
+			
+			getMaterial(active_res_type);//拉取素材列表
+			
+			//页面层
+			fodderIndex = layer.open({
+				type: 1,
+				title: '从素材库中选择',
+				area: ['100%', '100%'], //宽高
+				content: $('#fodderModal')
+			});				
+		});
+		
+	});
+	
+	//拉取素材
+	function getMaterial(active_res_type){
+		//拉取素材
+		if(active_res_type == 'news'){
+			getNewsList(1);//图文列表
+		}else if(active_res_type == 'image'){
+			getImageList(1);//图片列表
+		}
+	}
+	
+	//ajax获取图文列表
+	function getNewsList(page){
+		$.get('getNewsList',{"page":page},function(data){
+			if(data.isok == true){
+				var item = data.rs.item;
+				var html = '';
+				if(item.length > 0){
+					for(var i=0;i<item.length;i++){
+						var news_item = item[i]['content']['news_item'][0];
+						html += '<div class="news_div" onclick="selectItem(this);">'
+								+'<input type="hidden" name="media_id" value="'+item[i]["media_id"]+'">'
+								+'<div class="n-title">更新于：'+getLocalTime(item[i]["update_time"])+'</div>'
+								+'<div class="n-content">'
+								+'<div class="n-name">'+news_item["title"]+'</div>'
+								+'<div class="n-image"><img src="{$Request.domain}/system/get_contents.html?imageUrl='+news_item["thumb_url"]+'" alt="" /></div>'
+								+'<div class="n-abstract">'+news_item["digest"]+'</div>'
+								+'</div>'
+								+'</div>';
+					}
+				}else{
+					$("#fodderModal .c-body").html('<div style="text-align:center;margin-top:30px;font-size:16px;">素材库为空，请先前往微信公众平台创建素材!</div>');
+					return false;
+				}
+				laypage({
+				    cont: 'f-fenye',
+				    pages: Math.ceil(data.rs.total_count/20), //总页数
+				    curr: page, //当前页
+				    groups: 5, //连续显示分页数
+				    jump: function(obj, first){
+				        if(!first){
+					    	currPage = obj.curr;//得到了当前页，用于向服务端请求对应数据
+					    	getNewsList(currPage);
+				        }
+				    }
+				});
+				$("#fodderModal .c-body").html(html);
+			}else if(data.code == 0 || data.isok == false){
+				showTs(0,data.msg,3000);
+			}else{
+				showTs(0,'系统异常，请稍候再试',3000);
+			}
+		});
+	}
+	
+	//ajax获取图片列表
+	function getImageList(page){
+		$.get('getImageList',{"page":page},function(data){
+			if(data.isok == true){
+				var item = data.rs.item;
+				var html = '';
+				if(item.length > 0){
+					for(var i=0;i<item.length;i++){
+						html += '<div class="image_div" onclick="selectItem(this);">'
+								+'<input type="hidden" name="media_id" value="'+item[i]["media_id"]+'">'
+								+'<input type="hidden" name="imgurl" value="'+item[i]["url"]+'">'
+								+'<img src="{$Request.domain}/system/get_contents.html?imageUrl='+item[i]["url"]+'" alt="" />'
+								+'</div>';
+					}
+				}else{
+					$("#fodderModal .c-body").html('<div style="text-align:center;margin-top:30px;font-size:16px;">素材库为空，请先前往微信公众平台创建素材!</div>');
+					return false;
+				}
+				laypage({
+				    cont: 'f-fenye',
+				    pages: Math.ceil(data.rs.total_count/20), //总页数
+				    curr: page, //当前页
+				    groups: 5, //连续显示分页数
+				    jump: function(obj, first){
+				        if(!first){
+					    	currPage = obj.curr;//得到了当前页，用于向服务端请求对应数据
+					    	getImageList(currPage);
+				        }
+				    }
+				});
+				$("#fodderModal .c-body").html(html);
+			}else if(data.code == 0 || data.isok == false){
+				showTs(0,data.msg,3000);
+			}else{
+				showTs(0,'系统异常，请稍候再试',3000);
+			}
+		});
+	}
+	
+	//选中单个图文或图片
+	function selectItem(obj){
+		var selectHTML = $(obj).clone();
+		$(".showContent>.select_div").html(selectHTML);
+		$(".selectWrap").hide();
+		layer.close(fodderIndex);
+	}
+
+	
+	//清空选择素材
+	function clearMaterial(){
+		$(".select_div").empty();
+		$(".selectWrap").show();
+	}
+	
+	//转换时间戳为日期
+	function getLocalTime(nS) {     
+		return new Date(parseInt(nS) * 1000).toLocaleString().replace(/年|月/g, "-").replace(/日/g, " ");      
+    }
+	
+	//检查表单
+	function checkForm(obj){
+		var parent_id = $("[name=parent_id]").val();
+		if(parent_id != 0){
+			layer.confirm('添加子菜单后，一级菜单的内容将被清除。确定添加子菜单？', {
+				btn: ['确认','取消'] //按钮
+			}, function(index){
+				layer.close(index);
+				ajaxSubmitForm(obj);
+			}, function(){
+				
+			});
+		}else{
+			ajaxSubmitForm(obj);
+		}
+		return false;
+	}
+	
+	//ajax提交表单
+	function ajaxSubmitForm(obj){
+		$.ajax({
+            type: "POST",
+            url: 'addMenu',
+            data: $(obj).serialize(),
+            success: function(data) {
+                if(data.code == 0 || data.isok == false){
+                	showTs(0,data.msg,3000);
+                }else if(data.isok == true){
+                	showTs(1,data.msg,2000);
+                	setTimeout(function(){
+                		location.href = "{:url('@system/menuList')}";
+                	},2000);
+                }else{
+                	showTs(0,'系统异常，请稍候再试',3000);
+                }
+            }
+        });
+	}
+</script>

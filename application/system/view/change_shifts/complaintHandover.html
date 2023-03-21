@@ -1,0 +1,544 @@
+<style>
+body {
+    height: 100%;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-family: Helvetica Neue, Helvetica, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif;
+}
+html {
+    line-height: 1.15;
+    -webkit-text-size-adjust: 100%;
+}
+*, *:before, *:after {
+    -webkit-box-sizing: inherit;
+    box-sizing: inherit;
+}
+h2 {
+	display: block;
+    font-size: 30px;
+    margin-block-start: 0.83em;
+    margin-block-end: 0.83em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    font-weight: bold;
+	line-height: 46px;
+}
+h4 {
+	font-size: 20px;
+    line-height: 30px;
+	display: block;
+    margin-block-start: 1.33em;
+    margin-block-end: 1.33em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    font-weight: bold;
+}
+p {
+    display: block;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+	font-size: 20px;
+    line-height: 30px;
+}
+</style>
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<el-card style="display: block; margin: 30px;padding: 40px 20px;">
+			<h2 style="text-align: center;margin-bottom: 80px;">国际及一干传输投诉岗位交班待跟进事项填写</h2>
+			<el-form :model="ruleForm" :rules="rules" ref="ruleForm" class="demo-ruleForm" style="margin-bottom: 60px;">
+				<el-form-item prop="ch_content">
+					<el-input type="textarea" :autosize="{minRows:4,maxRows:16}" v-model="ruleForm.ch_content" placeholder="请描述待跟进内容" style="font-size: 20px;line-height: 30px;"></el-input>
+				</el-form-item>
+			</el-form>
+			
+			<el-form>
+				<el-form-item style="float: left;">
+					<!-- picker-options 设置禁用状态，参数为当前日期，要求返回 Boolean 禁用当前日期之后的日期 -->
+					<el-date-picker
+					v-model="ruleForm.time_stamp"
+					format="yyyy/MM/dd"
+					value-format="yyyyMMdd"
+					type="date"
+					placeholder="选择日期" 
+					:disabled="admin_account != 'kwh'"
+					style="width: 165px;"
+					:picker-options="{
+						disabledDate(time) { 
+							return time.getTime() > Date.now();
+						}
+					}">
+					</el-date-picker>
+					<el-select
+						:disabled="admin_account != 'kwh'"
+						v-model="ruleForm.banci"
+						style="width: 100px;"
+						placeholder="请选择">
+						<el-option 
+						label="白班"
+						:value="1"></el-option>
+						<el-option 
+						label="夜班"
+						:value="0"></el-option>
+					</el-select>
+				</el-form-item>
+				<el-form-item style="float: right;">
+					<el-tooltip class="item" effect="dark" content="仅对投诉值班同事开放">
+						<el-button :disabled="!can_i_submit" round type="primary" @click="submitForm('ruleForm')">
+							{{!can_i_submit ? '交班倒计时：'+timer : '交班'}}
+						</el-button>
+					</el-tooltip>
+					<el-tooltip class="item" effect="dark" content="仅对投诉值班同事开放">
+						<el-button round type="primary" @click="save('ruleForm')">暂存</el-button>
+					</el-tooltip>
+					<el-button round @click="resetForm('ruleForm')">重置</el-button>
+				</el-form-item>
+			</el-form>
+		</el-card>
+		<el-card style="display: block;margin: auto 30px;">
+			<el-button icon="el-icon-search" type="primary" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<el-button v-loading="isLoading" icon="el-icon-download" type="primary" circle @click="handleDownload()"></el-button>
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="交班人" prop="submitter">
+						<el-input
+						v-model="searchForm.submitter"
+						width="50"></el-input>
+					</el-form-item>
+					<el-form-item label="待跟进事项" prop="ch_content">
+						<el-input
+						v-model="searchForm.ch_content"></el-input>
+					</el-form-item>
+					<el-form-item label="班次时间" prop="time_stamp">
+						<el-input
+						v-model="searchForm.time_stamp"></el-input>
+					</el-form-item>
+					<el-form-item label="班次" prop="banci">
+						<el-select v-model="searchForm.banci">
+							<el-option></el-option>
+							<el-option label="白班" :value="1"></el-option>
+							<el-option label="夜班" :value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="交班时间" prop="ch_submit_time">
+						<el-date-picker
+						v-model="searchForm.ch_submit_time"
+						type="datetimerange"
+						format="yyyy-MM-dd HH:mm:ss"
+						value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<el-divider>历史交班数据</el-divider>
+			<el-table
+			:data="complaintHandoverDataList"
+			max-height="800"
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="expand">
+					<template
+					slot-scope="props">
+						<el-row :gutter="20">
+							<el-col :span="24">
+								<el-divider>
+								待跟进事项
+								</el-divider>
+								<el-input
+								autosize
+								type="textarea"
+								style="max-height:200px;overflow: scroll;display: block;width: 100%;"
+								v-model="props.row.ch_content"
+								disabled></el-input>
+							</el-col>
+						</el-row>
+					</template>
+				</el-table-column>
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="submitter"
+				label="交班人"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="ch_content"
+				label="待跟进事项"
+				show-overflow-tooltip
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="time_stamp"
+				label="班次时间"
+				show-overflow-tooltip
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="banci"
+				label="班次"
+				sortable
+				align="center">
+					<template slot-scope="scope">
+					{{scope.row.banci === 0 ? '夜班' : '白班'}}
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="ch_state"
+				label="状态"
+				align="center"
+				sortable
+				disabled>
+					<template slot-scope="scope">
+					{{scope.row.ch_state === 0 ? '未交班' : '已交班'}}
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="ch_submit_time"
+				label="交班时间"
+				sortable
+				align="center"></el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 2000]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script>
+	const complaintHandoverData = {:json_encode($complaintHandoverData)};
+	const complaintHandoverDataList = {:json_encode($complaintHandoverDataList)};
+	const admin_account = {:json_encode($admin_account)};
+	
+	const pagination = {
+				current_page: complaintHandoverDataList.current_page,
+				last_page: complaintHandoverDataList.last_page,
+				per_page: complaintHandoverDataList.per_page,
+				total: complaintHandoverDataList.total
+			};
+	let app = new Vue({
+		el: '#app',
+		data() {
+			return {
+				isLoading: false,
+				admin_account: admin_account,
+				can_i_submit: false, // 是否可以交班
+				timer: '...',
+				ruleForm: {
+					submitter: '{$adminInfo.admin_account}',
+					ch_id: complaintHandoverData.ch_id,
+					ch_content: complaintHandoverData.ch_content,
+					banci: complaintHandoverData.banci,
+					ch_state: complaintHandoverData.ch_state,
+					time_stamp: complaintHandoverData.time_stamp,
+				},
+				rules: {
+					ch_content: [
+						{ required: true, message: '必填项', trigger: 'blur' }
+					]
+				},
+				isShowSearch: false, // 打开搜索面板
+				searchForm: {
+					submitter: '',
+					ch_content: '',
+					banci: '',
+					time_stamp: '',
+					ch_submit_time: [],
+				},
+				complaintHandoverData: complaintHandoverData,
+				complaintHandoverDataList: complaintHandoverDataList.data,
+				pagination: pagination,
+			};
+		},
+		methods: {
+			save(formName){
+				const _this = this
+				_this.$refs[formName].validate((valid) => {
+					if (valid) {
+						$.ajax({
+							url: "{:url('@system/editComplaintHandover')}",
+							data:{
+								isSubmit: 0, // 1 表示交班 0表示暂存
+								ruleForm: _this.ruleForm
+							},
+							type: 'POST',
+							success: function (res) {
+								console.log(res);
+								let msg = res.msg
+								let code = res.code
+								if(code == 1){
+									showTs(1, msg, 1000)							
+								} else {
+									showTs(1, msg, 1000)
+								}
+							},
+							error: function (err) {
+								showTs(0, '出现未知错误，请联系管理员', 5000)
+								console.log(err);
+							}
+						})
+					} else {
+						return false;
+					}
+				});
+			},
+			submitForm(formName) {
+				const _this = this
+				_this.$refs[formName].validate((valid) => {
+					if (valid) {
+						$.ajax({
+							url: "{:url('@system/editComplaintHandover')}",
+							data:{
+								isSubmit: 1, // 1 表示交班 0表示暂存
+								ruleForm: _this.ruleForm
+							},
+							type: 'POST',
+							success: function (res) {
+								let msg = res.msg
+								let code = res.code
+								console.log(_this.ruleForm,res);
+								if(code == 1){
+									showTs(1, msg, 1000)
+									setTimeout(() => {
+										window.location.reload()
+									}, 1000);								
+								} else {
+									showTs(0, msg, 3000)
+								}
+							},
+							error: function (err) {
+								showTs(0, '出现未知错误，请联系管理员', 5000)
+								console.log(err);
+							}
+						})
+					} else {
+						return false;
+					}
+				});
+			},
+			resetForm(formName) {
+				this.$refs[formName].resetFields();
+			},
+			search(){
+				const _this = this;
+				$.ajax({
+					url:'complaintHandover',
+					type:'post',
+					data:{
+						isSearch: 1,
+						pagination: _this.pagination,
+						searchForm: _this.searchForm
+					},
+					success:function (res) {
+						_this.complaintHandoverDataList = res.data
+						_this.pagination = {
+							current_page: res.current_page,
+							last_page: res.last_page,
+							per_page: res.per_page,
+							total: res.total
+						}
+					},
+					error:function(e){
+						console.log(e)
+						showTs(0, '发生错误，请刷新一下~', 10000)
+					}
+				})
+			},
+			resetForm(formName){
+				this.$refs[formName].resetFields();
+			},
+			// pagination时
+			handleSizeChange(per_page){
+				const _this = this;
+				_this.pagination.per_page = per_page
+				_this.search();
+			},
+			handleCurrentChange(current_page){
+				const _this = this;
+				_this.pagination.current_page = current_page
+				_this.search();
+			},
+			// 导出班表
+			handleDownload(){
+				const _this = this
+				_this.isLoading = true
+				let data = [],th	
+				/* 通用导出数据  需要引入 xlsx.core.js
+				* data：数据
+				*  格式：[
+						{
+							title1:'',
+							title2:'',
+							title3:'',
+							title4:'',
+							title5:'',
+							title6:'',
+						},
+						{
+							title1:'',
+							title2:'',
+							title3:'',
+							title4:'',
+							title5:'',
+							title6:'',
+						},
+					]
+				* th：表头
+				* 	格式： ["title1", "title2","title3","title4","title5","title6"]
+				* is_show_shift_change: 导出是否显示换班记录 布尔值
+				* filename：导出表格名称
+				*/
+				// 导出需要点时间，3s内仅导出一次，只能用setTimeout的方式，在下面任何地方加_this.isLoading = false都瞬间执行
+				setTimeout(function(){
+					_this.isLoading = false
+				}, 3000)
+				th = ['时间','班次','交班人','交班内容','交班时间']
+				// 修改complaintHandoverDataList中的key为中文，并赋值给data
+				for (let i = 0; i < _this.complaintHandoverDataList.length; i++) {
+					let dataItem = {}
+					dataItem['时间'] = _this.complaintHandoverDataList[i].time_stamp
+					dataItem['班次'] = _this.complaintHandoverDataList[i].banci
+					dataItem['交班人'] = _this.complaintHandoverDataList[i].submitter
+					dataItem['交班内容'] = _this.complaintHandoverDataList[i].ch_content
+					dataItem['交班时间'] = _this.complaintHandoverDataList[i].ch_submit_time
+					data.push(dataItem)
+				}
+				let filename = "国际及一干传输投诉岗位交班历史数据";
+				exportData(data, th, filename);
+				function exportData(data, th, filename) {
+					let deferred = $.Deferred();
+					data = data || [];
+					th = th || [];
+					if (data.length === 0 || th.length === 0) {
+						console.log("缺少数据");
+						deferred.reject();
+						return;
+					}
+					filename = filename || '数据导出';
+					filename += '.xlsx';
+					let loadedData = [];
+					let i = 0;
+					loadedData.push(th);
+					for (i = 0; i < data.length; ++i) {
+						let item = data[i];
+						let obj = [];
+						for(let j = 0; j < th.length; j++) {
+							let str = item[th[j]]
+							obj.push(str)
+						}
+						loadedData.push(obj);
+					}
+					initFile();
+
+					function initFile() {
+						let wb = XLSX.utils.book_new(),
+							ws = XLSX.utils.aoa_to_sheet(loadedData);
+						XLSX.utils.book_append_sheet(wb, ws, "sheet1");
+						XLSX.writeFile(wb, filename, {
+							compression: true
+						});
+						deferred.resolve();
+					}
+					return deferred.promise();
+				}
+			},
+			
+		},
+		mounted() {
+			// 在这个阶段vue实例已经创建，以下内容已经设置完成：响应式数据、计算属性、方法和侦听器。然而，此时挂载阶段还未开始，因此 $el 属性仍不可用。仍然不能获取DOM元素。
+			
+			const _this = this
+			// 交班时间计时器
+			setInterval(function(){
+				// 制作日期timeStamp
+				let yyyy = new Date().getFullYear()
+				let mm = new Date().getMonth()+1
+				let dd = new Date().getDate()
+				if (mm <= 9){
+					mm = '0'+mm
+				}
+				if (dd <= 9){
+					dd = '0'+dd
+				}
+				let now_timeStamp = yyyy.toString() + mm.toString() + dd
+				// 获取时分秒，做交班倒计时
+				let h = new Date().getHours()
+				let m = new Date().getMinutes()
+				let s = new Date().getSeconds()
+				// 设置倒计时的时分秒
+				let count_down_h = 0 // 倒计时——时
+				let count_down_m = 0 // 倒计时——分
+				let count_down_s = 0 // 倒计时——秒
+				if (h < 7) {
+					// 当天早上夜班交班
+					count_down_h = 7 - h
+					count_down_m = 59 - m
+					count_down_s = 59 - s
+					if (count_down_m <= 9){
+						count_down_m = '0'+count_down_m
+					}
+					if (count_down_s <= 9){
+						count_down_s = '0'+count_down_s
+					}
+				} else if (h < 17) {
+					// 白班交班
+					count_down_h = 16 - h
+					count_down_m = 59 - m
+					count_down_s = 59 - s
+					if (count_down_m <= 9){
+						count_down_m = '0'+count_down_m
+					}
+					if (count_down_s <= 9){
+						count_down_s = '0'+count_down_s
+					}
+				} else if (h >= 17) {
+					// 第二天早上夜班交班
+					count_down_h = 23 - h + 8
+					count_down_m = 59 - m
+					count_down_s = 59 - s
+					if (count_down_m <= 9){
+						count_down_m = '0'+count_down_m
+					}
+					if (count_down_s <= 9){
+						count_down_s = '0'+count_down_s
+					}
+				}
+				// 判断can_i_submit 可交班情况还要考虑忘记交班的场景较复杂，所以改为判断不可交班情况更简单
+				if (Math.abs(_this.ruleForm['time_stamp'] - now_timeStamp) == 1 && _this.ruleForm['banci'] == 0 && h < 8) {
+					// 情况1：每天早上8点前，不能交班
+					_this.can_i_submit = false
+				} else if (Math.abs(_this.ruleForm['time_stamp'] - now_timeStamp) == 0 && _this.ruleForm['banci'] == 0 && h < 24) {
+					// 情况2：每天下午交班后，晚上24点前不能交班
+					_this.can_i_submit = false
+				} else if (Math.abs(_this.ruleForm['time_stamp'] - now_timeStamp) == 0 && _this.ruleForm['banci'] == 1 && h < 17) {
+					// 情况3：每天早上已交接昨日夜班后，下午17点前，不能交班
+					_this.can_i_submit = false
+				} else {
+					// 包括忘记交班的所有其他可以交班的情况
+					_this.can_i_submit = true
+				}
+				if (!_this.can_i_submit) { 
+					// 不能交接班时，才进行倒计时
+					_this.timer = count_down_h + ':' + count_down_m + ':' + count_down_s
+				}
+			}, 1000)
+		}
+	})
+	app = null
+</script>

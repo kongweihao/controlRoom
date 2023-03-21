@@ -1,0 +1,4 @@
+开启workerman
+php workermanTest.php start
+关闭workerman
+php workermanTest.php stop

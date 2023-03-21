@@ -1,0 +1,408 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>库存管理</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<el-button icon="el-icon-plus" circle @click="isShowAddDrawer = !isShowAddDrawer"></el-button>
+			<!-- 搜索面板 -->
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="物资名称" prop="im_name">
+						<el-input
+						v-model="searchForm.im_name"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="录入时间" prop="create_time">
+						<el-date-picker
+						v-model="searchForm.create_time"
+						type="datetimerange"
+						format="yyyy-MM-dd HH:mm:ss"
+						value-format="yyyy-MM-dd HH:mm:ss"
+						@blur="search()"></el-date-picker>
+					</el-form-item>
+					<el-form-item label="上一次操作时间" prop="update_time">
+						<el-date-picker
+						v-model="searchForm.update_time"
+						type="datetimerange"
+						format="yyyy-MM-dd HH:mm:ss"
+						value-format="yyyy-MM-dd HH:mm:ss"
+						@blur="search()"></el-date-picker>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+						<el-button @click="isShowSearch = !isShowSearch">收起</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<!-- 库存列表 -->
+			<el-table
+			:data="inventoryManagementList"
+			max-height="400"
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="im_name"
+				label="物资名称"
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						<el-input v-model="scope.row.im_name" @change="handleEdit(scope.row, 'im_name')"></el-input>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="im_num"
+				label="库存数量"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						<el-span class="el-icon-minus" @click="editImNum(scope.row, 'minus')" style="cursor: pointer;"></el-span>
+						<el-input v-model.number="scope.row.im_num" @change="handleEdit(scope.row, 'im_num')" style="width:65px;text-align:center;margin: auto 5px"></el-input>
+						<el-span class="el-icon-plus" @click="editImNum(scope.row, 'plus')" style="cursor: pointer;"></el-span>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="im_can_apply_num"
+				label="可申请数量"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					 <template slot-scope="scope">
+						<el-popover trigger="hover" placement="top">
+						<p>库存: {{ scope.row.im_num }}</p>
+						<p>用户请求: {{ scope.row.im_num - scope.row.im_can_apply_num }}</p>
+						<p>注：若可申请数量等于0，表示物资不足</p>
+						<div slot="reference" class="name-wrapper">
+							<el-tag size="medium">{{ scope.row.im_can_apply_num }}</el-tag>
+						</div>
+						</el-popover>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="im_unit"
+				label="单位"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="create_time"
+				label="录入时间"
+				sortable
+				width="155"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="update_time"
+				sortable
+				label="上一次操作时间"
+				width="155"
+				align="center"></el-table-column>
+				<el-table-column
+				fixed="right"
+				label="操作"
+				width="100"
+				align="center">
+					<template slot-scope="scope">
+					 	<el-button type="danger" icon="el-icon-delete" circle @click="handleDelete(scope.row)"></el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 500]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+		<el-drawer
+		title="新增物资"
+		:visible.sync="isShowAddDrawer"
+		direction="ltr"
+		size="30%"
+		:modal-append-to-body = "false"
+		close-on-press-escape = "false"
+		style="height: 100%;">
+			<el-form :inline="true" :model="addForm" :rules="addRules"  ref="addForm" style="margin-left:30px">
+				<el-form-item label="名称" prop="im_name">
+					<el-input
+					v-model="addForm.im_name"
+					width="50"></el-input>
+				</el-form-item>
+				<el-form-item label="数量" prop="im_num">
+					<el-input
+					v-model.number="addForm.im_num"
+					width="50"></el-input>
+				</el-form-item>
+				<el-form-item label="单位" prop="im_unit">
+					<el-input
+					v-model="addForm.im_unit"
+					width="50"></el-input>
+				</el-form-item>
+				<el-form-item style="display: block;text-align:center">
+					<el-button type="primary" @click="handleAdd('addForm')">提交</el-button>
+					<el-button @click="resetForm('addForm')">重置</el-button>
+				</el-form-item>
+			</el-form>
+		</el-drawer>
+	</div>
+</div>
+<script>
+const inventoryManagementList = {:json_encode($inventoryManagementList)};
+const pagination = {
+				current_page: inventoryManagementList.current_page,
+				last_page: inventoryManagementList.last_page,
+				per_page: inventoryManagementList.per_page,
+				total: inventoryManagementList.total
+			};
+let app = new Vue({
+	el: '#app',
+	data() {
+		var checkImNum = (rule, value, callback) => {
+			if (value < 0) {
+				callback(new Error('必须≥0'));
+			} else {
+				callback();
+			}
+		};
+		return {
+			isShowSearch: false, // 打开搜索面板
+			searchForm: {
+				im_name: '',
+				create_time: [],
+				update_time: []
+			},
+			inventoryManagementList: inventoryManagementList.data,
+			pagination: pagination,
+			isShowAddDrawer: false, // 打开新增面板
+			addForm: {
+				im_name: '',
+				im_num: '',
+				im_unit: '',
+			},
+			addRules: {
+				im_name: [
+					{ required: true, message: '不能为空', trigger: 'blur' },
+				],
+				im_num: [
+					{ validator: checkImNum, trigger: 'blur' },
+					{ required: true, message: '不能为空', trigger: 'blur' },
+					{ type: 'number', message: '必须为数字值'}
+				],
+				im_unit: [
+					{ required: true, message: '不能为空', trigger: 'blur' },
+				]
+			}
+		}
+	},
+	methods: {
+		search(){
+			const _this = this;
+			console.log(_this.searchForm);
+			$.ajax({
+				url:'inventoryManagementList',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					_this.inventoryManagementList = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					
+								_this.$message({
+									type: 'error',
+									message: '发生错误，请刷新一下'
+								});
+				}
+			})
+		},
+		resetForm(formName){
+			this.$refs[formName].resetFields();
+			if (formName === 'searchForm') {
+				this.search()
+			}
+		},
+		handleAdd(formName) {
+			const _this = this;
+ 			this.$refs[formName].validate((valid) => {
+				if (valid) {
+					$.ajax({
+						url:'addInventoryManagementList',
+						data: _this.addForm,
+						type: 'post',
+						success: function (res) {
+							const code = res.code
+							const msg = res.msg
+							if(code === 0){
+								_this.$message({
+									type: 'info',
+									message: msg
+								});
+							}else if(code > 0){
+								_this.$message({
+									type: 'success',
+									message: msg
+								});
+							}else{
+								_this.$message({
+									type: 'error',
+									message: '操作失败，请刷新重试：' + msg
+								});
+							}
+						},
+						error: function (err) {
+							console.log(err);
+							_this.$message({
+								type: 'error',
+								message: '未知错误，请联系管理员'
+							});
+						}
+					})
+				} else {
+					console.log('error submit!!');
+					return false;
+				}
+			});
+		},
+		handleEdit(row, key){
+			const _this = this;
+			row['key'] = key
+			$.ajax({
+				url: 'editInventoryManagementList',
+				type: 'post',
+				data: row,
+				success: function (res) {
+					const code = res.code
+					const msg = res.msg
+					if(code === 0){
+						_this.$message({
+									type: 'info',
+									message: msg
+								});
+					}else if(code > 0){
+						_this.$message({
+									type: 'success',
+									message: msg
+								});
+						// 修改物资数量时，同时修改可申请数量
+						if (key === 'im_num') {
+							row['im_can_apply_num'] = res.im_can_apply_num
+						}
+					}else{
+						_this.$message({
+									type: 'error',
+									message: '操作失败，请刷新重试：' + msg
+								});
+					}
+				},
+				error: function (err) {
+					_this.$message({
+							type: 'error',
+							message: '发生未知错误，请刷新重试'
+						});
+				}
+			})
+		},
+		editImNum(row, type) {
+			const _this = this;
+			row['im_num'] = parseInt(row['im_num'])
+			if (type === 'minus') {
+				row['im_num']--
+			} else if (type === 'plus') {
+				row['im_num']++
+			} else {
+				
+						_this.$message({
+							type: 'error',
+							message: '出现未知错误，请联系管理员，错误信息：编辑物资数量时发生函数参数错误' 
+						});
+			}
+			_this.handleEdit(row, 'im_num')
+		},
+		handleDelete(row) {
+			const _this = this;;
+			this.$confirm('此操作将永久删除物资【' + row.im_name + '】 是否继续?', '提示', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning',
+					center: true
+				}).then(() => {
+					$.ajax({
+						url: 'deleteInventoryManagementList',
+						type: 'post',
+						data: {im_id:row.im_id},
+						success: function (res) {
+							console.log(res);
+							const code = res.code
+							const msg = res.msg
+							if(code === 0){
+								_this.$message({
+									type: 'info',
+									message: msg
+								});
+							}else if(code > 0){
+								_this.$message({
+									type: 'success',
+									message: '删除成功!'
+								});
+								location.reload()
+							}else{
+								_this.$message({
+									type: 'error',
+									message: '操作失败，请刷新重试：' + msg
+								});
+							}
+						},
+						error: function (err) {
+							_this.$message({
+							type: 'error',
+							message: '发生未知错误，请刷新重试'
+						});
+						}
+					})
+				}).catch(() => {
+					this.$message({
+						type: 'info',
+						message: '已取消删除'
+					});
+				});
+		},
+		// pagination时
+		handleSizeChange(per_page){
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page){
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		}
+	}
+})
+</script>

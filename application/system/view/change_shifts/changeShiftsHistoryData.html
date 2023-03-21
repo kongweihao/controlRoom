@@ -1,0 +1,256 @@
+<style>
+	/* 交接班树形主键样式重写 */
+	.taskTree .el-tree-node__content {
+		height: auto;
+	}
+</style>
+<div class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>- 交接班历史数据管理</p>
+	</blockquote>
+	<div id="app" style="padding: 15px;">
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<el-button @click="handleExport" style="float: right;">导出</el-button>
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="时间" prop="time_stamp">
+						<el-input
+						v-model="searchForm.time_stamp"
+						width="50"></el-input>
+					</el-form-item>
+					<el-form-item label="班次" prop="is_day_shift">
+						<el-select v-model="searchForm.is_day_shift" placeholder="请选择">
+							<el-option></el-option>
+							<el-option label="白班" :value="1"></el-option>
+							<el-option label="夜班" :value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="交接班内容" prop="csh_data">
+						<el-tooltip>
+							<div slot="content">暂不支持输入‘/’进行搜索</div>
+							<el-input v-model="searchForm.csh_data"></el-input>
+						</el-tooltip>
+					</el-form-item>
+					<el-form-item label="交班人" prop="is_shiftOver">
+						<el-input
+						v-model="searchForm.is_shiftOver"></el-input>
+					</el-form-item>
+					<el-form-item label="接班人" prop="is_succession">
+						<el-input
+						v-model="searchForm.is_succession"></el-input>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<el-table
+			class="taskTree"
+			:data="draftList"
+			max-height="400"
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="expand">
+					<template
+					slot-scope="props"
+					style="position: relative;left: 200px;">
+						<el-row :gutter="20">
+							<el-divider>
+							交接班详情
+							</el-divider>
+							<el-tree
+								:data="props.row.csh_data"
+								:props="{label: 'tim_name', value: 'tim_id'}"
+								node-key="id"
+								:expand-on-click-node="false">
+								<div class="custom-tree-node" slot-scope="{ node, data }" style="width:100%;">
+									<!-- 构造引用类型数据 -->
+									<!-- 加载叶子节点 -->
+									<div v-if="data.type2ChildrenDataStr !== '' || data.is_leaf.toString() !== 'false'">
+										{{ indexArr[data.tim_level-1][(data.index.split('|').pop() || data.index )] + '、' + node.label }}
+										<el-input v-model="data.type2ChildrenDataStr" disabled type="textarea" rows="4" style="display: block;"></el-input>
+									</div>
+									<div v-else>{{ indexArr[data.tim_level-1][(data.index.split('|').pop() || data.index )] + '、' + node.label }}</div>
+								</div>
+							</el-tree>
+						</el-row>
+					</template>
+				</el-table-column>
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="time_stamp"
+				label="时间"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="is_day_shift"
+				label="班次"
+				show-overflow-tooltip
+				width="200"
+				align="center">
+					<template slot-scope="props">
+						{{ props.row.is_day_shift ? '白班' : '夜班' }}
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="is_succession"
+				label="接班人"
+				show-overflow-tooltip
+				width="200"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="is_shiftOver"
+				label="交班人"
+				show-overflow-tooltip
+				width="200"
+				align="center"></el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script type="module">
+const draftList = {:json_encode($draftList)};
+console.log(draftList);
+/** 索引设计器——为树形结构构建序号
+ * 6个级别，每个级别序号最大值为20
+**/
+const indexArr = [
+	// 第1级工作项
+	['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'],
+	// 第2级工作项
+	[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+	// 第3级工作项
+	['（1）','（2）','（3）','（4）','（5）','（6）','（7）','（8）','（9）','（10）','（11）','（12）','（13）','（14）','（15）','（16）','（17）','（18）','（19）','（20）'],
+	// 第4级工作项
+	['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],
+	// 第5级工作项
+	['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'],
+	// 第6级工作项
+	['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ','Ⅹ','Ⅺ','Ⅻ','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'],
+];
+new Vue({
+	el: '#app',
+	data() {
+		return {
+			isShowSearch: false, // 打开搜索面板
+			searchForm: {
+				time_stamp: '',
+				is_day_shift: '',
+				is_confirm: '',
+				evaluate: '',
+				reviewers: '',
+				post: '',
+				create_time: [],
+				update_time: []
+			},
+			indexArr: indexArr,
+			draftList: draftList.data,
+			pagination: {
+				per_page: draftList.per_page,
+				current_page: draftList.current_page,
+				total: draftList.total,
+			}
+		}	
+	},
+	mounted: function () {
+	},
+	watch: {
+	},
+	methods: {
+		// 搜索
+		search(){
+			const _this = this;
+			$.ajax({
+				url:'changeShiftsHistoryData',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					console.log(res);
+					_this.draftList = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					showTs(0, '发生错误，请刷新一下~', 10000)
+				}
+			})
+		},
+		// 重置
+		resetForm(formName) {
+			this.$refs[formName].resetFields();
+		},
+		// pagination时
+		handleSizeChange(per_page) {
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page) {
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		},
+		// 导出
+		handleExport() {
+			const _this = this
+			const csData = [];
+			for (let i = 0; i < this.draftList.length; i++) {
+				const draftListItem = this.draftList[i];
+				let csh_data = draftListItem.csh_data
+				function deepCshData(data) {
+					let txt = ''
+					for (let i = 0; i < data.length; i++) {
+						const dElement = data[i];
+						if (dElement.hasOwnProperty('children')) {
+							txt += dElement.tim_name + '\n' + deepCshData(dElement.children) + '\n'
+						} else {
+							// console.log(dElement.tim_name, dElement.type2ChildrenDataStr);
+							txt += dElement.tim_name + '\n' + (dElement.type2ChildrenDataStr || '无。') + '\n'
+						}
+					}
+					return txt
+				}
+				csData.push([
+					draftListItem.time_stamp,
+					draftListItem.is_day_shift === 0 ? '夜班' : '白班',
+					draftListItem.is_succession,
+					draftListItem.is_shiftOver,
+					deepCshData(csh_data),
+				])
+			}
+			// console.log(this.draftList);
+			layui.use(['table'], function(){
+				const table = layui.table
+				table.exportFile(['时间','班次','接班人','交班人','交接班内容'], csData ,'xls', '交接班数据'); //默认导出 xls
+			})
+
+		}
+	}
+})
+</script>

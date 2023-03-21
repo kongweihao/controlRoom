@@ -1,0 +1,65 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>生产信息管理系统-跳转</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-link type="warning" href="http://192.168.199.37/controlRoomPrivate/index.php" style="text-decoration:none">
+				<h2>
+					打开生产信息管理系统（需接入2.1与1.3五楼cmnet）
+				</h2>
+			</el-link>
+		</el-card>
+	</div>
+</div>
+<script>
+	let app = new Vue({
+		el: '#app',
+		data() {
+			return {
+				
+			}
+		},
+		methods: {
+			},
+		computed: {
+			// 对于任何复杂逻辑，你都应当使用计算属性
+		},
+		// 不要在选项 property 或回调上使用箭头函数，
+		// 比如 created: () => console.log(this.a) 或 vm.$watch('a', newValue => this.myMethod())。
+		// 因为箭头函数并没有 this，this 会作为变量一直向上级词法作用域查找，直至找到为止，
+		// 经常导致 
+		// Uncaught TypeError: Cannot read property of undefined 
+		// 或 Uncaught TypeError: this.myMethod is not a function 之类的错误。
+		beforeCreate:function(){
+			// 初始化：事件&生命周期
+		},
+		created:function(){
+			// 初始化：注入&校验
+			const _this = this;
+			
+		},
+		beforeMount:function(){
+		},
+		mounted:function(){
+			// 创建vm.$el 并用其替换"el" 
+			// 挂载完毕
+			const _this = this;
+		},
+		beforeUpdate:function(){
+			// 当data被修改时
+		},
+		updated: function () {
+			// 虚拟dom重新渲染并应用更新
+			const _this = this;
+		},
+		beforeDestroy:function(){
+			// 当调用vm.$destroy()函数时
+		},
+		destroy:function(){
+			// 解除绑定销毁子组件以及事件监听器
+			// 销毁完毕 
+		}
+	})
+
+</script>

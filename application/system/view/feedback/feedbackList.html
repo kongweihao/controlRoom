@@ -1,0 +1,363 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>大家的反馈</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="类型" prop="fb_type">
+						<el-select v-model="searchForm.fb_type" placeholder="请选择反馈类型">
+							<el-option></el-option>
+							<el-option label="吐槽" :value="-1"></el-option>
+							<el-option label="好评" :value="1"></el-option>
+							<el-option label="单纯反馈一下" :value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="账号" prop="admin_account">
+						<el-input
+						v-model="searchForm.admin_account"
+						width="50"></el-input>
+					</el-form-item>
+					<el-form-item label="反馈内容" prop="fb_content">
+						<el-input
+						v-model="searchForm.fb_content"></el-input>
+					</el-form-item>
+					<el-form-item label="解决方案" prop="fb_solution">
+						<el-input
+						v-model="searchForm.fb_solution"></el-input>
+					</el-form-item>
+					<el-form-item label="是否已读" prop="fb_is_read">
+						<el-select v-model="searchForm.fb_is_read">
+							<el-option></el-option>
+							<el-option label="已读" :value="1"></el-option>
+							<el-option label="未读" :value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="处理情况" prop="fb_is_handle">
+						<el-select v-model="searchForm.fb_is_handle">
+							<el-option></el-option>
+							<el-option label="已处理" :value="1"></el-option>
+							<el-option label="未处理" :value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="反馈时间" prop="create_time">
+						<el-date-picker
+						v-model="searchForm.create_time"
+						type="datetimerange"
+						format="yyyy-MM-dd HH:mm:ss"
+						value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
+					</el-form-item>
+					<el-form-item label="上一次操作时间" prop="update_time">
+						<el-date-picker
+						v-model="searchForm.update_time"
+						type="datetimerange"
+						format="yyyy-MM-dd HH:mm:ss"
+						value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<el-divider>默认置顶未读反馈</el-divider>
+			<el-table
+			:data="feedbacklist"
+			max-height="400"
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="expand">
+					<template
+					slot-scope="props">
+						<el-row :gutter="20">
+							<el-col :span="12">
+								<el-divider>
+								反馈详情
+								</el-divider>
+								<el-input
+								autosize
+								type="textarea"
+								style="max-height:200px;overflow: scroll;display: block;width: 100%;"
+								v-model="props.row.fb_content"
+								disabled></el-input>
+							</el-col>
+							<el-col :span="12">
+								<el-divider>
+								解决方案
+								</el-divider>
+								<el-input
+								autosize
+								type="textarea"
+								style="max-height:200px;overflow: scroll;display: block;width: 100%;"
+								v-model="props.row.fb_solution"
+								disabled></el-input>
+							</el-col>
+						</el-row>
+					</template>
+				</el-table-column>
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="fb_type"
+				label="类型"
+				width="130px"
+				align="center">
+					<template slot-scope="scope">
+						<i v-if="scope.row.fb_type == 1" class="el-icon-sunny" style="color: orange">好评</i>
+						<i v-if="scope.row.fb_type == 0" class="el-icon-share">单纯反馈一下</i>
+						<i v-if="scope.row.fb_type == -1" class="el-icon-cloudy" style="color: red">被吐槽了</i>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="admin_account"
+				label="账号"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="fb_content"
+				label="反馈内容"
+				show-overflow-tooltip
+				width="200"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="fb_solution"
+				label="解决方案"
+				show-overflow-tooltip
+				width="200"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="fb_is_read"
+				label="是否已读"
+				width="150"
+				align="center">
+					<template slot-scope="scope">
+						<el-form>
+							<el-form-item>
+								<el-switch
+								v-show="scope.row.fb_is_read === 0"
+								v-model="scope.row.fb_is_read"
+								inactive-color="red"
+								:active-value="1"
+								:inactive-value="0"
+								active-text="已读"
+								inactive-text="未读"
+								@change="handleEdit(scope.row, 'fb_is_read')"></el-switch>
+								<el-switch
+								v-if="scope.row.fb_is_read === 1"
+								v-model="scope.row.fb_is_read"
+								inactive-color="red"
+								:active-value="1"
+								:inactive-value="0"
+								active-text="已读"
+								inactive-text="未读"
+								disabled></el-switch>
+							</el-form-item>
+						</el-form>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="fb_is_handle"
+				label="处理情况"
+				width="180px"
+				align="center">
+					<template slot-scope="scope">
+						<el-form>
+							<el-form-item>
+								<el-tooltip effect="dark" content="请编辑解决方案">
+									<el-switch
+									v-model="scope.row.fb_is_handle"
+									inactive-color="red"
+									:active-value="1"
+									:inactive-value="0"
+									active-text="已处理"
+									inactive-text="未处理"
+									disabled></el-switch>
+								</el-tooltip>
+							</el-form-item>
+						</el-form>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="create_time"
+				label="反馈时间"
+				width="155"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="update_time"
+				label="上一次操作时间"
+				width="155"
+				align="center"></el-table-column>
+				<el-table-column
+				fixed="right"
+				label="操作"
+				width="155"
+				align="center">
+					<template slot-scope="scope">
+						<el-button type="text" @click="showEditLayer(scope.row)">编辑解决方案</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 2000]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script>
+const feedbacklist = {:json_encode($feedbacklist)};
+const pagination = {
+				current_page: feedbacklist.current_page,
+				last_page: feedbacklist.last_page,
+				per_page: feedbacklist.per_page,
+				total: feedbacklist.total
+			};
+let app = new Vue({
+	el: '#app',
+	data() {
+		return {
+			isShowSearch: false, // 打开搜索面板
+			searchForm: {
+				admin_account: '',
+				fb_type: '',
+				fb_content: '',
+				fb_is_read: '',
+				fb_is_handle: '',
+				fb_solution: '',
+				create_time: [],
+				update_time: []
+			},
+			feedbacklist: feedbacklist.data,
+			pagination: pagination,
+		}
+	},
+	methods: {
+		search(){
+			const _this = this;
+			$.ajax({
+				url:'feedbackList',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					_this.feedbacklist = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					showTs(0, '发生错误，请刷新一下~', 10000)
+				}
+			})
+		},
+		resetForm(formName){
+			this.$refs[formName].resetFields();
+		},
+		showEditLayer(row){
+			const _this = this;
+			let html;
+			html = '<textarea id="editFBSolution" style="margin:20px;width:560px; height:85%;border:1px solid #ccc;border-radius:5px">'+row.fb_solution+'</textarea>'
+			layer.open({
+				type: 1
+				,title: '编辑解决方案' //不显示标题栏
+				// ,closeBtn: false
+				,area: ['600px;','80%']
+				,shade: 0.8
+				,id: 'LAY_editFBSolution' //设定一个id，防止重复弹出
+				,moveType: 1 //拖拽模式，0或者1
+				,content: html
+				,btn: ['提交', '取消']
+				,btnAlign: 'c'
+				,success: function(layero){
+					const btn = layero.find('.layui-layer-btn');
+					btn.find('.layui-layer-btn0').click(function(){
+						const fb_solution = $('#editFBSolution').val()
+						if(fb_solution === ''){
+							layer.msg('解决方案不能为空',{
+								time: 500
+							})
+						}else if(fb_solution === row.fb_solution){
+							layer.msg('没有修改',{
+								time: 500
+							})
+						}else{
+							row.fb_solution = fb_solution
+							row.fb_is_read = 1
+							row.fb_is_handle = 1
+							_this.handleEdit(row, 'fb_solution')
+						}
+					});
+				}
+			});
+		},
+		handleEdit(row, key){
+			row.fb_is_handle == 1 && (row.fb_is_read = 1)
+			const params = {
+				fb_id: row.fb_id,
+			}
+			let msg = ''
+			switch (key) {
+				case 'fb_is_read':
+					params.fb_is_read = row.fb_is_read
+					msg = '读取状态'
+					break;
+				case 'fb_solution':
+					params.fb_solution = row.fb_solution
+					params.fb_is_read = 1
+					params.fb_is_handle = 1
+					msg = '解决方案'
+					break;
+				default:
+					break;
+			}
+			$.ajax({
+				url: 'editFeedbackList',
+				type: 'post',
+				data: params,
+				success: function (res) {
+					if(res === 0){
+						showTs(1, msg + '没有任何修改', 1000)
+					}else if(res > 0){
+						showTs(1, msg + '修改成功', 1000)
+					}else{
+						showTs(0, msg + '修改失败，请刷新重试~', 5000)
+					}
+				},
+				error: function (err) {
+					showTs(0, '发生未知错误，请刷新重试~', 5000)
+				}
+			})
+		},
+		// pagination时
+		handleSizeChange(per_page){
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page){
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		}
+	}
+})
+</script>

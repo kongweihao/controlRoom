@@ -1,0 +1,79 @@
+{if condition="$Think.cookie.isExpand == 'off'"}
+<div class="layui-footer" style="left:0px;">{$settingInfo.copyright_data}</div>
+{else/}
+<div class="layui-footer" style="left:200px;">{$settingInfo.copyright_data}</div>
+{/if}
+
+<div class="cover"></div>
+{//顶部下拉提示}
+<div class="topTs">
+	<div class="sysTs"></div>
+</div>
+<script>
+	//提示窗
+	var isShowTs = false;//是否正在提示中
+	function showTs(type,msg,duration){
+		$(function(){
+			if(isShowTs==true){
+				return false;
+			}
+			isShowTs = true;
+			var css;
+			if(type==0){
+				css = 'btn-danger';
+			}else if(type==1){
+				css = 'btn-success';
+			}
+			$(".sysTs").text(msg);
+			$(".sysTs").addClass(css);
+			$(".topTs").addClass("on");
+			setTimeout(function() {
+				$(".topTs").removeClass("on");
+				isShowTs = false;
+			}, duration);
+		});
+	}
+</script>
+{notempty name="successTs"}
+<script>showTs(1,"{$successTs}",2000);</script>
+{/notempty}
+{notempty name="$Think.session.successTs"}
+<script>showTs(1,"{$Think.session.successTs}",2000);</script>
+{/notempty}
+
+{notempty name="errorTs"}
+<script>showTs(0,"{$errorTs}",3000);</script>
+{/notempty}
+{notempty name="$Think.session.errorTs"}
+<script>showTs(0,"{$Think.session.errorTs}",3000);</script>
+{/notempty}
+
+{//操作确认弹窗}
+<script>
+	//询问框
+	function showConfirmTs(obj,title){
+		layer.confirm(title, {
+			btn: ['确认','取消'] //按钮
+		}, function(){
+			location.href = $(obj).attr('href');
+		}, function(){
+			
+		});
+		return false;
+	}
+</script>
+
+<script>
+	//加载layui模块绑定
+	layui.config({
+		base: '__ROOT__/public/static/js/system/modules/' //模块目录
+	}).use('common'); //加载入口
+</script>
+<script src="__JS__/system/common.js?v={$VERSION}"></script>
+<script src="__JS__/util.js?v={$VERSION}"></script>
+<script>
+    $(document).ready(function () {
+        $('#think_page_trace_open img,#think_page_trace').remove();
+        $('#think_page_trace_open div').css({'background':'transparent','color':'#cccccc'});//去掉tp5默认logo以及加载时间
+    });
+</script>

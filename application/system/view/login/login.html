@@ -1,0 +1,82 @@
+{__NOLAYOUT__}
+<!DOCTYPE html>
+<html>
+	<style>
+		/* placeholder文字颜色 */
+		input::-webkit-input-placeholder {
+			color: #aab2bd;
+		}
+	</style>
+<head>
+{include file="inc/head" title="$settingInfo.website_title" /}
+<link rel="stylesheet" href="__CSS__/system/login.css" />
+</head>
+<body>
+	<img src="__IMG__/login.jpg" width="100%" height="100%" alt="">
+	<div class="loginWrap" style="position:absolute;z-index: 100;width: 30vw;left: 40vw;bottom: 10vh;text-align: center;">
+		<img src="__ROOT__logo.png" alt="" height="30%">
+		<h2 style="color: white;">{$settingInfo.website_title}</h2>
+		<form class="layui-form" action="{:url('@system/login')}" method="post" >
+			<div class="layui-form-item">
+				<!--<label class="layui-form-label">帐号</label>-->
+				<div class="layui-input-block">
+					<input type="text" name="admin_account" value="{$data.admin_account}" autocomplete="off" placeholder="帐号" class="layui-input" required="required" style="border: 1px solid #9a0fd1;border-radius: 50px;text-align: center;">
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<!--<label class="layui-form-label">密码</label>-->
+				<div class="layui-input-block">
+					<input type="password" name="admin_password" value="{$data.admin_password}" placeholder="密码" autocomplete="off" class="layui-input" required="required" style="border: 1px solid #9a0fd1;border-radius: 50px;text-align: center;">
+				</div>
+			</div>
+			<!--提示密码错误-->
+			{notempty name="ts"}
+			<div class="layui-form-item" style="color:red;">{$ts}</div>
+			{/notempty}
+			<div class="layui-form-item submit-item">
+				<div class="layui-input-block">
+					<button class="layui-btn" type="submit" style="border-radius: 5px;background-image: linear-gradient(45deg,#fd009c, #9a0fd1, #5900ff);">立即登录</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</body>
+</html>
+<style>
+
+</style>
+<script>
+	function isMobile(){
+		let userAgentInfo = navigator.userAgent;
+		let Agents = ['Android','iPhone','SymbianOS','Windows Phone']
+		let getArr = Agents.filter(i => userAgentInfo.includes(i))
+		return getArr.length ? true : false
+	}
+	function init() {
+        //表单响应式样式
+		let loginWrapW = $('.loginWrap').css('width');
+        let loginWrapT = $('.loginWrap').css('top');
+        let loginWrapL = $('.loginWrap').css('left');
+		if(isMobile()) {
+			loginWrapW = '70vw';
+			loginWrapT = '25vh'
+			loginWrapL = '15VW'
+		} else {
+			loginWrapW = '20vw';
+			loginWrapT = '25vh'
+			loginWrapL = '40VW'
+		}
+        $('.loginWrap').css({'width':loginWrapW});
+        $('.loginWrap').css({'top':loginWrapT});
+        $('.loginWrap').css({'left':loginWrapL});
+    }
+	$(document).ready(function () {
+        $('#think_page_trace_open img,#think_page_trace').remove();
+        $('#think_page_trace_open div').css({'background':'transparent','color':'#cccccc'});//去掉tp5默认logo以及加载时间
+        init();
+        // alert('咱不支持ie浏览器内核');
+    });
+    $(window).resize(function() {
+        init();
+    });
+</script>

@@ -1,0 +1,804 @@
+<div class="layui-body" id="app">
+	<blockquote class="layui-elem-quote" style="margin:15px">
+		<p>- 导出模板是依据最新的岗位情况而设计，不一定和当前看到的班表中的字段相同</p>
+		<p>- 名字有星号的表示曾经换过班</p>
+	</blockquote>
+	<div style="text-align: center;">
+		<form id="form" class="layui-form layui-input-inline" action="{:url('@system/rotaList')}" method="post">
+			<div class="layui-inline">
+				<el-date-picker
+				v-model="time_stamp"
+				type="month"
+				value-format="yyyyMM"
+				@change="handleChangeMonth"
+				placeholder="选择月">
+				</el-date-picker>
+			</div>
+		</form>
+	</div>
+	<div class="layui-collapse" style="margin:15px">
+		<div class="layui-colla-item">
+			<h2 class="layui-colla-title">冻结班表</h2>
+			<div class="layui-colla-content">
+			<blockquote class="layui-elem-quote" style="margin:15px">
+				<p>- 可实现1~3段班表冻结功能</p>
+				<p>- 多段冻结若时间重叠取并集</p>
+			</blockquote>
+			<div class="layui-form layui-input-inline">
+				<div style="text-align: center;padding: 10px;">
+					<div class="layui-inline" style="padding-left: 30px;"> 
+						<span>第一段</span>
+					</div>
+					<div class="layui-inline" style="padding-left: 30px;width:130px"> 
+						{if condition="$frozenSet[0]['is_frozen'] == 1"}
+						{$frozenSet[0]['frozen_timestamp1']}
+						{else/}
+						<input type="text" class="layui-input" id="frozen_timestamp1">
+						{/if}
+					</div>
+					<div class="layui-inline" style="padding-left: 10px;width:80px"> 
+						{if condition="$frozenSet[0]['is_frozen'] == 1"}
+						{$frozenSet[0]['banci1'] == 1 ? '白班' : '夜班'}
+						{else/}
+						<select name="banci1" lay-filter="banci1">
+							<option value="{$frozenSet[0]['banci1']}" selected>{$frozenSet[0]['banci1'] == 1? '白班' : '夜班'}</option>
+							<option value="{$frozenSet[0]['banci1'] == 1? 2:1}" >{$frozenSet[0]['banci1'] == 1? '夜班' : '白班'}</option>
+						</select> 
+						{/if}
+					</div>
+					<span style="padding-left: 30px;">——</span>
+					<div class="layui-inline" style="padding-left: 30px;width:130px"> 
+						{if condition="$frozenSet[0]['is_frozen'] == 1"}
+						{$frozenSet[0]['frozen_timestamp2']}
+						{else/}
+						<input type="text" class="layui-input" id="frozen_timestamp2">
+						{/if}
+					</div>
+					<div class="layui-inline" style="padding-left: 10px;width:80px"> 
+						{if condition="$frozenSet[0]['is_frozen'] == 1"}
+						{$frozenSet[0]['banci2'] == 1 ? '白班' : '夜班'}
+						{else/}
+						<select name="banci2" lay-filter="banci2">
+							<option value="{$frozenSet[0]['banci2']}" selected>{$frozenSet[0]['banci2'] == 1? '白班' : '夜班'}</option>
+							<option value="{$frozenSet[0]['banci2'] == 1? 2:1}" >{$frozenSet[0]['banci2'] == 1? '夜班' : '白班'}</option>
+						</select> 
+						{/if}   
+					</div>
+					<form class="layui-form layui-input-inline" lay-filter="isFrozen1">
+						<div class="layui-form-item" style="margin:0">
+							<div class="layui-input-inline" style="float: right; width: 130px;">
+								<button class="layui-btn" style="background-color: #71cdff;">
+								{if condition="$frozenSet[0]['is_frozen'] == 0"}
+								冻结
+								{else/}
+								解冻
+								{/if}
+								</button>
+							</div>
+						</div>
+					</form>
+				</div>	
+			</div>
+			<div class="layui-form layui-input-inline">
+				<div style="text-align: center;padding: 10px;">
+					<div class="layui-inline" style="padding-left: 30px;"> 
+						<span>第二段</span>
+					</div>
+					<div class="layui-inline" style="padding-left: 30px;width:130px"> 
+						{if condition="$frozenSet[1]['is_frozen'] == 1"}
+						{$frozenSet[1]['frozen_timestamp1']}
+						{else/}
+						<input type="text" class="layui-input" id="frozen_timestamp3">
+						{/if}
+					</div>
+					<div class="layui-inline" style="padding-left: 10px;width:80px"> 
+						{if condition="$frozenSet[1]['is_frozen'] == 1"}
+						{$frozenSet[1]['banci1'] == 1 ? '白班' : '夜班'}
+						{else/}
+						<select name="banci3" lay-filter="banci3">
+							<option value="{$frozenSet[1]['banci1']}" selected>{$frozenSet[1]['banci1'] == 1? '白班' : '夜班'}</option>
+							<option value="{$frozenSet[1]['banci1'] == 1? 2:1}" >{$frozenSet[1]['banci1'] == 1? '夜班' : '白班'}</option>
+						</select>      
+						{/if}
+					</div>
+					<span style="padding-left: 30px;">——</span>
+					<div class="layui-inline" style="padding-left: 30px;width:130px"> 
+						{if condition="$frozenSet[1]['is_frozen'] == 1"}
+						{$frozenSet[1]['frozen_timestamp2']}
+						{else/}
+						<input type="text" class="layui-input" id="frozen_timestamp4">
+						{/if}
+					</div>
+					<div class="layui-inline" style="padding-left: 10px;width:80px"> 
+						{if condition="$frozenSet[1]['is_frozen'] == 1"}
+						{$frozenSet[1]['banci2'] == 1 ? '白班' : '夜班'}
+						{else/}
+						<select name="banci4" lay-filter="banci4">
+							<option value="{$frozenSet[1]['banci2']}" selected>{$frozenSet[1]['banci2'] == 1? '白班' : '夜班'}</option>
+							<option value="{$frozenSet[1]['banci2'] == 1? 2:1}" >{$frozenSet[1]['banci2'] == 1? '夜班' : '白班'}</option>
+						</select>      
+						{/if}
+					</div>
+					<form class="layui-form layui-input-inline" lay-filter="isFrozen2">
+						<div class="layui-form-item" style="margin:0">
+							<div class="layui-input-inline" style="float: right; width: 130px;">
+								<button class="layui-btn" style="background-color: #71cdff;">
+								{if condition="$frozenSet[1]['is_frozen'] == 0"}
+								冻结
+								{else/}
+								解冻
+								{/if}
+								</button>
+							</div>
+						</div>
+					</form>
+				</div>	
+			</div>
+			<div class="layui-form layui-input-inline">
+				<div style="text-align: center;padding: 10px;">
+					<div class="layui-inline" style="padding-left: 30px;"> 
+						<span>第三段</span>
+					</div>
+					<div class="layui-inline" style="padding-left: 30px;width:130px"> 
+						{if condition="$frozenSet[2]['is_frozen'] == 1"}
+						{$frozenSet[2]['frozen_timestamp1']}
+						{else/}
+						<input type="text" class="layui-input" id="frozen_timestamp5">
+						{/if}
+					</div>
+					<div class="layui-inline" style="padding-left: 10px;width:80px"> 
+						{if condition="$frozenSet[2]['is_frozen'] == 1"}
+						{$frozenSet[2]['banci1'] == 1 ? '白班' : '夜班'}
+						{else/}
+						<select name="banci5" lay-filter="banci5">
+							<option value="{$frozenSet[2]['banci1']}" selected>{$frozenSet[2]['banci1'] == 1? '白班' : '夜班'}</option>
+							<option value="{$frozenSet[2]['banci1'] == 1? 2:1}" >{$frozenSet[2]['banci1'] == 1? '夜班' : '白班'}</option>
+						</select>       
+						{/if}
+					</div>
+					<span style="padding-left: 30px;">——</span>
+					<div class="layui-inline" style="padding-left: 30px;width:130px"> 
+						{if condition="$frozenSet[2]['is_frozen'] == 1"}
+						{$frozenSet[2]['frozen_timestamp2']}
+						{else/}
+						<input type="text" class="layui-input" id="frozen_timestamp6">
+						{/if}
+					</div>
+					<div class="layui-inline" style="padding-left: 10px;width:80px"> 
+						{if condition="$frozenSet[2]['is_frozen'] == 1"}
+						{$frozenSet[2]['banci2'] == 1 ? '白班' : '夜班'}
+						{else/}
+						<select name="banci6" lay-filter="banci6">
+							<option value="{$frozenSet[2]['banci2']}" selected>{$frozenSet[2]['banci2'] == 1? '白班' : '夜班'}</option>
+							<option value="{$frozenSet[2]['banci2'] == 1? 2:1}" >{$frozenSet[2]['banci2'] == 1? '夜班' : '白班'}</option>
+						</select>
+						{/if}
+					</div>
+					<form class="layui-form layui-input-inline" lay-filter="isFrozen3">
+						<div class="layui-form-item" style="margin:0">
+							<div class="layui-input-inline" style="float: right; width: 130px;">
+								<button class="layui-btn" style="background-color: #71cdff;">
+								{if condition="$frozenSet[2]['is_frozen'] == 0"}
+								冻结
+								{else/}
+								解冻
+								{/if}
+								</button>
+							</div>
+						</div>
+					</form>
+				</div>	
+			</div>
+		  </div>
+		</div>
+	</div>
+	<!-- 值班表 -->
+	<div style="padding:15px;clear: both;">
+		<table id="rotaListTable" lay-filter="rotaList_table"></table>
+	</div>
+	<div style="text-align: center ;">
+		<el-button v-loading="isExportLoading" @click="handleDownload(cols_data,cols_monitorPostList,true)">导出班表</el-button>
+		<el-button v-loading="isExportLoading" @click="handleDownload(cols_data,cols_monitorPostList,false)">导出班表（带换班记录）</el-button>
+	</div>
+</div>
+
+<script type="text/html" id="editBtn">
+	<a class="layui-btn layui-btn-xs" lay-event="edit" style="height:20px;line-height:20px;width:40px;padding:0">编辑</a>
+	<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del" style="height:20px;line-height:20px;width:40px;padding:0">删除</a>
+</script>
+<script>
+	const app = new Vue({
+		el: '#app',
+		data() {
+			return {
+				time_stamp: "{$time_stamp}",
+				isExportLoading: false,
+				cols_monitorPostList: [], //值班表表头数据，从下面layUI模板中获取
+				cols_data: [], //值班表表身数据，从下面layUI模板中获取
+			}
+		},
+		methods: {
+			// 导出班表
+			handleDownload(data, th, is_hide_shift_change){	
+				/* 通用导出数据  需要引入 xlsx.core.js
+				* data：数据
+				*  格式：[
+						{
+							title1:'',
+							title2:'',
+							title3:'',
+							title4:'',
+							title5:'',
+							title6:'',
+						},
+						{
+							title1:'',
+							title2:'',
+							title3:'',
+							title4:'',
+							title5:'',
+							title6:'',
+						},
+					]
+				* th：表头
+				* 	格式： ["title1", "title2","title3","title4","title5","title6"]
+				* is_show_shift_change: 导出是否显示换班记录 布尔值
+				* filename：导出表格名称
+				*/
+				const _this = this
+				this.isExportLoading = true
+				// 浏览器导出需要几秒钟，这里设置三秒内禁止重复导出，下面其他代码都瞬间执行无法设置loading
+				setInterval(function(){
+					_this.isExportLoading = false
+				}, 3000)
+				let filename = this.time_stamp+"班表";
+			　　exportData(data, th, filename);
+				function exportData(data, th, filename) {
+					let deferred = $.Deferred();
+					data = data || [];
+					th = th || [];
+					if (data.length === 0 || th.length === 0) {
+			　　　　　　　console.log("缺少数据");
+						deferred.reject();
+						return;
+					}
+					filename = filename || '数据导出';
+					filename += '.xlsx';
+					let loadedData = [];
+					let i = 0;
+					loadedData.push(th);
+					for (i = 0; i < data.length; ++i) {
+						let item = data[i];
+						let obj = [];
+						for(let j = 0; j < th.length; j++) {
+							let str = item[th[j]]
+							// is_hide_shift_change 是否隐藏换班记录
+							if(is_hide_shift_change && str.indexOf('<') != -1) {
+								str = str.slice(0,str.indexOf('<'));
+							}
+							obj.push(str)
+						}
+						loadedData.push(obj);
+					}
+					initFile();
+
+					function initFile() {
+						let wb = XLSX.utils.book_new(),
+							ws = XLSX.utils.aoa_to_sheet(loadedData);
+						XLSX.utils.book_append_sheet(wb, ws, "sheet1");
+						XLSX.writeFile(wb, filename, {
+							compression: true
+						});
+						deferred.resolve();
+
+					}
+
+					return deferred.promise();
+				}
+
+			},
+			handleChangeMonth(){
+				const _this = this
+				console.log(_this.time_stamp )
+				if(_this.time_stamp  == ''){
+					return
+				}
+				location.href = "{:url('@system/rotaList')}?time_stamp=" + _this.time_stamp;
+			}
+		}
+	})
+layui.use(['table','laydate','form'], function(){
+	let time_stamp = "{$time_stamp}";
+	let frozen_timestamp1 = "{$frozenSet[0]['frozen_timestamp1']}";
+	let frozen_timestamp2 = "{$frozenSet[0]['frozen_timestamp2']}";
+	let banci1 = "{$frozenSet[0]['banci1']}";
+	let banci2 = "{$frozenSet[0]['banci2']}";
+	
+	let frozen_timestamp3 = "{$frozenSet[1]['frozen_timestamp1']}";
+	let frozen_timestamp4 = "{$frozenSet[1]['frozen_timestamp2']}";
+	let banci3 = "{$frozenSet[1]['banci1']}";
+	let banci4 = "{$frozenSet[1]['banci2']}";
+	
+	let frozen_timestamp5 = "{$frozenSet[2]['frozen_timestamp1']}";
+	let frozen_timestamp6 = "{$frozenSet[2]['frozen_timestamp2']}";
+	let banci5 = "{$frozenSet[2]['banci1']}";
+	let banci6 = "{$frozenSet[2]['banci2']}";
+	let isSubmitFrozen = 0;
+	// 模板表头
+	app.cols_monitorPostList.push("日期");
+	"{for start='0' end='$monitorPostList_len'}"
+		app.cols_monitorPostList.push("{$monitorPostList[$i]['post_name']}")
+	"{/for}"
+	// 值班表表头
+	let cols_rotaList = [{field:'time_stamp',title: '日期', fixed: 'left', minWidth:100}];
+	
+	cols_rotaList.push({
+		field: "week",
+		title: "星期",
+		minWidth:140,
+	})
+	
+	let cols_style = '';
+	"{for start='0' end='$thisMon_monitorPost_len'}"
+	if("{$thisMon_monitorPost[$i]['is_night']}" == 1){
+		if("{$thisMon_monitorPost[$i]['is_day']}" == 0){
+			cols_style = 'background-color: #eee';
+		}else{
+			cols_style = 'background-color: #ccc';
+		}
+	}
+	cols_rotaList.push({
+		field: "{$thisMon_monitorPost[$i]['monitor_post_name']}",
+		title: "{$thisMon_monitorPost[$i]['monitor_post_name']}",
+		minWidth: 200,
+		style: cols_style
+	})
+	cols_style = ''
+	"{/for}"
+
+	let table = layui.table
+	,form = layui.form;
+	
+
+	table.render({
+		elem: '#rotaListTable'
+		,height: 500
+		,url: 'rotaList' //数据接口
+		,where: { 
+			rotaList: 1
+			,time_stamp: time_stamp
+		}//接口的其他参数
+		// ,method: 'post' // 默认get
+		,page: false //开启分页
+		,defaultToolbar: ['add', 'filter', 'print']
+		,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+		// ,totalRow: true //开启合计行
+		,request: {
+			// pageName: 'page' //页码的参数名称，默认：page
+			// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+		}
+		,response: {
+			// statusName: 'code' //规定数据状态的字段名称，默认：code
+			// ,statusCode: 1 //规定成功的状态码，默认：0
+			// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+			// countName: 'total' //规定数据总数的字段名称，默认：count
+			// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+		}
+		,parseData: function(res){ //res 即为原始返回的数据
+			// 为了导出班表
+			app.cols_data = res.data
+			for(let i = 0; i < app.cols_data.length; i++) {
+				app.cols_data[i]['星期'] = app.cols_data[i].week
+				app.cols_data[i]['日期'] = app.cols_data[i].time_stamp
+			}
+			// console.log(res)
+		}
+		,cols: [cols_rotaList]
+		,done: function(res, curr, count){
+			showTs(1,'加载成功',500)
+		}
+	});
+
+	//监听头工具栏事件
+	table.on('toolbar(rotaList_table)', function(obj){
+		let checkStatus = table.checkStatus(obj.config.id)
+		,data = checkStatus.data; //获取选中的数据
+		switch(obj.event){
+			case 'add':
+				layer.open({
+					type: 1
+					,title: '导入班表岗位' //不显示标题栏
+					// ,closeBtn: false
+					// ,area: ['600px;','80%']
+					,shade: 0.8
+					,id: 'LAY_addMonitorPost' //设定一个id，防止重复弹出
+					,moveType: 1 //拖拽模式，0或者1
+					,content: '<div style="padding: 50px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;">导入班表前建议先导出模板，在模板的基础上进行编辑将使得导入过程更加顺利~</div>'
+					,btn: ['开始导入', '取消']
+					,btnAlign: 'c'
+					,success: function(layero){
+						const btn = layero.find('.layui-layer-btn');
+						btn.find('.layui-layer-btn0').click(function(){
+							const id_arr = [];
+							for(let i = 0 ; i < data.length ; i++){
+								id_arr.push(data[i].id)
+							}
+							window.location = 'addRota'
+						});
+					}
+				});
+			break;
+			case 'update':
+				window.location = 'editRota?time_stamp={$time_stamp}'
+				// console.log("{$time_stamp}")
+				// layer.msg('批量修改功能暂不开放~')
+			break;
+			case 'delete':
+				layer.open({
+					type: 1
+					,title: '导入班表岗位' //不显示标题栏
+					// ,closeBtn: false
+					// ,area: ['600px;','80%']
+					,shade: 0.8
+					,id: 'LAY_addMonitorPost' //设定一个id，防止重复弹出
+					,moveType: 1 //拖拽模式，0或者1
+					,content: '<div style="padding: 50px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;">确定要删除时间为{$time_stamp}的整张值班班表吗？（此操作将不可恢复）</div>'
+					,btn: ['确认删除', '取消']
+					,btnAlign: 'c'
+					,success: function(layero){
+						let btn = layero.find('.layui-layer-btn');
+						btn.find('.layui-layer-btn0').click(function(){
+							let id_arr = [];
+							for(let i = 0 ; i < data.length ; i++){
+								id_arr.push(data[i].id)
+							}
+							$.ajax({
+								url:'deleteRota'
+								,type:'post'
+								,data:{time_stamp:"{$time_stamp}"}
+								,success:function(res){
+									if(res){
+										layer.open({
+											type: 1
+											,content: '<div style="padding: 20px 100px;">已成功删除'+res+'条数据</div>'
+											,btn: '确定'
+											,btnAlign: 'c' //按钮居中
+											,shade: 0 //不显示遮罩
+											,yes: function(){
+												layer.closeAll();
+												window.location.reload()
+											}
+										});
+									}else{
+										layer.open({
+											type: 1
+											,content: '<div style="padding: 20px 100px;">哦喔发生错误：'+res+'，请联系管理员解决</div>'
+											,btn: '确定'
+											,btnAlign: 'c' //按钮居中
+											,shade: 0 //不显示遮罩
+											,yes: function(){
+											layer.closeAll();
+											}
+										});
+									}
+								}
+							})
+							// window.location = 'addRota'
+						});
+					}
+				});
+			break;
+		};
+	});
+	// 当前班表所属时间戳
+	//按月搜索值班表功
+	let laydate = layui.laydate;
+
+	//执行一个laydate实例
+	laydate.render({
+		elem: '#frozen_timestamp1' //指定元素
+		,format:'yyyyMMdd'
+		,value: frozen_timestamp1
+		,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+		,done: function(value, date, endDate){
+			if(value == ''){
+				frozen_timestamp1 = ''
+				return
+			}
+			let y = date.year;
+			let m = date.month;
+			let d = date.date;
+			m = m > 9 ? m : '0' + m;
+			d = d > 9 ? d : '0' + d;
+			frozen_timestamp1 = y.toString() + m.toString() + d.toString();
+		}
+	});
+	form.on('select(banci1)', function(data){
+		banci1 = data.value
+	});
+	//执行一个laydate实例
+	laydate.render({
+		elem: '#frozen_timestamp2' //指定元素
+		,format:'yyyyMMdd'
+		,value: frozen_timestamp2
+		,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+		,done: function(value, date, endDate){
+			if(value == ''){
+				frozen_timestamp2 = ''
+				return
+			}
+			let y = date.year;
+			let m = date.month;
+			let d = date.date;
+			m = m > 9 ? m : '0' + m;
+			d = d > 9 ? d : '0' + d;
+			frozen_timestamp2 = y.toString() + m.toString() + d.toString();
+		} 
+	});
+	form.on('select(banci2)', function(data){
+		banci2 = data.value
+	});
+
+	//执行一个laydate实例
+	laydate.render({
+		elem: '#frozen_timestamp3' //指定元素
+		,format:'yyyyMMdd'
+		,value: frozen_timestamp3
+		,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+		,done: function(value, date, endDate){
+			if(value == ''){
+				frozen_timestamp3 = ''
+				return
+			}
+			let y = date.year;
+			let m = date.month;
+			let d = date.date;
+			m = m > 9 ? m : '0' + m;
+			d = d > 9 ? d : '0' + d;
+			frozen_timestamp3 = y.toString() + m.toString() + d.toString();
+		}
+	});
+	form.on('select(banci3)', function(data){
+		banci3 = data.value
+	});
+	//执行一个laydate实例
+	laydate.render({
+		elem: '#frozen_timestamp4' //指定元素
+		,format:'yyyyMMdd'
+		,value: frozen_timestamp4
+		,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+		,done: function(value, date, endDate){
+			if(value == ''){
+				frozen_timestamp4 = ''
+				return
+			}
+			let y = date.year;
+			let m = date.month;
+			let d = date.date;
+			m = m > 9 ? m : '0' + m;
+			d = d > 9 ? d : '0' + d;
+			frozen_timestamp4 = y.toString() + m.toString() + d.toString();
+		} 
+	});
+	form.on('select(banci4)', function(data){
+		banci4 = data.value
+	});
+
+
+	//执行一个laydate实例
+	laydate.render({
+		elem: '#frozen_timestamp5' //指定元素
+		,format:'yyyyMMdd'
+		,value: frozen_timestamp5
+		,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+		,done: function(value, date, endDate){
+			if(value == ''){
+				frozen_timestamp5 = ''
+				return
+			}
+			let y = date.year;
+			let m = date.month;
+			let d = date.date;
+			m = m > 9 ? m : '0' + m;
+			d = d > 9 ? d : '0' + d;
+			frozen_timestamp5 = y.toString() + m.toString() + d.toString();
+		}
+	});
+	form.on('select(banci5)', function(data){
+		banci5 = data.value
+	});
+	//执行一个laydate实例
+	laydate.render({
+		elem: '#frozen_timestamp6' //指定元素
+		,format:'yyyyMMdd'
+		,value: frozen_timestamp6
+		,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+		,done: function(value, date, endDate){
+			if(value == ''){
+				frozen_timestamp6 = ''
+				return
+			}
+			let y = date.year;
+			let m = date.month;
+			let d = date.date;
+			m = m > 9 ? m : '0' + m;
+			d = d > 9 ? d : '0' + d;
+			frozen_timestamp6 = y.toString() + m.toString() + d.toString();
+		} 
+	});
+	form.on('select(banci6)', function(data){
+		banci6 = data.value
+	});
+
+	// 第1段冻结
+	form.on('submit(isFrozen1)', function(data){
+		if (isSubmitFrozen) {
+			layer.msg('请勿重复提交')
+			return false;
+		}
+		if (!parseInt("{$frozenSet[0]['is_frozen']}")) {
+			if (!frozen_timestamp1) {
+				layer.msg('请补充完整要冻结的日期')
+				return false;
+			}
+			if (!frozen_timestamp2) {
+				layer.msg('请补充完整要冻结的日期')
+				return false;
+			}
+			if (frozen_timestamp1 > frozen_timestamp2) {
+				layer.msg('开始日期要小于结束日期')
+				return false;
+			}
+			if (frozen_timestamp1 == frozen_timestamp2) {
+				if (banci1 > banci2) {
+					layer.msg('白夜班不正确，请检查')
+					return false;
+				}
+			}
+		}
+		
+		isSubmitFrozen = 1
+		let params = {
+				frozen_timestamp1: frozen_timestamp1,
+				frozen_timestamp2: frozen_timestamp2,
+				banci1: data.field.banci1,
+				banci2: data.field.banci2,
+				is_frozen: "{$frozenSet[0]['is_frozen'] == 1? 0: 1}",
+				id: 1
+			}
+		$.ajax({
+			type:'post'
+			,data: params
+			,url:'frozenRota'
+			,success: function (res) {
+				if (res === 1) {
+					layer.msg('操作成功！2s后自动刷新')
+					setTimeout(() => {
+						location.reload();
+					}, 2000);
+				} else {
+					layer.msg('操作失败，请联系管理员！')
+				}
+			}
+			,error: function (err) {
+				layer.msg('未知，请联系管理员！')
+			}
+		})
+		return false;//阻止表单跳转
+	});
+
+	// 第2段冻结
+	form.on('submit(isFrozen2)', function(data){
+		if (isSubmitFrozen) {
+			layer.msg('请勿重复提交')
+			return false;
+		}
+		if (!parseInt("{$frozenSet[1]['is_frozen']}")) {
+			if (!frozen_timestamp3) {
+				layer.msg('请补充完整要冻结的日期')
+				return false;
+			}
+			if (!frozen_timestamp4) {
+				layer.msg('请补充完整要冻结的日期')
+				return false;
+			}
+			if (frozen_timestamp3 > frozen_timestamp4) {
+				layer.msg('开始日期要小于结束日期')
+				return false;
+			}
+			if (frozen_timestamp3 == frozen_timestamp4) {
+				if (banci3 > banci4) {
+					layer.msg('白夜班不正确，请检查')
+					return false;
+				}
+			}
+		}
+		
+		isSubmitFrozen = 1
+		let params = {
+				frozen_timestamp1: frozen_timestamp3,
+				frozen_timestamp2: frozen_timestamp4,
+				banci1: data.field.banci3,
+				banci2: data.field.banci4,
+				is_frozen: "{$frozenSet[1]['is_frozen'] == 1? 0: 1}",
+				id: 2
+			}
+		$.ajax({
+			type:'post'
+			,data: params
+			,url:'frozenRota'
+			,success: function (res) {
+				if (res === 1) {
+					layer.msg('操作成功！2s后自动刷新')
+					setTimeout(() => {
+						location.reload();
+					}, 2000);
+				} else {
+					layer.msg('操作失败，请联系管理员！')
+				}
+			}
+			,error: function (err) {
+				layer.msg('未知，请联系管理员！')
+			}
+		})
+		return false;//阻止表单跳转
+	});
+
+	// 第3段冻结
+	form.on('submit(isFrozen3)', function(data){
+		if (isSubmitFrozen) {
+			layer.msg('请勿重复提交')
+			return false;
+		}
+		if (!parseInt("{$frozenSet[2]['is_frozen']}")) {
+			if (!frozen_timestamp5) {
+				layer.msg('请补充完整要冻结的日期')
+				return false;
+			}
+			if (!frozen_timestamp6) {
+				layer.msg('请补充完整要冻结的日期')
+				return false;
+			}
+			if (frozen_timestamp5 > frozen_timestamp6) {
+				layer.msg('开始日期要小于结束日期')
+				return false;
+			}
+			if (frozen_timestamp5 == frozen_timestamp6) {
+				if (banci5 > banci6) {
+					layer.msg('白夜班不正确，请检查')
+					return false;
+				}
+			}
+		}
+		
+		isSubmitFrozen = 1
+		let params = {
+				frozen_timestamp1: frozen_timestamp5,
+				frozen_timestamp2: frozen_timestamp6,
+				banci1: data.field.banci5,
+				banci2: data.field.banci6,
+				is_frozen: "{$frozenSet[2]['is_frozen'] == 1? 0: 1}",
+				id: 3
+			}
+		$.ajax({
+			type:'post'
+			,data: params
+			,url:'frozenRota'
+			,success: function (res) {
+				if (res === 1) {
+					layer.msg('操作成功！2s后自动刷新')
+					setTimeout(() => {
+						location.reload();
+					}, 2000);
+				} else {
+					layer.msg('操作失败，请联系管理员！')
+				}
+			}
+			,error: function (err) {
+				layer.msg('未知，请联系管理员！')
+			}
+		})
+		return false;//阻止表单跳转
+	});
+});
+</script>

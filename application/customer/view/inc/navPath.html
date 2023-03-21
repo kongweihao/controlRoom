@@ -1,0 +1,89 @@
+<div>
+
+{if condition="$Think.cookie.isExpand == 'off'"}
+<div class="layui-breadcrumb" style="z-index:1000;left:0px;top: 0px;padding: 0px">
+{else/}
+<div class="layui-breadcrumb" style="z-index:1000;left:200px;top: 0px;padding: 0px">
+{/if}
+
+	<div style="margin: auto 15px;width:100%;min-width: 250px">
+
+		<div class="klogo" style="position: relative;background: transparent;border: none;display:inline-block;z-index: 1000;width: 30px;height: 30px;overflow: hidden;z-index: 100;">
+			<a href="javascript:void(0)" style="background: transparent" onclick="expandLeftNav();"><i class="fa fa-bars" style="color: #cccccc"></i></a>
+		</div>
+		<div class="topNav klogo" style="position: relative;float: right;top: 0px;background: transparent;border: none;padding: auto 0;z-index: 0;">
+			<ul class="layui-nav">
+				<li class="layui-nav-item adminInfo">
+					<a href="javascript:;" style="min-width: 30px;height:14px;max-width: 220px;overflow: hidden;">
+						{notempty name="$adminInfo.admin_head"}
+							<img src="__ROOT__/{$adminInfo.admin_head}" alt="__ROOT__{$adminInfo.admin_account}" />
+							{else/}
+							<i class="fa fa-user-circle" style="position: relative;">
+								<p style="position: relative;top: -13px;left: 20px">
+									{notempty name="$adminInfo.admin_nickname"}
+									{$adminInfo.admin_nickname}
+									{else/}
+									{$adminInfo.admin_account}
+									{/notempty}
+								</p>
+
+							</i>
+							{/notempty}
+
+						<!--111111111111111111111111111111111111111111111111111111-->
+
+					</a>
+					<dl class="layui-nav-child" id="layoutDiv" style="margin: -20px 0px 0px -30px ">
+						<dd>
+							<a href="{:url('@system/logout')}"><i class="fa fa-sign-out" aria-hidden="true"></i> 退出</a>
+						</dd>
+					</dl>
+				</li>
+			</ul>
+		</div>
+
+		<div style="position: absolute;display: inline-block;top: 33px;left: 14px;min-width: 500px">
+			<i class="fa fa-home"></i>
+			<a href="javascript:void(0)"><cite>首页</cite></a>
+
+			{notempty name="$navPath.twoRuleInfo"}
+			{if condition="$navPath.twoRuleInfo.rule == 'null'"}
+			<a><cite>{$navPath.twoRuleInfo.rule_name}</cite></a>
+			{else/}
+			<a href='{:url("@".$navPath["twoRuleInfo"]["rule"])}'>{$navPath.twoRuleInfo.rule_name}</a>
+			{/if}
+			{/notempty}
+
+			{notempty name="$navPath.threeRuleInfo"}
+			{if condition="$navPath.threeRuleInfo.rule == 'null'"}
+			<a><cite>{$navPath.threeRuleInfo.rule_name}</cite></a>
+			{else/}
+			<a href='{:url("@".$navPath["threeRuleInfo"]["rule"])}'>{$navPath.threeRuleInfo.rule_name}</a>
+			{/if}
+			{/notempty}
+
+			{notempty name="$navPath.fourRuleInfo"}
+			{if condition="$navPath.fourRuleInfo.rule == 'null'"}
+			<a><cite>{$navPath.fourRuleInfo.rule_name}</cite></a>
+			{else/}
+			<a href='{:url("@".$navPath["fourRuleInfo"]["rule"])}'>{$navPath.fourRuleInfo.rule_name}</a>
+			{/notempty}
+		</div>
+
+	</div>
+</div>
+
+</div>
+</div>
+<style type="text/css">
+	.layui-nav-bar{
+		display: none;
+	}
+</style>
+<script>
+	$(document).ready(function () {
+	    setTimeout(function () {
+            $('.klogo ul li a span').remove();//去掉‘>’
+        },50)
+    })
+</script>

@@ -1,0 +1,394 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>用户请求列表</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<!-- 搜索面板 -->
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="单号" prop="mrl_job_num">
+						<el-input
+						v-model="searchForm.mrl_job_num"
+						placeholder="支持模糊搜索，日期+账号"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="审核者账号" prop="mrl_checker">
+						<el-input
+						v-model="searchForm.mrl_checker"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="审核者姓名" prop="mrl_checker_nickname">
+						<el-input
+						v-model="searchForm.mrl_checker_nickname"
+						
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="申请者账号" prop="mrl_applicant">
+						<el-input
+						v-model="searchForm.mrl_applicant"
+						
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="申请者姓名" prop="mrl_applicant_nickname">
+						<el-input
+						v-model="searchForm.mrl_applicant_nickname"
+						
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="状态" prop="mrl_state">
+						<el-select v-model="searchForm.mrl_state" placeholder="请选择" @change="search()">
+							<el-option label="全部" value=""></el-option>
+							<el-option label="待审核" value="0"></el-option>
+							<el-option label="审核通过待关单" value="1"></el-option>
+							<el-option label="驳回申请" value="2"></el-option>
+							<el-option label="已关单" value="3"></el-option>
+							<el-option label="因未知原因导致申领失败" value="-1"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+						<el-button @click="isShowSearch = !isShowSearch">收起</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<el-divider>默认置顶待审核申请</el-divider>
+			<!-- 申领列表 -->
+			<el-table
+			:data="materialRequisitionList"
+			max-height="600"
+			border
+			style="margin-top:15px">
+				<el-table-column type="expand">
+					<template slot-scope="props">
+						<el-form label-position="left" inline class="demo-table-expand">
+							<el-form-item label="审核人账号">
+								<span>{{ props.row.mrl_checker }}</span>
+							</el-form-item>
+							<br>
+							<el-form-item label="申请人账号">
+								<span>{{ props.row.mrl_applicant }}</span>
+							</el-form-item>
+							<br>
+							<el-form-item label="申请时间">
+								<span>{{ props.row.create_time }}</span>
+							</el-form-item>
+							<br>
+							<el-form-item label="最近一次操作时间">
+								<span>{{ props.row.update_time }}</span>
+							</el-form-item>
+							<br>
+							<el-form-item label="当前流程">
+								<div>
+									<el-steps direction="vertical" :active="props.row.steps.length">
+										<el-step v-for="(item, i) in props.row.steps" :title="item.step" :description="item.statement + '  ' + item.time"></el-step>
+										<el-step v-if="props.row.mrl_state === 0" title="待审核"></el-step>
+										<el-step v-if="props.row.mrl_state === 1" title="待关单"></el-step>
+										<el-step v-if="props.row.mrl_state === 2" title="待回复"></el-step>
+										<el-step v-if="props.row.mrl_state === -1" title="未知错误"></el-step>
+									</el-steps>
+								</div>
+							</el-form-item>
+						</el-form>
+					</template>
+				</el-table-column>
+				<el-table-column
+				type="index"
+				label="序号"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="mrl_state"
+				label="状态"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						<el-span v-if="scope.row.mrl_state === 0" style="color: #E6A23C;">待审核</el-span>
+						<el-span v-else-if="scope.row.mrl_state === 1" style="color: #909399;">审核通过待关单</el-span>
+						<el-span v-else-if="scope.row.mrl_state === 2" style="color: #F56C6C;">驳回</el-span>
+						<el-span v-else-if="scope.row.mrl_state === 3" style="color: #909399;">已关单</el-span>
+						<el-span v-else style="color: #F56C6C;">未知状态，请联系系统管理员</el-span>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="mrl_job_num"
+				label="单号"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="mrl_checker_nickname"
+				label="审核人"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="mrl_applicant_nickname"
+				label="申请人"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="im_name"
+				label="物品"
+				show-overflow-tooltip
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="mrl_num"
+				label="申请数量"
+				show-overflow-tooltip
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="im_can_apply_num"
+				label="可申请数量"
+				show-overflow-tooltip
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="im_num"
+				label="库存"
+				show-overflow-tooltip
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="im_unit"
+				label="单位"
+				show-overflow-tooltip
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="lastSteps.statement"
+				label="备注"
+				show-overflow-tooltip
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				fixed="right"
+				label="操作"
+				width="100"
+				align="center">
+					<template v-if="scope.row.mrl_state === 0" slot-scope="scope">
+						<el-button type="text" @click="handleEdit(scope.row, 1)">通过</el-button>
+						<el-button type="text" @click="handleEdit(scope.row, 2)" style="color:red">驳回</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 500]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script>
+const materialRequisitionList = {:json_encode($materialRequisitionList)};
+// 初始化申请数量
+const pagination = {
+				current_page: materialRequisitionList.current_page,
+				last_page: materialRequisitionList.last_page,
+				per_page: materialRequisitionList.per_page,
+				total: materialRequisitionList.total
+			};
+let app = new Vue({
+	el: '#app',
+	data() {
+		return {
+			isShowSearch: false, // 打开搜索面板
+			searchForm: {
+				mrl_job_num: '',
+				mrl_applicant: '',
+				mrl_applicant_nickname: '',
+				mrl_checker: '',
+				mrl_checker_nickname: '',
+				mrl_state: '',
+			},
+			materialRequisitionList: materialRequisitionList.data,
+			pagination: pagination,
+		}
+	},
+	methods: {
+		search(){
+			const _this = this;
+			console.log(_this.searchForm);
+			$.ajax({
+				url:'materialRequisitionList',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					// 初始化申请数量
+					console.log(res);
+					_this.materialRequisitionList = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					_this.$message({
+						type: 'error',
+						message: '发生错误，请刷新一下'
+					});
+				}
+			})
+		},
+		resetForm(formName){
+			this.$refs[formName].resetFields();
+			if (formName === 'searchForm') {
+				this.search()
+			}
+		},
+		handleEdit(row, mrl_state){
+			const _this = this;
+			let confirmMsg = '通过审核后库存数量将剩余：' + (row.im_num - row.mrl_num) + '，确认通过审核？是的话请填写审核说明'
+			if (mrl_state === 2) {
+				confirmMsg = '驳回申请后将会释放库存，可申请数量增加至：' + (row.im_can_apply_num + row.mrl_num) + '，需尽快联系申请人处理，确认驳回申请？'
+			}
+			this.$prompt(confirmMsg, '提示', {
+				confirmButtonText: '确定',
+				cancelButtonText: '取消',
+				inputPattern: /^[\s\S]*.*[^\s][\s\S]*$/,
+				inputErrorMessage: '审核说明不能为空',
+				type: 'warning',
+				center: true
+			}).then(({ value }) => {
+				row['mrl_state'] = mrl_state
+				row['statement'] = value
+				$.ajax({
+					url: 'editMaterialRequisitionList',
+					type: 'post',
+					data: row,
+					success: function (res) {
+						console.log(res);
+						const code = res.code
+						const msg = res.msg
+						if(code === 0){
+							_this.$message({
+								type: 'info',
+								message: msg
+							});
+						}else if(code > 0){
+							_this.$message({
+								type: 'success',
+								message: msg
+							});
+							setInterval(() => {
+								location.reload();
+							}, 1000);
+						}else{
+							_this.$message({
+								type: 'error',
+								message: msg
+							});
+						}
+					},
+					error: function (err) {
+						_this.$message({
+							type: 'error',
+							message: '发生未知错误，请刷新重试'
+						});
+					}
+				})
+			}).catch(() => {
+				this.$message({
+					type: 'info',
+					message: '已取消'
+				});
+			});
+		},
+		editNumOA(row, type) {
+			const _this = this;
+			row['im_num_of_applications'] = parseInt(row['im_num_of_applications'])
+			if (type === 'minus') {
+				(--row['im_num_of_applications'] < 0) && (row['im_num_of_applications'] = 0)
+			} else if (type === 'plus') {
+				row['im_num_of_applications']++
+			} else {
+				_this.$message({
+					type: 'error',
+					message: '出现未知错误，请联系管理员，错误信息：编辑物资数量时发生函数参数错误' 
+				});
+			}
+			console.log(row);
+		},
+		handleDelete(row) {
+			const _this = this;
+			this.$confirm('此操作将永久删除物资【' + row.im_name + '】 是否继续?', '提示', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning',
+					center: true
+				}).then(() => {
+					$.ajax({
+						url: 'deleteInventoryManagementList',
+						type: 'post',
+						data: {im_id:row.im_id},
+						success: function (res) {
+							console.log(res);
+							const code = res.code
+							const msg = res.msg
+							if(code === 0){
+								_this.$message({
+									type: 'info',
+									message: msg
+								});
+							}else if(code > 0){
+								_this.$message({
+									type: 'success',
+									message: '删除成功!'
+								});
+								location.reload()
+							}else{
+								_this.$message({
+									type: 'error',
+									message: msg
+								});
+							}
+						},
+						error: function (err) {
+							_this.$message({
+							type: 'error',
+							message: '发生未知错误，请刷新重试'
+						});
+						}
+					})
+				}).catch(() => {
+					this.$message({
+						type: 'info',
+						message: '已取消删除'
+					});
+				});
+		},
+		// pagination时
+		handleSizeChange(per_page){
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page){
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		}
+	}
+})
+</script>

@@ -1,0 +1,314 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>大家的调休余额</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<!-- 搜索面板 -->
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="值班日期" prop="dol_timestamp">
+						<el-date-picker
+						v-model="searchForm.dol_timestamp"
+						align="right"
+						type="date"
+						format="yyyy-MM-dd"
+						value-format="yyyyMMdd"
+						width="50"
+						placeholder="支持模糊搜索"
+						:picker-options="pickerOptionsStart"
+						@blur="search()"></el-date-picker>
+					</el-form-item>
+					<el-form-item label="班次" prop="dol_day_or_night">
+						<el-select v-model="searchForm.dol_day_or_night" width="50" placeholder="请选择" @change="search()">
+							<el-option label="全部" value=""></el-option>
+							<el-option label="白班" value="1"></el-option>
+							<el-option label="夜班" value="0"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="调休配额/天" prop="dol_days_off">
+						<el-input
+						v-model="searchForm.dol_days_off"
+						width="50"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="调休余额/天" prop="dol_days_off_balance">
+						<el-input
+						v-model="searchForm.dol_days_off_balance"
+						width="50"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="账号" prop="admin_account">
+						<el-input
+						v-model="searchForm.admin_account"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="姓名" prop="admin_fullname">
+						<el-input
+						v-model="searchForm.admin_fullname"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="说明" prop="dol_remarks">
+						<el-input
+						v-model="searchForm.dol_remarks"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="是否失效" prop="is_invalid">
+						<el-select v-model="searchForm.is_invalid" width="50" placeholder="请选择" @change="search()">
+							<el-option label="全部" value=""></el-option>
+							<el-option label="正常" :value="1"></el-option>
+							<el-option label="失效" :value="2"></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+						<el-button @click="isShowSearch = !isShowSearch">收起</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<!-- 调休余额列表 -->
+			<el-table
+			:data="checkEveryoneSAnnualLeaveBalance"
+			max-height="400"
+			show-summary
+			border
+			:row-class-name="tableRowClassName"
+			style="margin-top:15px">
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="dol_timestamp"
+				label="值班日期"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="dol_day_or_night"
+				label="班次"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.dol_day_or_night == 1 ? '白班' : '夜班'}}
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="dol_days_off"
+				label="调休配额/天"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="dol_days_off_balance"
+				label="调休余额/天"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="admin_account"
+				label="账号"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="admin_fullname"
+				label="姓名"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="is_invalid"
+				label="是否失效"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.is_invalid == 1 ? '正常' : '已失效'}}
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="dol_remarks"
+				label="说明"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 500]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<style>
+.el-table .warning-row {
+    background: oldlace;
+}
+</style>
+<script>
+const checkEveryoneSAnnualLeaveBalance = {:json_encode($checkEveryoneSAnnualLeaveBalance)};
+const pagination = {
+				current_page: checkEveryoneSAnnualLeaveBalance.current_page,
+				last_page: checkEveryoneSAnnualLeaveBalance.last_page,
+				per_page: checkEveryoneSAnnualLeaveBalance.per_page,
+				total: checkEveryoneSAnnualLeaveBalance.total
+			};
+const app = new Vue({
+	el: '#app',
+	data() {
+		let checkImNum = (rule, value, callback) => {
+			if (value < 0) {
+				callback(new Error('必须≥0'));
+			} else {
+				callback();
+			}
+		};
+		return {
+			isShowSearch: false, // 打开搜索面板
+			searchForm: {
+				dol_timestamp: '',
+				dol_days_off: '',
+				dol_days_off_balance: '',
+				dol_day_or_night: '',
+				dol_days_off: '',
+				admin_account: '',
+				admin_fullname: '',
+				is_invalid: 1,
+				dol_remarks: '',
+			},
+			checkEveryoneSAnnualLeaveBalance: checkEveryoneSAnnualLeaveBalance.data,
+			pagination: pagination,
+			pickerOptionsStart: {
+				shortcuts: [{
+					text: '今天',
+					onClick(picker) {
+					picker.$emit('pick', new Date());
+					}
+				}, {
+					text: '昨天',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24);
+					picker.$emit('pick', date);
+					}
+				}, {
+					text: '一周前',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24 * 7);
+					picker.$emit('pick', date);
+					}
+				}]
+			},
+			pickerOptionsEnd: {
+				shortcuts: [{
+					text: '今天',
+					onClick(picker) {
+					picker.$emit('pick', new Date());
+					}
+				}, {
+					text: '昨天',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24);
+					picker.$emit('pick', date);
+					}
+				}, {
+					text: '一周前',
+					onClick(picker) {
+					const date = new Date();
+					date.setTime(date.getTime() - 3600 * 1000 * 24 * 7);
+					picker.$emit('pick', date);
+					}
+				}]
+			}
+		}
+	},
+	methods: {
+		search(){
+			const _this = this;
+			$.ajax({
+				url:'checkEveryoneSAnnualLeaveBalance',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					_this.checkEveryoneSAnnualLeaveBalance = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					
+								_this.$message({
+									type: 'error',
+									message: '发生错误，请刷新一下'
+								});
+				}
+			})
+		},
+		resetForm(formName){
+			this.$refs[formName].resetFields();
+			if (formName === 'searchForm') {
+				this.search()
+			}
+		},
+		// pagination时
+		handleSizeChange(per_page){
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page){
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		},
+		handleClose(done) {
+			this.$confirm('确认关闭？')
+				.then(_ => {
+					done();
+				})
+          .catch(_ => {});
+      	},
+		tableRowClassName({row, rowIndex}) {
+			if (row.is_invalid === 2) {
+				return 'warning-row';
+			}
+			return '';
+		}
+	}
+})
+</script>

@@ -1,0 +1,150 @@
+<style>
+	.layui-tab-content{
+		padding-bottom: 80px;
+	}
+</style>
+<div class="layui-body" style="left:200px;">
+	<blockquote class="layui-elem-quote layui-wran-color" style="margin:15px 15px 0 15px;">注意：权限是整个系统的控制核心，非开发人员请勿操作！</blockquote>
+	<div class="layui-tab-content">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>添加权限</legend>
+		</fieldset>
+		<form class="layui-form" action="{:url('@system/addRule')}" method="post">
+			<div class="layui-form-item">
+				<label class="layui-form-label" style="width:86px">权限名称
+					<div class="layui-form-mid layui-word-aux star">必填</div>
+				</label>
+				<div class="layui-input-inline">
+					<input type="text" name="rule_name" value="{$backData.rule_name}" placeholder="权限名称" class="layui-input" maxlength="30" required="required">
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label" style="width:86px">权限规则
+					<div class="layui-form-mid layui-word-aux star">必填</div>
+				</label>
+				<div class="layui-input-inline">
+					<input type="text" name="rule" value="{$backData.rule}" placeholder="权限规则，如：system/ruleList" class="layui-input" required="required">
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label" style="width:86px">是否菜单</label>
+				<div class="layui-input-inline">
+					{if condition="$backData.is_menu == 1"}
+					<input type="checkbox" name="is_menu" value="1" lay-skin="switch" lay-filter="is_menu" lay-text="是|否" checked="checked">
+					{else/}
+					<input type="checkbox" name="is_menu" value="1" lay-skin="switch" lay-filter="is_menu" lay-text="是|否">
+					{/if}
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label" style="width:86px">所属菜单</label>
+				<div class="layui-input-inline">
+					<select name="parent_id">
+						<option value=""></option>
+						<option value="0">一级菜单</option>
+						{volist name="menuList" id="vo"}
+						{if condition="$vo.parent_id ==0"}
+						
+						{if condition="$backData.parent_id == $vo.id"}
+						<option value="{$vo.id}" selected="selected">{$vo.rule_name}</option>
+						{else/}
+						<option value="{$vo.id}">{$vo.rule_name}</option>
+						{/if}
+						
+						{volist name="menuList" id="svo"}
+						{if condition="$svo.parent_id == $vo.id"}
+						
+						{if condition="$backData.parent_id == $svo.id"}
+						<option value="{$svo.id}" selected="selected">—— {$svo.rule_name}</option>
+						{else/}
+						<option value="{$svo.id}">—— {$svo.rule_name}</option>
+						{/if}
+						
+						{/if}
+						{/volist}
+						
+						{/if}
+						{/volist}
+					</select>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label" style="width:86px">排序</label>
+				<div class="layui-input-inline">
+					<input type="text" name="sort" value="{$backData.sort}" placeholder="排序" class="layui-input" autocomplete="off">
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<button class="layui-btn layui-btn-normal" style="width:86px;background: transparent;color: #00a0e9" onclick="return showIconModal();">选择图标</button>
+
+				<div class="layui-input-inline">
+					<input type="text" name="icon" value="{$backData.icon}" placeholder="选择图标" class="layui-input">
+				</div>
+
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">状态</label>
+				<div class="layui-input-inline">
+					{if condition="$backData.status == 1 || $backData.status ==null"}
+					<input type="checkbox" name="status" value="1" lay-skin="switch" lay-filter="status" lay-text="正常|禁用" checked>
+					{else/}
+					<input type="checkbox" name="status" value="1" lay-skin="switch" lay-filter="status" lay-text="正常|禁用">
+					{/if}
+				</div>
+			</div>
+			<div class="layui-form-item submit-item" style="min-width: 300px">
+				<div class="layui-input-block">
+					<button class="layui-btn" lay-submit="" lay-filter="demo1">立即提交</button>
+					<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+{include file="inc/icon" /}
+	<style>
+		.layui-input-inline{
+			position: relative !important;
+			width:90% !important;
+			padding: 0px !important;
+			float: right !important;
+
+		}
+		.layui-form-label{
+			position: relative !important;
+			float: left !important;
+			margin: 0px !important;
+		}
+	</style>
+<script>
+	$(function(){
+		//选中图标
+		$("#iconModal a").click(function(){
+			var fa = $(this).find("i").attr("class");
+			$(".iconWrap").html('<i class="'+fa+'" style="font-size:18px;margin-left:15px;margin-top:8px;"></i>');
+			$("input[name=icon]").val(fa);
+			hideIconModal();
+		});
+		
+		//icon以input的值为准
+		$("input[name=icon]").change(function() {
+			$(".iconWrap i").attr("class",$(this).val());
+		});
+		
+		//点击cover，关闭图标选择弹窗
+		$(".cover").click(function(){
+			hideIconModal();
+		});
+	});
+	
+	//显示选择图标弹窗
+	function showIconModal(){
+		$(".cover,#iconModal").fadeIn(300);
+		return false;
+	}
+	//关闭选择图标弹窗
+	function hideIconModal(){
+		$(".cover,#iconModal").fadeOut(200);
+	}
+</script>

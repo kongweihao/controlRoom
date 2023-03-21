@@ -1,0 +1,79 @@
+
+<div class="leftNav layui-side layui-bg-black" style="width:200px;top: 0px;overflow: hidden;">
+
+	<div style="position:relative;margin:30px auto;width: 80px;height: 80px;border: 1px solid grey;border-radius: 50%; background: url('__ROOT__logo.png') no-repeat;background-size: cover;">
+		<a style="width: 100%;height: 100%" href="#"></a>
+	</div>
+	<div class="layui-side-scroll" id="admin-navbar-side" lay-filter="side">
+		<ul class="layui-nav layui-nav-tree beg-navbar">
+			{volist name="menuList" id="vo"}
+			{notin name="$Think.session.adminAccount" value="$passAdmins"}
+				{if condition="$currRequestTopParentId == $vo.id"}
+				<li class="layui-nav-item layui-nav-itemed">
+				{else/}
+				<li class="layui-nav-item">
+				{/if}
+					{if condition="$vo.parent_id == 0"}
+						{in name="$vo.id" value="$currAdminHasRules"}
+						<a href="javascript:;">
+							<i class="fa-fw {$vo.icon}"></i>
+							<cite>{$vo.rule_name}</cite>
+							<span class="layui-nav-more"></span>
+						</a>
+						<dl class="layui-nav-child">
+							{volist name="menuList" id="svo"}
+							{in name="$svo.id" value="$currAdminHasRules"}
+								{if condition="$svo.parent_id == $vo.id"}
+								{if condition="$Request.path == $svo.rule"}
+								<dd class="layui-this">
+								{else/}
+								<dd>
+								{/if}
+									<a href='{:url("@$svo[rule]")}'>
+										<i class="layui-icon"></i>
+										<cite>{$svo.rule_name}</cite>
+									</a>
+								</dd>
+								{/if}
+							{/in}
+							{/volist}
+						</dl>
+						{/in}
+					{/if}
+				</li>
+			{else/}
+				{if condition="$currRequestTopParentId == $vo.id"}
+				<li class="layui-nav-item layui-nav-itemed">
+				{else/}
+				<li class="layui-nav-item">
+				{/if}
+					{if condition="$vo.parent_id == 0"}
+						<a href="javascript:;">
+							<i class="fa-fw {$vo.icon}"></i>
+							<cite>{$vo.rule_name}</cite>
+							<span class="layui-nav-more"></span>
+						</a>
+						<dl class="layui-nav-child">
+							{volist name="menuList" id="svo"}
+							{if condition="$svo.parent_id == $vo.id"}
+							{if condition="$Request.path == $svo.rule"}
+							<dd class="layui-this">
+							{else/}
+							<dd>
+							{/if}
+								<a href='{:url("@$svo[rule]")}'>
+									<i class="layui-icon"></i>
+									<cite>{$svo.rule_name}</cite>
+								</a>
+							</dd>
+							{/if}
+							{/volist}
+						</dl>
+					{/if}
+				</li>
+			{/notin}
+			{/volist}
+		</ul>
+	</div>
+
+</div>

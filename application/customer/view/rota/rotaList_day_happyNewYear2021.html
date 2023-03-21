@@ -1,0 +1,186 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" style="position: absolute;">
+	<script type="text/javascript">
+		// 提高echart清晰度
+		//注意：
+        //1.这段代码应当写在echarts.js引入之前
+        //2.这个属性对于移动端设备有重要影响，使用时请结合项目，切勿乱用
+		window.devicePixelRatio = 3;
+	</script>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>当班值班人员信息</title>
+		<script src="__COMMON__/jquery-3.1.1.min.js"></script>
+		<link rel="stylesheet" href="__COMMON__/animate.css" />
+		<script src="__COMMON__/wow.min.js"></script>
+	</head>
+	<body style="position: absolute;top: -20px;">
+		<div id="frame">
+			<div style="transform:scale(1,1.3);position: absolute;left: 754px;top: 130px;">
+				<img class="img_head" src="__ROOT__{$rotaList_day.0.head}" alt="" width="500" height="500" style="border-radius: 30%;position:absolute;top: 0px;left: -20px;">
+				<img src="__IMG__/牛.png" alt="" style="position: absolute;top: 263px;left: -177px;width: 322px;height: 250px;">
+				<div style="position: absolute;top: 263px;left: 177px;width: 522px;height: 250px;text-align: center;color: black;">
+					<img src="__IMG__/对话框.png" alt="" style="position: relative;width: 522px;height: 250px;">
+					<div style="position: relative;display: inline-block;top: -188px;font-size: 24px;">
+						<div style="position: relative;display: inline-block;padding-bottom: 23px;">值班长</div>
+						<br>
+						<div style="position: relative;display: inline-block;padding-bottom: 20px;">
+							{$rotaList_day.0.name}
+						</div>
+						<br>
+						<div style="position: relative;display: inline-block;font-size: 16px;">
+							13922220360 13822220010
+						</div>
+
+					</div>
+				</div>
+			</div>
+			<!-- 右 -->
+			<div style="transform:scale(1,1.3);position: absolute;display: inline-block;right: 347px;top: 100px;font-size: 14px;color: black;">
+				<img class="img_head" src="__ROOT__{$rotaList_day.0.head}" alt="" width="110" height="110" style="border-radius: 30%;position:absolute;top: 0px;left: -20px;">
+				<div style="position: absolute;top: 122px;left:-35px;display: inline-block;width: 200px;">{$rotaList_day.0.name}  {$rotaList_day.0.phone}</div>
+				<img src="__IMG__/小红框.png" alt="" width="110" height="20" style="border-radius: 30%;position:absolute;top: 100px;left: -20px;">
+				<div style="position: absolute;top: 100px;display: inline-block;width: 200px;">{$rotaList_day.0.mp_alias}</div>
+			</div>
+			<div style="transform:scale(1,1.3);position: absolute;display: inline-block;right: 255px;top: 331px;font-size: 14px;color: black;">
+				<img class="img_head" src="__ROOT__{$rotaList_day.1.head}" alt="" width="110" height="110" style="border-radius: 30%;position:absolute;top: 0px;left: -20px;">
+				<div style="position: absolute;top: 122px;left:-35px;display: inline-block;width: 200px;">{$rotaList_day.1.name}  {$rotaList_day.1.phone}</div>
+				<img src="__IMG__/小红框.png" alt="" width="110" height="20" style="border-radius: 30%;position:absolute;top: 100px;left: -20px;">
+				<div style="position: absolute;top: 100px;display: inline-block;width: 200px;">{$rotaList_day.1.mp_alias}</div>
+			</div>
+			<div style="transform:scale(1,1.3);position: absolute;display: inline-block;right: 347px;bottom: 236px;font-size: 14px;color: black;">
+				<img class="img_head" src="__ROOT__{$rotaList_day.2.head}" alt="" width="110" height="110" style="border-radius: 30%;position:absolute;top: 0px;left: -20px;">
+				<div style="position: absolute;top: 122px;left:-35px;display: inline-block;width: 200px;">{$rotaList_day.2.name}  {$rotaList_day.2.phone}</div>
+				<img src="__IMG__/小红框.png" alt="" width="110" height="20" style="border-radius: 30%;position:absolute;top: 100px;left: -20px;">
+				<div style="position: absolute;top: 100px;display: inline-block;width: 200px;">{$rotaList_day.2.mp_alias}</div>
+			</div>
+			<!-- 左 -->
+			<div style="transform:scale(1,1.3);position: absolute;display: inline-block;left: 273px;top: 90px;font-size: 14px;color: black;">
+				<img class="img_head" src="__ROOT__{$rotaList_day.3.head}" alt="" width="110" height="110" style="border-radius: 30%;position:absolute;top: 0px;left: -20px;">
+				<div style="position: absolute;top: 122px;left:-35px;display: inline-block;width: 200px;">{$rotaList_day.3.name}  {$rotaList_day.3.phone}</div>
+				<img src="__IMG__/小红框.png" alt="" width="110" height="20" style="border-radius: 30%;position:absolute;top: 100px;left: -20px;">
+				<div style="position: absolute;top: 100px;display: inline-block;width: 200px;">{$rotaList_day.3.mp_alias}</div>
+			</div>
+			<div style="transform:scale(1,1.3);position: absolute;display: inline-block;left: 185px;top: 322px;font-size: 14px;color: black;">
+				<img class="img_head" src="__ROOT__{$rotaList_day.4.head}" alt="" width="110" height="110" style="border-radius: 30%;position:absolute;top: 0px;left: -20px;">
+				<div style="position: absolute;top: 122px;left:-35px;display: inline-block;width: 200px;">{$rotaList_day.4.name}  {$rotaList_day.4.phone}</div>
+				<img src="__IMG__/小红框.png" alt="" width="110" height="20" style="border-radius: 30%;position:absolute;top: 100px;left: -20px;">
+				<div style="position: absolute;top: 100px;display: inline-block;width: 200px;">{$rotaList_day.4.mp_alias}</div>
+			</div>
+			<div style="transform:scale(1,1.3);position: absolute;display: inline-block;left: 269px;bottom: 246px;font-size: 14px;color: black;">
+				<img class="img_head" src="__ROOT__{$rotaList_day.5.head}" alt="" width="110" height="110" style="border-radius: 30%;position:absolute;top: 0px;left: -20px;">
+				<div style="position: absolute;top: 122px;left:-35px;display: inline-block;width: 200px;font-size: 12px;">{$rotaList_day.5.name}  {$rotaList_day.5.phone}</div>
+				<img src="__IMG__/小红框.png" alt="" width="110" height="20" style="border-radius: 30%;position:absolute;top: 100px;left: -20px;">
+				<div style="position: absolute;top: 100px;display: inline-block;width: 200px;">{$rotaList_day.5.mp_alias}</div>
+			</div>
+		</div>
+		<div class="timer" style="position: absolute;right:20px;bottom:10px;font-size:14px;">
+		</div>	
+		<img src="__IMG__/彩云.png" width="1920" height="800" alt="" style="position: absolute;top: 0;">
+	</body>
+</html>
+<script type="text/javascript">
+wow = new WOW({animateClass: 'animated',});
+wow.init();
+  let is_time_change = 0;//监测时间变化，如果监测发现白夜班交替了，则重新加载数据
+  function xys(){
+		let innerWbili = window.innerWidth/1920;
+		let innerHbili = window.innerHeight/800;
+		$('body').css({'top':'0'})
+		$('html').css({'width':'0','height':'0','transform':'scaleX('+innerWbili+') scaleY(' +innerHbili+ ')'})
+  }
+  xys()
+  window.onresize = function(){ 
+    xys()
+  }
+  var Timer,banci;
+  clearInterval(Timer)
+  let t1 = new Date();
+  let t2 = new Date();
+  let txt = t1.getHours() >= 18 ||  t2.getHours() < 9 ? '夜班' : '白班';
+  banci = txt
+  Timer = setInterval(function(){
+	let t2 = new Date();
+	let txt2 = t2.getHours() >= 18 ||  t2.getHours() < 9 ? '夜班' : '白班';
+	if(banci != txt2){
+		setInterval(function(){
+			location.reload()
+		}, 300000)
+		clearInterval(Timer)
+	}
+	$('.titleTxt span:nth-child(1)').text(t2.getMonth()+1 + '月' + t2.getDate() + '日')
+  },1000)
+</script>
+<style>
+body{
+	background-image: url('__IMG__/春节背景.png');
+	/* background-position: center; */
+	/* background-repeat: no-repeat; */
+	line-height: normal;
+	font-weight: normal;
+	color: #FFFFFF;
+	/* background-attachment: fixed; */
+	/* background-size: cover; */
+	width: 1920px;
+	height: 800px;
+	margin: 0;
+	padding:0;
+	overflow: hidden;
+}
+.titleTxt{
+    position: relative;
+    top: -6px;
+    font-size: 18px;
+}
+.container{
+	position: relative;
+	width: 100%;
+	text-align: center
+}
+.row{
+	position: relative;
+	width: 100%;
+	height: 222px;
+}
+.zbry{
+	display: inline-block;
+	width: 226px;
+	height: 208px;
+	/* background-image: url('__IMG__/rotaList_day_frame1.png'); */
+	margin: auto 10px;
+	text-align: left;
+	/* transform: scaleX(0.8); */
+}
+.zbry img{
+	top: 8px;
+	left: 10px;
+	position: relative;
+	font-size: 14px;
+	border-radius: 5px;
+	/* border: 1px solid #55adff; */
+	/* -moz-box-shadow:2px 2px 20px #55adff; 
+	-webkit-box-shadow:2px 2px 20px #55adff;
+	box-shadow:2px 2px 20px #55adff; */
+}
+.zbryTitle{
+	text-align: center;
+	padding:0;
+	margin:8px auto;
+}
+.zbry_gangwei{
+    position: relative;
+    top: -112px;
+    left: 129px;
+    font-size: 14px;
+}
+.zbry_name{
+	position: relative;
+    top: -95px;
+    left: 127px;
+}
+.phone{
+    position: relative;
+    top: -73px;
+    left: 26px;
+}
+</style>

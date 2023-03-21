@@ -1,0 +1,199 @@
+<style>
+	.layui-table td:nth-child(2){
+		text-align: left;
+	}
+	.ctrlWrap>a{
+		float: left;
+	}
+	.ctrlWrap>form{
+		float: right;
+	}
+	.ctrlWrap>form .layui-form-item .layui-input-inline{
+		width: 90%;
+		float: right;
+	}
+	input{
+		text-align: center;
+	}
+</style>
+<div class="layui-body" style="left:200px;">
+	<blockquote class="layui-elem-quote layui-wran-color" style="margin:15px 15px 0 15px;">注意：权限是整个系统的控制核心，非开发人员请勿操作！</blockquote>
+	<div class="ctrlWrap">
+		<a href="{:url('@system/addRule')}" class="layui-btn layui-btn-normal layui-btn-small"  style="background: transparent;color: #1e9fff"><i style="color: #1e9fff" class="layui-icon">&#xe608;</i> 添加权限</a>
+		<form class="layui-form" action="{:url('@system/ruleList')}" method="get">
+			<div class="layui-form-item" style="margin-bottom:0;">
+				<div class="layui-input-inline">
+					<select name="oneLevelRuleId" lay-filter="oneLevelRule">
+						<option value="0">-- 全部权限 --</option>
+						{volist name="allRuleList" id="vo"}
+						{if condition="$vo.parent_id == 0"}
+						{if condition="$vo.id == $Request.get.oneLevelRuleId"}
+						<option value="{$vo.id}" selected="selected">{$vo.rule_name}</option>
+						{else/}
+						<option value="{$vo.id}">{$vo.rule_name}</option>
+						{/if}
+						{/if}
+						{/volist}
+					</select>
+				</div>
+			</div>
+		</form>
+	</div>
+	<div class="panel panel-default table-responsive" style="padding: 10px;border: none;">
+		<table class="layui-table" lay-data="{height: 'full-200', cellMinWidth: 120}" lay-filter="ruleListTable">
+		<thead>
+				<tr>
+					<th lay-data="{field:'id', fixed:'left'}">ID</th>
+					<th lay-data="{field:'sort'}">排序</th>
+					<th lay-data="{field:'rule_name', width:'200', align:'left'}">权限名称</th>
+					<th lay-data="{field:'rule'}">权限规则</th>
+					<th lay-data="{field:'status'}">状态</th>
+					<th lay-data="{field:'is_menu_data'}">是否菜单</th>
+					<th lay-data="{field:'icon'}">图标</th>
+					<th lay-data="{field:'menu_level'}">级别</th>
+					<th lay-data="{field:'create_time'}">创建时间</th>
+					<th lay-data="{field:'handle', fixed:'right', width:'180'}">操作</th>
+				</tr>
+			</thead>
+			<tbody>
+				{volist name="oneRuleList" id="vo"}
+					{if condition="$vo.parent_id == 0"}
+					<tr>
+						<td>{$vo.id}</td>
+						<td>
+							<input type="text" value="{$vo.sort}" class="sort" onchange='sortRule(this,{$vo.id})' />
+						</td>
+						<td>{$vo.rule_name}</td>
+						<td>{$vo.rule}</td>
+						<td>
+							{switch name="$vo.status"}
+							{case value="1"}{$vo.status_data}{/case}
+							{case value="2"}<span style="color:red;">{$vo.status_data}</span>{/case}
+							{/switch}
+						</td>
+						<td>{$vo.is_menu_data}</td>
+						<td><i class="{$vo.icon}"></i></td>
+						<td>一级菜单</td>
+						<td>{$vo.create_time}</td>
+						<td>
+							<a href="{:url('@system/editRule',['page'=>$Request.get.page,'ruleId'=>$vo.id])}" class="layui-btn layui-btn-normal layui-btn-mini"  style="background: transparent;color:#1e9fff">编辑</a>
+							<a href="{:url('@system/deleteRule',['ruleId'=>$vo.id])}" class="layui-btn layui-btn-danger layui-btn-mini" onclick="return showConfirmTs(this,'确认删除 {$vo.rule_name} ?')" style="background: transparent;color:#ff5722">删除</a>
+						</td>
+					</tr>
+					{volist name="allRuleList" id="svo"}
+						{if condition="$svo.parent_id == $vo.id"}
+						<tr>
+							<td>{$svo.id}</td>
+							<td>
+								<input type="text" value="{$svo.sort}" class="sort" onchange='sortRule(this,{$svo.id})' />
+							</td>
+							<td>—— {$svo.rule_name}</td>
+							<td>{$svo.rule}</td>
+							<td>
+								{switch name="$svo.status"}
+								{case value="1"}{$svo.status_data}{/case}
+								{case value="2"}<span style="color:red;">{$svo.status_data}</span>{/case}
+								{/switch}
+							</td>
+							<td>{$svo.is_menu_data}</td>
+							<td><i class="{$svo.icon}"></i></td>
+							<td>
+								{if condition="$svo.is_menu == 1"}
+								二级菜单									
+								{/if}
+							</td>
+							<td>{$svo.create_time}</td>
+							<td>
+								<a href="{:url('@system/editRule',['page'=>$Request.get.page,'ruleId'=>$svo.id])}" class="layui-btn layui-btn-normal layui-btn-mini"  style="background: transparent;color:#1e9fff">编辑</a>
+								<a href="{:url('@system/deleteRule',['ruleId'=>$svo.id])}" class="layui-btn layui-btn-danger layui-btn-mini" onclick="return showConfirmTs(this,'确认删除 {$svo.rule_name} ?')" style="background: transparent;color:#ff5722">删除</a>
+							</td>
+						</tr>
+						{volist name="allRuleList" id="tvo"}
+						{if condition="$tvo.parent_id == $svo.id"}
+						<tr>
+							<td>{$tvo.id}</td>
+							<td>
+								<input type="text" value="{$tvo.sort}" class="sort" onchange='sortRule(this,{$tvo.id})' />
+							</td>
+							<td>———— {$tvo.rule_name}</td>
+							<td>{$tvo.rule}</td>
+							<td>
+								{switch name="$tvo.status"}
+								{case value="1"}{$tvo.status_data}{/case}
+								{case value="2"}<span style="color:red;">{$tvo.status_data}</span>{/case}
+								{/switch}
+							</td>
+							<td>{$tvo.is_menu_data}</td>
+							<td><i class="{$tvo.icon}"></i></td>
+							<td></td>
+							<td>{$tvo.create_time}</td>
+							<td>
+								<a href="{:url('@system/editRule',['page'=>$Request.get.page,'ruleId'=>$tvo.id])}" class="layui-btn layui-btn-normal layui-btn-mini"  style="background: transparent;color:#1e9fff">编辑</a>
+								<a href="{:url('@system/deleteRule',['ruleId'=>$tvo.id])}" class="layui-btn layui-btn-danger layui-btn-mini" onclick="return showConfirmTs(this,'确认删除 {$tvo.rule_name} ?')" style="background: transparent;color:#ff5722">删除</a>
+							</td>
+						</tr>
+						{/if}
+						{/volist}
+						{/if}
+					{/volist}
+					{/if}
+				{/volist}
+			</tbody>
+		</table>
+	</div>
+	<div class="fenyeWrap" style="min-width: 300px">
+		<div id="fenye"></div>
+		<div>共 {:count($allRuleList)} 条</div>
+	</div>
+</div>
+<script>
+	//权限排序
+	function sortRule(obj,ruleId){
+		var sortNum = $(obj).val();
+		$.get('sortRule',{"ruleId":ruleId,"sortNum":sortNum},function(data){
+			if(data.code == 0 || data.isok==-1 || data.isok==false){
+				showTs(0,data.msg,3000);
+			}else if(data.isok==true){
+				showTs(1,data.msg,2000);
+			}else{
+				showTs(0,'网络异常',3000);
+			}
+		});
+	}
+	
+	layui.use(['table','form','laypage'], function(){
+		//列表筛选
+		var form = layui.form;
+		form.on('select(oneLevelRule)', function(data) {
+            $(this).parents('form').submit();
+		});
+		
+		// layui 的静态table有个bug，当你加载所有数据的时候，table表格显示还是只有十条数据，
+		// 因此这里用重新渲染的方式解决该bug
+		var table = layui.table;
+		//转换静态表格
+		table.init('ruleListTable', {
+			height: 315 //设置高度
+			,limit: 100000000000000 //注意：请务必确保 limit 参数（默认：10）是与你服务端限定的数据条数一致
+			//支持所有基础参数
+		}); 
+		//分页
+		var laypage = layui.laypage;
+		var queryVar = getAllQueryVariableWithout(['page']);//不包含page的变量字符串
+		// console.log("{:config('paginate')['list_rows']}")
+		laypage.render({
+			elem: 'fenye',
+			count: "{:config('paginate')['list_rows'] * $oneRuleList->lastPage()}", //数据总数
+			limit: "{:config('paginate')['list_rows']}",//每页显示的条数
+		    curr: "{$Request.get.page}", //当前页
+		    groups: 5, //连续显示分页数
+		    layout: ['prev', 'page', 'next', 'skip'],
+		    jump: function(obj, first){
+		        if(!first){
+			    	var currPage = obj.curr;//得到了当前页，用于向服务端请求对应数据
+			    	location.href = "{:url('@system/ruleList')}" + queryVar + 'page=' + currPage;
+		        }
+		    }
+		});
+	});
+</script>

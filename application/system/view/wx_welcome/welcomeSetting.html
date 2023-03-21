@@ -1,0 +1,281 @@
+<link rel="stylesheet" href="__CSS__/system/wxmenu.css" />
+<div class="layui-body" style="left:200px;">
+	<blockquote class="layui-elem-quote" style="margin:15px 15px 0 15px;">
+		温馨提示：<br/>
+		<div>1、自定义菜单所需素材，需先在微信公众平台编辑或上传。本系统无素材管理功能。</div>
+		<div>2、关注回复需要先在微信公众平台开启开发者模式。</div>
+	</blockquote>
+	<div class="layui-tab-content">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>关注回复设置</legend>
+		</fieldset>
+		<form class="layui-form" action="{:url('@system/welcomeSetting')}" method="post">
+			<div class="layui-form-item" id="content_div">
+				<label class="layui-form-label">回复内容</label>
+				<div class="layui-input-inline">
+					<div class="contentWrap">
+						<div class="c-head">
+							<ul>
+								{if condition="$welcomeInfo.res_type == 'text' || $welcomeInfo.res_type == null"}
+								<li><input type="radio" name="res_type" value="text" title="文本" lay-filter="res_type" checked="checked"></li>
+								{else/}
+								<li><input type="radio" name="res_type" value="text" title="文本" lay-filter="res_type"></li>
+								{/if}
+								{if condition="$welcomeInfo.res_type == 'news'"}
+								<li><input type="radio" name="res_type" value="news" title="图文消息" lay-filter="res_type" checked="checked"></li>
+								{else/}
+								<li><input type="radio" name="res_type" value="news" title="图文消息" lay-filter="res_type"></li>
+								{/if}
+								{if condition="$welcomeInfo.res_type == 'image'"}
+								<li><input type="radio" name="res_type" value="image" title="图片" lay-filter="res_type" checked="checked"></li>
+								{else/}
+								<li><input type="radio" name="res_type" value="image" title="图片" lay-filter="res_type"></li>
+								{/if}
+							</ul>
+						</div>
+						<div class="c-body showContent">
+							{if condition="$welcomeInfo.res_type == 'text' || $welcomeInfo.res_type == null"}
+							<div class="text_div">
+								<div class="layui-form-item layui-form-text">
+									<textarea name="content" placeholder="请输入内容" class="layui-textarea">{$welcomeInfo.content}</textarea>
+								</div>
+							</div>
+							{else/}
+							<div class="select_div">
+								{if condition="$welcomeInfo.res_type == 'news'"}
+									{notempty name="$mediaInfo"}
+									<div class="news_div" onclick="selectItem(this);">
+										<input type="hidden" name="media_id" value="{$welcomeInfo.media_id}">
+										<div class="n-title">更新于：{$mediaInfo.update_time|date="Y-m-d H:i:s",###}</div>
+										<div class="n-content">
+											<div class="n-name">{$mediaInfo.news_item[0]['title']}</div>
+											<div class="n-image">
+												<img src="{$Request.domain}/system/get_contents.html?imageUrl={$mediaInfo.news_item[0]['thumb_url']}" alt="" />
+											</div>
+											<div class="n-abstract">{$mediaInfo.news_item[0]['digest']}</div>
+										</div>
+									</div>
+									{/notempty}
+								{else/}
+									{notempty name="$welcomeInfo.imgurl"}
+									<div class="image_div" onclick="selectItem(this);">
+										<input type="hidden" name="media_id" value="{$welcomeInfo.media_id}">
+										<input type="hidden" name="imgurl" value="{$welcomeInfo.imgurl}" />
+										<img src="{$Request.domain}/system/get_contents.html?imageUrl={$welcomeInfo.imgurl}" alt="" />
+									</div>
+									{/notempty}
+								{/if}
+							</div>
+							{/if}
+							{if condition="$mediaInfo != null || !empty($welcomeInfo.imgurl)"}
+							<div class="clearBtn"><a href="javascript:void(0);" onclick="clearMaterial();">清空</a></div>
+							<div class="selectWrap" style="display:none;">
+							{elseif condition="$welcomeInfo.res_type == 'text' || $welcomeInfo.res_type == null" /}
+							<div class="clearBtn" style="display:none;"><a href="javascript:void(0);" onclick="clearMaterial();">清空</a></div>
+							<div class="selectWrap" style="display:none;">
+							{else/}
+							<div class="clearBtn"><a href="javascript:void(0);" onclick="clearMaterial();">清空</a></div>
+							<div class="selectWrap">						
+							{/if}
+								<i class="fa fa-plus"></i>
+								<div>从素材库中选择</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">状态</label>
+				<div class="layui-input-block">
+					{if condition="$welcomeInfo.status == 1 || $welcomeInfo.status ==null"}
+					<input type="checkbox" name="status" value="1" lay-skin="switch" lay-filter="status" lay-text="启用|禁用" checked>
+					{else/}
+					<input type="checkbox" name="status" value="1" lay-skin="switch" lay-filter="status" lay-text="启用|禁用">
+					{/if}
+				</div>
+			</div>
+			<div class="layui-form-item submit-item">
+				<div class="layui-input-block">
+					<button class="layui-btn">立即提交</button>
+					<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<!-- 素材弹窗 -->
+<div id="fodderModal">
+	<div class="contentWrap">
+		<div class="c-body">
+			
+		</div>
+	</div>
+	<div id="f-fenye"></div>
+</div>
+
+<script>
+	var laypage;
+	var fodderIndex;//素材弹窗
+	layui.use(['form','laypage'], function(){
+		var form = layui.form
+		laypage= layui.laypage;
+				
+		//切换回复内容单选按钮
+		var active_res_type = $("[name=res_type]:checked").val();
+		form.on('radio(res_type)',function(data){
+			var textHtml = '<div class="text_div">'
+					+'<div class="layui-form-item layui-form-text">'
+					+'<textarea name="text" placeholder="请输入内容" class="layui-textarea"></textarea>'
+					+'</div>'
+					+'</div>';
+			var noTextHtml = '<div class="select_div"></div>';
+			res_type = $("[name=res_type]:checked").val();
+			if(res_type != active_res_type){
+				active_res_type = res_type;
+				$(".text_div,.select_div").remove();
+				if(res_type == 'text'){
+					$(".clearBtn").hide();
+					$(".selectWrap").hide();
+					$(".showContent").prepend(textHtml);
+				}else{
+					$(".showContent").prepend(noTextHtml);
+					$(".clearBtn").show();
+					$(".selectWrap").show();
+					$("#fodderModal .c-body,#f-fenye").empty();
+				}
+			}
+		});
+		
+		//从素材库中选择
+		$(".selectWrap").click(function(){
+			$("#fodderModal .c-body").html('<div style="text-align:center;margin-top:30px;font-size:16px;">请稍等，正在加载中...</div>');
+			
+			getMaterial(active_res_type);//拉取素材列表
+			
+			//页面层
+			fodderIndex = layer.open({
+				type: 1,
+				title: '从素材库中选择',
+				area: ['100%', '100%'], //宽高
+				content: $('#fodderModal')
+			});				
+		});
+		
+	});
+	
+	//拉取素材
+	function getMaterial(active_res_type){
+		$("#fodderModal .c-body,#f-fenye").empty();
+		$("#fodderModal .c-body").html('<div style="text-align:center;margin-top:30px;font-size:16px;">请稍等，正在加载中...</div>');
+		//拉取素材
+		if(active_res_type == 'news'){
+			getNewsList(1);//图文列表
+		}else if(active_res_type == 'image'){
+			getImageList(1);//图片列表
+		}
+	}
+	
+	//ajax获取图文列表
+	function getNewsList(page){
+		$.get('getNewsList',{"page":page},function(data){
+			if(data.isok == true){
+				var item = data.rs.item;
+				var html = '';
+				if(item.length > 0){
+					for(var i=0;i<item.length;i++){
+						var news_item = item[i]['content']['news_item'][0];
+						html += '<div class="news_div" onclick="selectItem(this);">'
+								+'<input type="hidden" name="media_id" value="'+item[i]["media_id"]+'">'
+								+'<div class="n-title">更新于：'+getLocalTime(item[i]["update_time"])+'</div>'
+								+'<div class="n-content">'
+								+'<div class="n-name">'+news_item["title"]+'</div>'
+								+'<div class="n-image"><img src="{$Request.domain}/system/get_contents.html?imageUrl='+news_item["thumb_url"]+'" alt="" /></div>'
+								+'<div class="n-abstract">'+news_item["digest"]+'</div>'
+								+'</div>'
+								+'</div>';
+					}
+				}else{
+					$("#fodderModal .c-body").html('<div style="text-align:center;margin-top:30px;font-size:16px;">素材库为空，请先前往微信公众平台创建素材!</div>');
+					return false;
+				}
+				laypage({
+				    cont: 'f-fenye',
+				    pages: Math.ceil(data.rs.total_count/20), //总页数
+				    curr: page, //当前页
+				    groups: 5, //连续显示分页数
+				    jump: function(obj, first){
+				        if(!first){
+					    	currPage = obj.curr;//得到了当前页，用于向服务端请求对应数据
+					    	getNewsList(currPage);
+				        }
+				    }
+				});
+				$("#fodderModal .c-body").html(html);
+			}else if(data.code == 0 || data.isok == false){
+				showTs(0,data.msg,3000);
+			}else{
+				showTs(0,'系统异常，请稍候再试',3000);
+			}
+		});
+	}
+	
+	//ajax获取图片列表
+	function getImageList(page){
+		$.get('getImageList',{"page":page},function(data){
+			if(data.isok == true){
+				var item = data.rs.item;
+				var html = '';
+				if(item.length > 0){
+					for(var i=0;i<item.length;i++){
+						html += '<div class="image_div" onclick="selectItem(this);">'
+								+'<input type="hidden" name="media_id" value="'+item[i]["media_id"]+'">'
+								+'<input type="hidden" name="imgurl" value="'+item[i]["url"]+'">'
+								+'<img src="{$Request.domain}/system/get_contents.html?imageUrl='+item[i]["url"]+'" alt="" />'
+								+'</div>';
+					}
+				}else{
+					$("#fodderModal .c-body").html('<div style="text-align:center;margin-top:30px;font-size:16px;">素材库为空，请先前往微信公众平台创建素材!</div>');
+					return false;
+				}
+				laypage({
+				    cont: 'f-fenye',
+				    pages: Math.ceil(data.rs.total_count/20), //总页数
+				    curr: page, //当前页
+				    groups: 5, //连续显示分页数
+				    jump: function(obj, first){
+				        if(!first){
+					    	currPage = obj.curr;//得到了当前页，用于向服务端请求对应数据
+					    	getImageList(currPage);
+				        }
+				    }
+				});
+				$("#fodderModal .c-body").html(html);
+			}else if(data.code == 0 || data.isok == false){
+				showTs(0,data.msg,3000);
+			}else{
+				showTs(0,'系统异常，请稍候再试',3000);
+			}
+		});
+	}
+	
+	//选中单个图文或图片
+	function selectItem(obj){
+		var selectHTML = $(obj).clone();
+		$(".showContent>.select_div").html(selectHTML);
+		$(".selectWrap").hide();
+		layer.close(fodderIndex);
+	}
+
+	
+	//清空选择素材
+	function clearMaterial(){
+		$(".select_div").empty();
+		$(".selectWrap").show();
+	}
+	
+	//转换时间戳为日期
+	function getLocalTime(nS) {     
+		return new Date(parseInt(nS) * 1000).toLocaleString().replace(/年|月/g, "-").replace(/日/g, " ");      
+    }
+</script>

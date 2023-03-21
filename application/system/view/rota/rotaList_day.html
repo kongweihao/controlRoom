@@ -1,0 +1,312 @@
+<style>	
+.img_emoticon{
+	display: none;
+}
+</style>
+<div class="layui-body">
+	<div style="text-align: center;padding: 10px;">
+		{if condition="$adminInfo.admin_account == 'kwh'"}
+		<div class="layui-inline" style="padding-left: 30px;"> 
+			<span>选择日期</span>
+		</div>
+		<div class="layui-inline" style="padding-left: 30px;"> 
+			<input type="text" class="layui-input" id="rotaList_day_timestamp">
+		</div>
+		{/if}
+		<a class="layui-btn layui-btn-normal" 
+			style="float: right;background-color: rgb(255, 115, 0);margin-left: 20px;"   
+			onclick="window.open('../customer/rotaList_day_happyNewYear')">
+			前端效果(春节版)
+		</a>
+		<!-- <a class="layui-btn layui-btn-normal" 
+			style="float: right;background-color: rgb(255, 115, 0);margin-left: 20px;"   
+			onclick="window.open('../customer/rotaList_day_happyNewYear2020')">
+			前端效果(2020春节版)
+		</a> -->
+		<a class="layui-btn layui-btn-normal" 
+			style="float: right;"   
+			onclick="window.open('../customer/rotaList_day')">
+			前端效果
+		</a>
+	</div>
+	<!-- 白班 -->
+	<div class="panel panel-default table-responsive" style="margin: 10px;text-align:center;border: none;clear: both;">
+		<div class="ctrlWrap" style="text-align: center">
+			<h4>白班（按下空格键可查看表情包效果哦~）</h4>
+		</div>
+		<table class="layui-table">
+			<thead>
+			<tr class="" style="background-color: #eeeeee">
+				{foreach name=":$rota_day" item="item" key="k" }
+				<th lay-data="{field:{$item['monitor_post_name']}}" style="text-align: center">
+					<div class="input-group-btn selectedGay" style="display: inline-block;margin-right: 40px;">
+						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button>
+						<ul class="dropdown-menu dropdown-menu-left" style="height: 120px;overflow-y:scroll;">
+							{foreach name=":$item.monitorPost_type_arr" item="item_item" key="k_k" }
+							<li title="工作职责：{$item_item['duty']}">
+								<a timeStamp="{$item['time_stamp']}" monitorPostName="{$item['monitor_post_name']}" rotaOldVal="{$item.name}" rotaNowVal="{$item_item['name']}">
+									<img class="img_head" src="__ROOT__{$item_item['head']}" width="50" style="border-radius: 50%;">
+									<img class="img_emoticon" src="__ROOT__{$item_item['emoticon']}" width="50" style="border-radius: 50%;">
+									<div style="display: inline-block;vertical-align: bottom;padding-left: 10px;">
+										<span>姓名：{$item_item['name']}</span>
+										<br>
+										<span>手机：{$item_item['phone']}</span>
+										<br>
+										<span>工号：{$item_item['job_number']}</span>
+									</div>
+								</a>
+							</li>
+							<hr>
+							{/foreach}
+						</ul>
+					</div>
+					{$item['monitor_post_name']}
+				</th>
+				{/foreach}
+			</tr>
+			</thead>
+			<tbody>
+			<tr>
+				{foreach name=":$rota_day" item="item" key="k" }
+				<td>
+					<img class="img_head" src="__ROOT__{$item.head}" title="工作职责：{$item.duty}" height="100"  width="80" style="border-radius: 5px;border-shaw:1px 1px;" alt="">
+					<img class="img_emoticon" src="__ROOT__{$item.emoticon}" title="工作职责：{$item.duty}" height="100"  width="80" style="border-radius: 5px;border-shaw:1px 1px;" alt="">
+					<p>
+						{$item.phone}
+					</p>					
+				</td>
+				{/foreach}
+			</tr>
+			</tbody>
+		</table>
+	</div>
+	<hr>
+<!-- 夜班 -->
+	<div class="panel panel-default table-responsive" style="margin: 10px;text-align:center;background-color: #eeeeee;border: none;">
+		<div class="ctrlWrap" style="text-align: center">
+			<h4 style="color:blueviolet">夜班</h4>
+		</div>
+		<table class="layui-table">
+			<thead>
+			<tr class="" style="background-color: #dddddd">
+				{foreach name=":$rota_night" item="item" key="k" }
+				<th lay-data="{field:{$item['monitor_post_name']}}" style="text-align: center">
+					<div class="input-group-btn selectedGay" style="display: inline-block;margin-right: 40px;">
+						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button>
+						<ul class="dropdown-menu dropdown-menu-left" style="height: 120px;overflow-y:scroll;">
+							{foreach name=":$item.monitorPost_type_arr" item="item_item" key="k_k" }
+							<li title="工作职责：{$item_item['duty']}">
+								<a timeStamp="{$item['time_stamp']}" monitorPostName="{$item['monitor_post_name']}" rotaOldVal="{$item.name}" rotaNowVal="{$item_item['name']}">
+									<img class="img_head" src="__ROOT__{$item_item['head']}" width="50" style="border-radius: 50%;">
+									<img class="img_emoticon" src="__ROOT__{$item_item['emoticon']}" width="50" style="border-radius: 50%;">
+									<div style="display: inline-block;vertical-align: bottom;padding-left: 10px;">
+										<span>姓名：{$item_item['name']}</span>
+										<br>
+										<span>手机：{$item_item['phone']}</span>
+										<br>
+										<span>工号：{$item_item['job_number']}</span>
+									</div>
+								</a>
+							</li>
+							<hr>
+							{/foreach}
+						</ul>
+					</div>
+					{$item['monitor_post_name']}
+				</th>
+				{/foreach}
+			</tr>
+			</thead>
+			<tbody>
+			<tr>
+				{foreach name=":$rota_night" item="item" key="k" }
+				<td>
+					<img class="img_head" src="__ROOT__{$item.head}" title="工作职责：{$item.duty}" height="100"  width="80" style="border-radius: 5px;border-shaw:1px 1px;" alt="">
+					<img class="img_emoticon" src="__ROOT__{$item.emoticon}" title="工作职责：{$item.duty}" height="100"  width="80" style="border-radius: 5px;border-shaw:1px 1px;" alt="">
+					<p>
+						{$item.phone}
+					</p>					
+				</td>
+				{/foreach}
+			</tr>
+			</tbody>
+		</table>
+	</div>
+
+</div>
+<script>
+	let date = new Date();
+	let year = date.getFullYear();//保存年份
+	let month = date.getMonth() + 1;//保存月份
+	let day = date.getDate();//保存月份
+	month = month > 9 ? month : '0' + month;
+	day = day > 9 ? day : '0' + day;
+	let time_stamp_today = year.toString() + month.toString() + day.toString();//当天的时间戳
+	// 当前班表所属时间戳
+	let time_stamp = location.href.split('=').length > 1 ?  parseInt(location.href.split('=')[1]) : time_stamp_today;
+
+	layui.use('laydate', function(){
+		var laydate = layui.laydate;
+		let dateInit = time_stamp;
+		//执行一个laydate实例
+		laydate.render({
+			elem: '#rotaList_day_timestamp' //指定元素
+			,value: dateInit
+			,format:'yyyyMMdd'
+			,trigger: 'click' // 当页面空间不足时，laydate组件trigger属性默认的focus值会导致出现一闪而过的效果，这里直接设置为click能解决该问题
+			,done: function(value, date, endDate){
+				if(value == ''){
+					return
+				}
+				let y = date.year;
+				let m = date.month;
+				let d = date.date;
+				m = m > 9 ? m : '0' + m;
+				d = d > 9 ? d : '0' + d;
+				let time_stamp = y.toString() + m.toString() + d.toString();
+				location.href = "{:url('@system/rotaList_day')}?time_stamp=" + time_stamp ;
+			}
+		});
+	});
+	
+	function updataRotaMessage(time_stamp,monitor_post_name,val,old_val){
+			
+		// 不知道为啥直接传一个json字符串过来无法用JSON.parse()解析，因此直接把其拆分出来传输
+		// val 当前值
+		// old_val 旧值
+		if(val == old_val){
+			// 无修改
+			return
+		}
+
+
+		let params = {}
+		params['rota_time_stamp'] = time_stamp//时间戳
+		params['monitor_post_name'] = monitor_post_name//岗位名
+		params['replacement'] = val//替换者
+		params['operation_account'] = "{$adminInfo.admin_account}"//操作者
+		params['guy_be_replaced'] = old_val//被替换的人
+		params['equipment'] = navigator.platform//用户设备
+		params['operation_guy'] = "{$adminMemberName}"//操作人，操作账号关联的人员信息
+		
+		$.ajax({
+			url:"{:url('@system/updateDailyRota')}",
+			//普通账号连进入此页面的权限都没有，因此这里可以不判断权限
+			data:params,
+			type:"post",
+			success:function(res){
+				if (res == 1) {
+					layer.msg('保存成功')
+					window.location.reload();//刷新
+				} else if(res == -1) {
+					showTs(0, "发现冲突：该岗位已被某位管理员修改了，请刷新获取最新班表再尝试换班", 10000);
+				} else if(res == 0) {
+					showTs(0, "不允许修改历史班表", 3000);
+				} else if (res.code === 0) {
+					showTs(0, res.msg, 3000);
+				}
+			}
+		})
+	}
+
+	// 选择值班人员
+	$('.selectedGay').click(function (e) {
+		let target = e.target;
+		// console.log(target)
+		// return
+		if(target.tagName == 'BUTTON' )return;
+		if(target.tagName == 'IMG' || target.tagName == 'DIV')target = target.parentElement;
+		if(target.tagName == 'SPAN')target = target.parentElement.parentElement;
+		if(target.tagName != 'A')return;
+		
+		let input = $(this).find('input');
+		let timeStamp = $(target).attr('timeStamp');
+		let monitorPostName = $(target).attr('monitorPostName');
+		let rotaNowVal = $(target).attr('rotaNowVal');//要更新的值
+		let rotaOldVal = $(target).attr('rotaOldVal');//旧值
+		updataRotaMessage(timeStamp,monitorPostName,rotaNowVal,rotaOldVal)
+	});
+
+//   空格键切换表情包版本与正式版本
+let is_emoticon = 1;//表情包版本与正式版本切换开关
+document.onkeydown = function(event){
+	var e = event || window.event || arguments.callee.caller.arguments[0];
+	if(e && e.keyCode==32){ // 按空格键 切换为视讯版
+		if(is_emoticon){
+			$('.img_head').css('display','none')
+			$('.img_emoticon').css('display','inline-block')
+			is_emoticon = 0;
+
+		}else{
+			$('.img_emoticon').css('display','none')
+			$('.img_head').css('display','inline-block')
+			is_emoticon = 1;
+		}
+	  }
+}
+</script>
+<style>
+
+.head{
+	text-align: center;
+	height: 80px;
+	width: 100%;
+	padding-top: 30px;
+	position: relative;
+}
+.titleTxt{
+    position: relative;
+    top: -66px;
+    font-size: 24px;
+}
+.container{
+	position: relative;
+	width: 100%;
+	text-align: center
+}
+.row{
+	position: relative;
+	width: 100%;
+	height: 222px;
+}
+.zbry{
+	display: inline-block;
+	width: 226px;
+	height: 208px;
+	background-image: url('__IMG__/rotaList_day_frame1.png');
+	margin: auto 30px;
+	text-align: left
+}
+.zbry img{
+	top: 8px;
+	left: 10px;
+	position: relative;
+	font-size: 16px;
+	border-radius: 5px;
+	/* border: 1px solid #55adff; */
+	-moz-box-shadow:2px 2px 20px #55adff; 
+	-webkit-box-shadow:2px 2px 20px #55adff;
+	box-shadow:2px 2px 20px #55adff;
+}
+.zbryTitle{
+	text-align: center;
+	padding:0;
+	margin:8px auto;
+}
+.zbry_gangwei{
+    position: relative;
+    top: -112px;
+    left: 129px;
+    font-size: 16px;
+}
+.zbry_name{
+	position: relative;
+    top: -100px;
+    left: 127px;
+}
+.phone{
+    position: relative;
+    top: -73px;
+    left: 26px;
+}
+</style>

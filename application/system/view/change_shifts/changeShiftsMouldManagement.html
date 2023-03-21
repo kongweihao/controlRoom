@@ -1,0 +1,910 @@
+<div class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>- 交接班模具管理</p>
+		<p>- 同级别下的引用字段将根据排序、利用逗号拼接并循环遍历所有符合要求的数据项</p>
+		<p>- 类型互斥原则：同级别下的引用字段不可以与基本类型共存</p>
+		<p>- 数据同源原则：同级别下的引用字段只能来源于同一数据源（既同一张表格）</p>
+	</blockquote>
+	<div id="app" style="padding: 15px;">
+		<el-tabs type="border-card" value="now">
+			<el-tab-pane label="工作项管理" name="now">
+				<template>
+					<el-button @click="handleShowAddTaskItem" type="primary" style="margin: 15px;float: right;">新增</el-button>
+					<el-table
+					ref="timListTableData"
+					:data="timListTableData"
+					style="width: 100%;margin-bottom: 20px;"
+					row-key="tim_id"
+					border
+					lazy
+					highlight-current-row="true"
+					:load="loadTaskItemChildrenThree"
+					max-height="600"
+					:tree-props="{children: 'children', hasChildren: 'hasChildren'}">
+						<el-table-column
+						fixed
+						prop="tim_name"
+						label="名称"
+						sortable
+						show-overflow-tooltip
+						header-align="center">
+						</el-table-column>
+						<el-table-column
+						sortable
+						align="center"
+						label="级别"
+						prop="tim_level">
+							<template slot-scope="scope">
+								<el-span>{{ scope.row.tim_level + '级工作项'}}</el-span>
+							</template>
+						</el-table-column>
+						<el-table-column
+						sortable
+						align="center"
+						label="排序"
+						prop="tim_sort"></el-table-column>
+						<el-table-column
+						align="center"
+						label="类型"
+						prop="tim_type">
+							<template slot-scope="scope">
+								<el-span v-if="scope.row.tim_type === 1">【基本类型】</el-span>
+								<el-span v-else-if="scope.row.tim_type === 2">
+									【引用类型】
+									<br>
+									值班信息字段为：
+									{{ scope.row.rsrm.ctrr_rsrm_name + '->' + scope.row.rsrm.children.ctrr_rsrm_name + '->' + scope.row.rsrm.children.children.ctrr_rsrm_name}}
+								</el-span>
+							</template>
+						</el-table-column>
+						<el-table-column
+						sortable
+						align="center"
+						label="提示信息"
+						prop="tim_tips"></el-table-column>
+						<el-table-column
+						sortable
+						align="center"
+						label="是否可编辑"
+						prop="tim_is_editable">
+							<template slot-scope="scope">
+								<el-span>{{ scope.row.tim_is_editable === 1 ? '可编辑' : '不可编辑' }}</el-span>
+							</template>
+						</el-table-column>
+						<el-table-column
+						fixed="right"
+						label="操作"
+						align="center"
+						width="90">
+						  <template slot-scope="scope">
+							<!-- 编辑弹窗 -->
+							<el-button type="text" size="mini" @click="handleShowEditTaskItem(scope)" slot="reference" style="color: rgb(142, 194, 255);">编辑</el-button>
+							<el-button
+							type="text"
+							size="mini"
+							type="danger"
+							@click="handleDeleteTaskItem(scope)"
+							style="color: orangered;margin-left: 10px;">删除</el-button>
+						  </template>
+						</el-table-column>
+					</el-table>
+				</template>
+			</el-tab-pane>
+			<el-tab-pane label="岗位与工作项关联关系管理">
+				<blockquote class="layui-elem-quote" style="margin:15px;">
+					<p>- 在这里，你可以设计自己想要的交接班内容</p>
+					<p>- 岗位 + 工作项 = 交接班模具</p>
+				</blockquote>
+				<el-button @click="handleShowAddMt_ti" type="primary" style="margin: 15px;float: right;">新增</el-button>
+				<el-table
+				ref="mt_tiListTableData"
+				:data="mt_tiListTableData"
+				style="width: 100%;margin-bottom: 20px;"
+				row-key="mptti_id"
+				border
+				highlight-current-row="true"
+				max-height="600">
+					<el-table-column
+					fixed 
+					type="expand"
+					label="展开详情"
+					align="center"
+					width="80">
+						<template slot-scope="scope">
+							<el-form>
+								<el-form-item>
+									<el-tree :data="scope.row.tim_id_tree" :props="{label: 'tim_name'}" default-expand-all></el-tree>
+								</el-form-item>
+							</el-form>
+						</template>
+					</el-table-column>
+					<el-table-column
+					label="排序" 
+					prop="mptti_sort"
+					sortable
+					align="center"
+					width="80">
+					</el-table-column>
+					<el-table-column
+					label="岗位类型" 
+					prop="monitorPost_type"
+					sortable
+					width="200"
+					align="center">
+					</el-table-column>
+					<el-table-column
+					label="工作项（这里仅显示最高级别工作项，展开可查看岗位与工作项关系图）" 
+					prop="taskItems"
+					sortable
+					align="center">
+						<template slot-scope="scope">
+							<el-tag v-for="i in scope.row.taskItems" v-if="i.tim_parent_id === 0">{{i.tim_name}}</el-tag>
+						</template>
+					</el-table-column>
+					<el-table-column
+					fixed="right"
+					label="操作"
+					align="center"
+					width="90">
+						<template slot-scope="scope">
+							<!-- 编辑弹窗 -->
+							<el-button type="text" size="mini" @click="handleShowEditMt_ti(scope)" slot="reference" style="color: rgb(142, 194, 255);">编辑</el-button>
+							<el-button
+							type="text"
+							size="mini"
+							type="danger"
+							@click="handleDeleteMt_ti(scope)"
+							style="color: orangered;margin-left: 10px;">删除</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+			</el-tab-pane>
+		</el-tabs>
+
+		<!-- 工作项新增或编辑抽屉 -->
+		<el-drawer
+		:title="addOrEditTaskItemDrawer.title"
+		:visible.sync="isShowAddOrEditTaskItemDrawer"
+		direction="ltr"
+		size="50%"
+		:modal-append-to-body = "false">
+			<el-form ref="addOrEditTaskItemForm" :model="addOrEditTaskItemForm" :rules="addOrEditTaskItemFormRules" label-width="200px" style="display: inline-block;text-align:center">
+				<el-form-item label="工作项名称" prop="tim_name" :error="addOrEditTaskItemFormErrMsg.tim_name">
+					<el-input v-model="addOrEditTaskItemForm.tim_name"></el-input>
+				</el-form-item>
+				<el-form-item label="父级" prop="tim_parent_id" v-if="isShow_tim_parent_id" :error="addOrEditTaskItemFormErrMsg.tim_parent_id">
+				  	<el-cascader  v-model="addOrEditTaskItemForm.tim_parent_id" :props="timCascaderProp" clearable/>
+				</el-form-item>
+				<el-form-item label="类型" prop="tim_type" :error="addOrEditTaskItemFormErrMsg.tim_type">
+					<el-select v-model="addOrEditTaskItemForm.tim_type">
+						<el-tooltip content="将工作项设置为文本类型" placement="right">
+							<el-option :key="1" :value="1" label="基本类型"/>
+						</el-tooltip>
+						<el-tooltip content="引用已设计好的生产表格数据" placement="right">
+							<el-option :key="2" :value="2" label="引用类型"/>
+						</el-tooltip>
+					</el-select>
+				</el-form-item>
+				<el-form-item v-if="addOrEditTaskItemForm.tim_type === 2" label="请选择数据源" prop="ctrr_rsrm_id" :error="addOrEditTaskItemFormErrMsg.ctrr_rsrm_id">
+					<el-cascader v-model="addOrEditTaskItemForm.ctrr_rsrm_id" :options="rsrmAllLevel" :props = "{ value: 'ctrr_rsrm_id', label: 'ctrr_rsrm_name' }" clearable>
+						<template slot-scope="{ node, data }">
+							<span>{{ data.ctrr_rsrm_name }}</span>
+							<span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
+						</template>
+					</el-cascader>
+				</el-form-item>
+				<el-form-item label="排序" prop="tim_sort" :error="addOrEditTaskItemFormErrMsg.tim_sort">
+					<el-input v-model.number="addOrEditTaskItemForm.tim_sort"></el-input>
+				</el-form-item>
+				<el-form-item label="提示信息" prop="tim_tips" :error="addOrEditTaskItemFormErrMsg.tim_tips">
+					<el-input v-model="addOrEditTaskItemForm.tim_tips"></el-input>
+				</el-form-item>
+				<el-form-item>
+					<el-button v-if="addOrEditTaskItemDrawer.type === 'add'" @click="resetAddOrEditTaskItemForm()">重置</el-button>
+					<el-button v-if="addOrEditTaskItemDrawer.type === 'add'"  @click="handleAddTaskItem('addOrEditTaskItemForm')">提交</el-button>
+					<el-button v-else @click="handleEditTaskItem('addOrEditTaskItemForm')">提交</el-button>
+				</el-form-item>
+			</el-form>
+		</el-drawer>
+
+		<!-- 岗位类型与工作项关联关系新增或编辑抽屉 -->
+		<el-drawer
+		:title="addOrEditMt_tiDrawer.title"
+		:visible.sync="isShowAddOrEditMt_tiDrawer"
+		direction="ltr"
+		size="50%"
+		:modal-append-to-body = "false">
+			<el-form ref="addOrEditMt_tiForm" :model="addOrEditMt_tiForm" :rules="addOrEditMt_tiFormRules" label-width="200px" style="display: inline-block;text-align:center">
+				<el-form-item label="id" prop="mptti_id" v-show="false" :error="addOrEditMt_tiFormErrMsg.monitorPost_type_id">
+					<el-input v-model="addOrEditMt_tiForm.mptti_id" disabled/>
+				</el-form-item>
+				<el-form-item v-if="addOrEditMt_tiDrawer.type === 'add'" label="岗位类型" prop="monitorPost_type_id" :error="addOrEditMt_tiFormErrMsg.monitorPost_type_id">
+					<el-select v-model="addOrEditMt_tiForm.monitorPost_type_id">
+						<el-option v-for="i in mtList" :key="i.monitorPost_type_id" :value="i.monitorPost_type_id" :label="i.monitorPost_type"/>
+					</el-select>
+				</el-form-item>
+				<el-form-item v-else label="岗位类型" prop="monitorPost_type_id" :error="addOrEditMt_tiFormErrMsg.tim_id">
+					<el-input v-model="addOrEditMt_tiForm.monitorPost_type" disabled/>
+				</el-form-item>
+				<el-form-item label="选择工作项" prop="tim_id_arr" :error="addOrEditMt_tiFormErrMsg.tim_id_arr">
+					<el-cascader
+					v-model ="addOrEditMt_tiForm.tim_id_arr"
+					:options="timTree"
+					:props="{ multiple: true, label: 'tim_name', value: 'tim_id' }"
+					collapse-tags
+					placeholder="试试搜索"
+					filterable>
+						<template slot-scope="{ node, data }">
+							<span>{{ data.tim_name }}</span>
+							<span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
+						</template>
+					</el-cascader>
+				</el-form-item>
+				<el-form-item label="排序" prop="mptti_sort" :error="addOrEditMt_tiFormErrMsg.mptti_sort">
+					<el-input v-model.number="addOrEditMt_tiForm.mptti_sort"/>
+				</el-form-item>
+				<el-form-item>
+					<el-button v-if="addOrEditMt_tiDrawer.type === 'add'" @click="resetAddOrEditMt_tiForm()">重置</el-button>
+					<el-button v-if="addOrEditMt_tiDrawer.type === 'add'"  @click="handleAddMt_ti('addOrEditMt_tiForm')">提交</el-button>
+					<el-button v-else @click="handleEditMt_ti('addOrEditMt_tiForm')">提交</el-button>
+				</el-form-item>
+			</el-form>
+		</el-drawer>
+	</div>
+</div>
+<script type="module">
+	// 整个工作项表格的树形数据结构
+	const timTree = {:json_encode($timTree)};
+	// 按级逐步获取的工作项列表
+	const timList = {:json_encode($timList)};
+	// 岗位类型列表
+	const mtList = {:json_encode($mtList)};
+	// 岗位类型与工作项关联关系列表
+	const mt_tiList = {:json_encode($mt_tiList)};
+	// 构造一级工作项索引（规则：每一个工作项的索引都在父级索引的基础上加上自己的tim_id，这样的设计可以直观的追溯每个工作项的所有父级）
+	for (let i = 0; i < timList.length; i++) {
+		timList[i]['tim_index'] = timList[i]['tim_id'].toString()
+	}
+	const app = new Vue({
+		el: '#app',
+		data() {
+			return {
+				// 工作项管理模块
+				// 整个工作项表格的树形数据结构
+				timTree: timTree,
+				// 按级逐步获取的工作项列表
+				timListTableData: timList,
+				// 一期：由于无限级别的工作项设计导致编辑父级是算法较为复杂，目前暂不支持修改工作项的父级
+				isShow_tim_parent_id: true,
+				// 工作项——新增或编辑
+				isShowAddOrEditTaskItemDrawer: false,
+				// 抽屉配置信息
+				addOrEditTaskItemDrawer: {
+					type: 'add', // add or edit
+					title: '新增工作项', // 新增工作项 or 编辑工作项
+				},
+				// form
+				addOrEditTaskItemForm: {
+					tim_id: '', // 仅在编辑时候有效
+					tim_parent_id: '',
+					tim_name: '',
+					tim_sort: 0,
+					tim_type: 1,
+					ctrr_rsrm_id: '',
+					tim_tips: '',
+					tim_is_delete: 0
+				},
+				// rules
+				addOrEditTaskItemFormRules: {
+					tim_name: [
+						{ required: true, message: '请输入工作项名称', trigger: 'blur' }
+					],
+					tim_parent_id: [
+						{ required: true, message: '请选择一个父级', trigger: 'blur' }
+					],
+					tim_type: [
+						{ required: true, message: '类型不能为空', trigger: 'blur' }
+					],
+					ctrr_rsrm_id: [
+						{ required: true, message: '请选择一个数据源', trigger: 'blur' }
+					],
+					tim_sort: [
+						{ required: true, message: '排序不能为空'},
+      					{ type: 'number', message: '排序必须为数字值'}
+					]
+				},
+				// error 这里与form看着很像，但是这里只允许空字符串，与form还是有区别的
+				addOrEditTaskItemFormErrMsg: {
+					tim_parent_id: '',
+					tim_name: '',
+					tim_sort: '',
+					tim_type: '',
+					ctrr_rsrm_id: '',
+					tim_tips: '',
+					tim_is_delete: 0
+				},
+				// 设置工作项级联配置项
+				timCascaderProp: {
+					checkStrictly: true,
+					// 点击触发方式与lazy搭配效果不佳而且看起来像是有bug，这里改为hover触发即可
+					expandTrigger: 'hover',
+					// 懒加载
+					lazy: true,
+					lazyLoad (node, resolve) {
+						const { level, isLeaf } = node;
+						if (isLeaf) {
+							// 叶子节点直接返回，主要用于第一次点击“新增第一级”时不做处理
+							resolve([]);
+							return
+						}
+						// level === 0 时表示获取第一级数据
+						const data = {
+								getOneOfTimLevel: 1,
+								parentLevel: level,
+								parentId: node.value || '',
+								tim_name: node.label || ''
+							}
+						$.ajax({
+							url: 'changeShiftsMouldManagement',
+							type: 'post',
+							data: data,
+							success: function (res) {
+								const itemArr = res.data
+								const code = res.code
+								// code = 0 表示已没有子工作项
+								const nodes = []
+								if (code === 1) {
+									if (level === 0) {
+										nodes.push({
+											value: 0,
+											label: "新增第一级",
+											leaf: true
+										})	
+									}
+									for (let i = 0; i < itemArr.length; i++) {
+										nodes.push({
+											value: itemArr[i]['tim_id'],
+											label: itemArr[i]['tim_name'],
+											// leaf: true
+										})
+									}
+								}
+								// 通过调用resolve将子节点数据返回，通知组件数据加载完成
+								resolve(nodes);
+							}
+						})
+					}
+				},
+				// 懒加载值班信息所有级
+				rsrmAllLevel: '',
+
+				
+				// 岗位类型与工作项关联关系管理模块
+				// 岗位类型与工作项关联关系列表
+				mt_tiListTableData: mt_tiList,
+				// 岗位类型列表
+				mtList: mtList,
+				// 工作项——新增或编辑
+				isShowAddOrEditMt_tiDrawer: false,
+				// 抽屉配置信息
+				addOrEditMt_tiDrawer: {
+					type: 'add', // add or edit
+					title: '新增关联', // 新增关联 or 编辑关联
+				},
+				// form
+				addOrEditMt_tiForm: {
+					mptti_id: '',
+					monitorPost_type_id: '',
+					tim_id: [],
+					mptti_sort: 0,
+					monitorPost_type: '',
+					tim_id_arr: []
+				},
+				// rules
+				addOrEditMt_tiFormRules: {
+					tim_id_arr: [
+						{ required: true, message: '工作项不能为空', trigger: 'blur' }
+					],
+					mptti_sort: [
+						{ required: true, message: '排序不能为空'},
+      					{ type: 'number', message: '排序必须为数字值'}
+					],
+				},
+				// error 这里与form看着很像，但是这里只允许空字符串，与form还是有区别的
+				addOrEditMt_tiFormErrMsg: {
+					monitorPost_type_id: '',
+					tim_id: '',
+					monitorPost_type: ''
+				},
+			}	
+		},
+		methods: {
+			// 工作项管理模块
+			// 懒加载工作项树形结构
+			loadTaskItemChildrenThree (tree, treeNode, resolve) {
+				let data = {
+					getNextLevel: tree.tim_level+1,
+					tim_parent_id: tree.tim_id
+				}
+				console.log(data);
+				const _this = this
+				$.ajax({
+					type: 'GET'
+					,data: data
+					,url: 'changeShiftsMouldManagement'
+					,success: function(res){
+						const code = res.code
+						const msg = res.msg
+						console.log(res);
+						if (code === 1) {
+							const childrenList = res.data
+							for (let i = 0; i < childrenList.length; i++) {
+								childrenList[i]['tim_index'] = tree.tim_index + '_' + childrenList[i]['tim_id']
+							}
+							resolve(childrenList)
+							_this.$notify({
+								title: '操作成功',
+								message: msg,
+								type: 'success',
+								duration: 500
+							})
+						} else { 
+							_this.$notify({
+								title: '操作失败',
+								message: '请联系管理员',
+								type: 'error'
+							})
+						}
+					}
+				})
+			},
+			// 显示新增/编辑工作项面板并初始化
+			handleShowAddTaskItem() {
+				this.isShowAddOrEditTaskItemDrawer = true
+				const _this = this
+				if (this.addOrEditTaskItemDrawer.type == 'edit') {
+					// 如果上次操作是edit，则需要重置一下表单
+					this.resetAddOrEditTaskItemForm()
+					this.isShow_tim_parent_id = true
+				}
+				this.addOrEditTaskItemDrawer.type = 'add'
+				this.addOrEditTaskItemDrawer.title = '新增工作项'
+			},
+			handleAddTaskItem (formName) {
+				const _this = this
+				this.$refs[formName].validate((valid) => {
+					// 每次提交需要将错误信息置空，否则用户重复提交的时候会出现不提示错误信息的情况
+					for (let k in this.addOrEditTaskItemFormErrMsg) {
+						this.addOrEditTaskItemFormErrMsg[k] = ''
+					}
+					if (valid) {
+						const data = this.addOrEditTaskItemForm
+				console.log(data);
+						$.ajax({
+							url: 'addTaskItem',
+							type: 'post',
+							data: data,
+							success: function (res) {
+								const code = res.code
+								const msg = res.msg
+								if (code === 1) {
+									_this.$notify({
+										title: "新增成功",
+										type: 'success',
+										message: msg.tips,
+										duration: 500
+									})
+									setInterval(() => {
+										location.reload()
+									}, 500);
+								} else if (code === -1) {
+									_this.$notify({
+										title: "新增失败",
+										type: 'error',
+										message: msg.tips
+									})
+									const errMsg = msg['errMsg']
+									for (const k in errMsg) {
+										_this.addOrEditTaskItemFormErrMsg[k] = errMsg[k]
+									}
+								} else if (code === 0) {
+									showTs(0, msg, 2000)
+								} else {
+									_this.$notify({
+										title: "操作失败",
+										type: 'error',
+										message: '发生未知错误，请联系管理员'
+									})
+								}
+							}
+						})
+					}
+				})
+			},
+			resetAddOrEditTaskItemForm() {
+				for (const k in this.addOrEditTaskItemForm) {
+					this.addOrEditTaskItemForm[k] = ''
+				}
+			},
+			handleDeleteTaskItem (scope) {
+				const tim_id = scope.row.tim_id
+				const _this = this;
+				this.$confirm('确认删除工作项：' + scope.row.tim_name + '?', '正在删除工作项', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning'
+				}).then(() => {
+					$.ajax({
+						url: 'deleteTaskItem',
+						data: {
+							tim_id: tim_id
+						},
+						type: 'post',
+						success: function (res) {
+							const code = res.code
+							const msg = res.msg
+							if (code === 1) {
+								_this.$notify({
+									title: '操作成功',
+									type: 'success',
+									message: msg.tips,
+									duration: 500
+								})
+								// 无法响应式：树形组件目前找不到数据源，无法删除对应数据项，因此只能使用刷新的方式
+								// _this.timListTableData.splice(scope.$index, 1)
+								setInterval(() => {
+									location.reload()
+								}, 500);
+							} else if (code === -1) {
+								_this.$notify({
+									title: '操作失败',
+									type: 'error',
+									message: msg.tips
+								})
+							} else if (code === 0) {
+									showTs(0, msg, 2000)
+							} else {
+								_this.$notify({
+									title: "操作失败",
+									type: 'error',
+									message: '发生未知错误，请联系管理员'
+								})
+							}
+						}
+					})
+				}).catch(() => {
+					this.$message({
+						type: 'info',
+						message: '已取消删除'
+					});          
+				});
+			},
+			// 显示新增/编辑工作项面板并初始化
+			handleShowEditTaskItem(scope) {
+				this.isShowAddOrEditTaskItemDrawer = true
+				const _this = this
+				if (this.addOrEditTaskItemDrawer.type == 'add') {
+					// 如果上次操作是edit，则需要重置一下表单
+					this.resetAddOrEditTaskItemForm()
+					this.isShow_tim_parent_id = false
+				}
+				for (const k in this.addOrEditTaskItemFormErrMsg) {
+					this.addOrEditTaskItemFormErrMsg[k] = ''
+				}
+				this.addOrEditTaskItemDrawer.type = 'edit'
+				this.addOrEditTaskItemDrawer.title = '编辑工作项（暂不支持修改父级）'
+				for (const k in this.addOrEditTaskItemForm) {
+					this.addOrEditTaskItemForm[k] = scope.row[k]
+				}
+				// 构造父级字段
+				let tim_index_arr = scope.row.tim_index.split('_')
+				for (let i = 0; i < tim_index_arr.length; i++) {
+					tim_index_arr[i] = parseInt(tim_index_arr[i])
+				}
+				// 最后一个id是自己，删除掉才是父级id的正确索引
+				tim_index_arr.pop()
+
+				this.addOrEditTaskItemForm['tim_parent_id'] = tim_index_arr
+				// 构造数据源字段
+				if (scope.row.tim_type === 2) {
+					const rsrm = scope.row.rsrm
+					this.addOrEditTaskItemForm['ctrr_rsrm_id'] = []
+					let is_childern = rsrm
+					while (is_childern) {
+						this.addOrEditTaskItemForm['ctrr_rsrm_id'].push(is_childern.ctrr_rsrm_id)
+						is_childern = is_childern.children
+					}
+				} else {
+					this.addOrEditTaskItemForm['ctrr_rsrm_id'] = ''
+				}
+			},
+			handleEditTaskItem (formName) {
+				const _this = this
+				this.$refs[formName].validate((valid) => {
+					if (valid) {
+						const params = JSON.parse(JSON.stringify(this.addOrEditTaskItemForm)) 
+						JSON.stringify(params.tim_parent_id) !== "[]" || (params.tim_parent_id = [0])
+						$.ajax({
+							url: 'editTaskItem',
+							data: params,
+							type: 'post',
+							success: function (res) {
+								const code = res.code 
+								const msg = res.msg
+								if ( code === 1) {
+									_this.$notify({
+										title: '操作成功',
+										type: 'success',
+										message: msg.tips,
+										duration: 500
+									})
+									setInterval(() => {
+										location.reload()
+									}, 500);
+								} else if(code === -2) {
+									// 数据没有变化
+									_this.$notify({
+										title: '提示',
+										message: msg.tips
+									})
+									const errMsg = msg.errMsg
+									for (const k in errMsg) {
+										_this.addOrEditTaskItemFormErrMsg[k] = errMsg[k]
+									}
+								} else if (code === 0) {
+									showTs(0, msg, 2000)
+								} else if (code === -1) {
+									// 字段检测
+									_this.$notify({
+										title: '操作失败',
+										type: 'error',
+										message: msg.tips
+									})
+									const errMsg = msg.errMsg
+									for (const k in errMsg) {
+										_this.addOrEditTaskItemFormErrMsg[k] = errMsg[k]
+									}
+								} else {
+									// 未知错误
+									_this.$notify({
+										title: "操作失败",
+										type: 'error',
+										message: '发生未知错误，请联系管理员'
+									})
+								}
+							}
+						})
+					}
+				})
+			},
+
+
+			// 显示新增/编辑关联关系面板并初始化
+			handleShowAddMt_ti() {
+				this.isShowAddOrEditMt_tiDrawer = true
+				const _this = this
+				if (this.addOrEditMt_tiDrawer.type == 'edit') {
+					// 如果上次操作是edit，则需要重置一下表单
+					this.resetAddOrEditMt_tiForm()
+				}
+				this.addOrEditMt_tiDrawer.type = 'add'
+				this.addOrEditMt_tiDrawer.title = '新增关联'
+			},
+			handleAddMt_ti (formName) {
+				const _this = this
+				this.$refs[formName].validate((valid) => {
+					// 每次提交需要将错误信息置空，否则用户重复提交的时候会出现不提示错误信息的情况
+					for (let k in this.addOrEditMt_tiFormErrMsg) {
+						this.addOrEditMt_tiFormErrMsg[k] = ''
+					}
+					if (valid) {
+						const data = this.addOrEditMt_tiForm
+						$.ajax({
+							url: 'addMt_ti',
+							type: 'post',
+							data: data,
+							success: function (res) {
+								const code = res.code
+								const msg = res.msg
+								console.log(res);
+								if (code === 1) {
+									_this.$notify({
+										title: "新增成功",
+										type: 'success',
+										message: msg.tips,
+										duration: 500
+									})
+									setInterval(() => {
+										location.reload()
+									}, 500);
+								} else if (code === -1) {
+									_this.$notify({
+										title: "新增失败",
+										type: 'error',
+										message: msg.tips
+									})
+									const errMsg = msg['errMsg']
+									for (const k in errMsg) {
+										_this.addOrEditMt_tiFormErrMsg[k] = errMsg[k]
+									}
+								} else if (code === 0) {
+									showTs(0, msg, 2000)
+								} else {
+									_this.$notify({
+										title: "新增失败",
+										type: 'error',
+										message: '发生未知错误，请联系管理员'
+									})
+								}
+							}
+						})
+					}
+				})
+			},
+			// 岗位类型与工作项关联关系管理模块
+			resetAddOrEditMt_tiForm() {
+				for (const k in this.addOrEditMt_tiForm) {
+					this.addOrEditMt_tiForm[k] = ''
+				}
+			},
+			// 显示新增/编辑工作项面板并初始化
+			handleShowEditMt_ti (scope) {
+				this.isShowAddOrEditMt_tiDrawer = true
+				const _this = this
+				if (this.addOrEditMt_tiDrawer.type == 'add') {
+					// 如果上次操作是edit，则需要重置一下表单
+					this.resetAddOrEditMt_tiForm()
+				}
+				// 情况错误提示
+				for (const k in this.addOrEditMt_tiFormErrMsg) {
+					this.addOrEditMt_tiFormErrMsg[k] = ''
+				}
+				this.addOrEditMt_tiDrawer.type = 'edit'
+				this.addOrEditMt_tiDrawer.title = '编辑关联'
+				for (const k in this.addOrEditMt_tiForm) {
+					Vue.set(this.addOrEditMt_tiForm, k, scope.row[k])
+				}
+				// 构造工作项id数组
+				this.addOrEditMt_tiForm['tim_id'] = []
+				for (let i = 0; i < scope.row['taskItems'].length; i++) {
+					this.addOrEditMt_tiForm['tim_id'].push(scope.row['taskItems'][i]['tim_id'])
+				}
+				// 工作项id二维数组元素类型转换：字符串转数字
+				for (let i = 0; i < this.addOrEditMt_tiForm['tim_id_arr'].length; i++) {
+					for (let j = 0; j < this.addOrEditMt_tiForm['tim_id_arr'][i].length; j++) {
+						this.addOrEditMt_tiForm['tim_id_arr'][i][j] = parseInt(this.addOrEditMt_tiForm['tim_id_arr'][i][j])
+					}
+				}
+			},
+			handleEditMt_ti (formName) {
+				const _this = this
+				this.$refs[formName].validate((valid) => {
+					if (valid) {
+						const params = JSON.parse(JSON.stringify(this.addOrEditMt_tiForm)) 
+						JSON.stringify(params.tim_parent_id) !== "[]" || (params.tim_parent_id = [0])
+						$.ajax({
+							url: 'editMt_ti',
+							data: params,
+							type: 'post',
+							success: function (res) {
+								const code = res.code 
+								const msg = res.msg
+								if ( code === 1) {
+									_this.$notify({
+										title: '操作成功',
+										type: 'success',
+										message: msg.tips,
+										duration: 500
+									})
+									setInterval(() => {
+										location.reload()
+									}, 500);
+								} else if(code === -2) {
+									// 提交数据没有变化
+									_this.$notify({
+										title: '提示',
+										message: msg.tips
+									})
+									const errMsg = msg.errMsg
+									for (const k in errMsg) {
+										_this.addOrEditMt_tiFormErrMsg[k] = errMsg[k]
+									}
+								} else if (code === 0) {
+									showTs(0, msg, 2000)
+								} else {
+									_this.$notify({
+										title: "操作失败",
+										type: 'error',
+										message: '发生未知错误，请联系管理员'
+									})
+								}
+							}
+						})
+					}
+				})
+			},
+			handleDeleteMt_ti (scope) {
+				const mptti_id = scope.row.mptti_id
+				const _this = this;
+				this.$confirm('确认删除【' + scope.row.monitorPost_type + '】的工作项关联?', '正在删除工作项', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning'
+				}).then(() => {
+					$.ajax({
+						url: 'deleteMt_ti',
+						data: {
+							mptti_id: mptti_id
+						},
+						type: 'post',
+						success: function (res) {
+							const code = res.code
+							const msg = res.msg
+							if (code === 1) {
+								_this.$notify({
+									title: '操作成功',
+									type: 'success',
+									message: msg.tips,
+									duration: 500
+								})
+								// 无法响应式：树形组件目前找不到数据源，无法删除对应数据项，因此只能使用刷新的方式
+								// _this.timListTableData.splice(scope.$index, 1)
+								setInterval(() => {
+									location.reload()
+								}, 500);
+							} else if (code === -1) {
+								_this.$notify({
+									title: '操作失败',
+									type: 'error',
+									message: msg.tips
+								})
+							} else if (code === 0) {
+									showTs(0, msg, 2000)
+							} else {
+								_this.$notify({
+									title: "操作失败",
+									type: 'error',
+									message: '发生未知错误，请联系管理员'
+								})
+							}
+						}
+					})
+				}).catch(() => {
+					this.$message({
+						type: 'info',
+						message: '已取消删除'
+					});          
+				});
+			},
+
+		},
+		mounted: function () {
+			const _this = this
+			// 如果希望等到整个视图都渲染完毕，可以在 mounted 内部使用 vm.$nextTick：
+			this.$nextTick(function () {
+				// 获取所有值班信息数据
+				if (this.rsrmAllLevel === '') {
+					// 已有值班信息数据则不再请求值班信息数据以及工作项数据
+					$.ajax({
+						type: 'post',
+						url: 'changeShiftsMouldManagement',
+						data: { getRsrmAllLevel: 1 },
+						success: function (res) {
+							const code = res.code
+							if (code === 1) {
+								_this.rsrmAllLevel = res.data
+							} else {
+								_this.$notify({
+									title: '出现错误',
+									message: '初始化获取值班信息数据时发生未知错误，请联系管理员',
+									type: 'error',
+									duration: 0
+								})
+							}
+						}
+					})
+				}
+			})
+		}
+	})
+</script>

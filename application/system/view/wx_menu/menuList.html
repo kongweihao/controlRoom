@@ -1,0 +1,123 @@
+<div class="layui-body" style="left:200px;">
+	<blockquote class="layui-elem-quote" style="margin:15px 15px 0 15px;">
+		温馨提示：<br/>
+		1、自定义菜单最多包括3个一级菜单，每个一级菜单最多包含5个二级菜单。<br/>
+		2、一级菜单最多4个汉字，二级菜单最多7个汉字，多出来的部分将会以“...”代替。<br/>
+		3、创建自定义菜单后，菜单的刷新策略是，在用户进入公众号会话页或公众号profile页时，如果发现上一次拉取菜单的请求在5分钟以前，就会拉取一下菜单，如果菜单有更新，就会刷新客户端的菜单。测试时可以尝试取消关注公众账号后再次关注，则可以看到创建后的效果。<br/>
+		4、推送菜单需要先在微信公众平台开启开发者模式。
+	</blockquote>
+	<div class="ctrlWrap">
+		<a href="{:url('@system/addMenu')}" class="layui-btn layui-btn-normal layui-btn-small"><i class="layui-icon">&#xe608;</i> 添加微信菜单</a>
+		<a href="{:url('@system/pushWxMenu')}" onclick="return showConfirmTs(this,'确认推送菜单至微信服务器 ?')" class="layui-btn layui-btn-warm layui-btn-small"><i class="layui-icon">&#xe62f;</i> 推送至微信服务器</a>
+	</div>
+	<div class="layui-content">
+		<table class="layui-table" lay-filter="table">
+			<thead>
+				<tr>
+					<th lay-data="{field:'wx_name', width:180, fixed:'left'}">菜单名称</th>
+					<th lay-data="{field:'button_level_data', width:120}">菜单级别</th>
+					<th lay-data="{field:'type', width:120}">菜单类型</th>
+					<th lay-data="{field:'appid', width:120}">小程序appid</th>
+					<th lay-data="{field:'key', width:100}">事件key</th>
+					<th lay-data="{field:'url', width:200}">跳转url</th>
+					<th lay-data="{field:'res_type', width:100}">回复类型</th>
+					<th lay-data="{field:'sort', width:90}">排序</th>
+					<th lay-data="{field:'handle', width:150, fixed:'right'}">操作</th>
+				</tr>
+			</thead>
+			<tbody>
+				{volist name="wxMenuList" id="vo"}
+					{if condition="$vo.parent_id == 0"}
+					<tr>
+						<td colspan="9"></td>
+					</tr>
+					<tr>
+						<td>{$vo.wx_name}</td>
+						<td>{$vo.button_level_data}</td>
+						<td>{$vo.type}</td>
+						<td>{$vo.appid}</td>
+						<td>{$vo.key}</td>
+						<td>{$vo.url}</td>
+						<td>{$vo.res_type}</td>
+						<td>
+							<input type="text" value="{$vo.sort}" class="sort" onchange='sortMenu(this,{$vo.id})' />
+						</td>
+						<td>
+							<a href="{:url('@system/editMenu',['menuId'=>$vo.id])}" class="layui-btn layui-btn-xs">编辑</a>
+							<a href="{:url('@system/deleteMenu',['menuId'=>$vo.id])}" class="layui-btn layui-btn-danger layui-btn-xs" onclick="return showConfirmTs(this,'删除一级菜单，该一级菜单的子菜单也会被删除，确认删除 {$vo.wx_name} ?')">删除</a>
+						</td>
+					</tr>
+					
+					{volist name="wxMenuList" id="svo"}
+					{if condition="$svo.parent_id == $vo.id"}
+						<tr>
+							<td>—— {$svo.wx_name}</td>
+							<td>{$svo.button_level_data}</td>
+							<td>{$svo.type}</td>
+							<td>{$svo.appid}</td>
+							<td>{$svo.key}</td>
+							<td>{$svo.url}</td>
+							<td>{$svo.res_type}</td>
+							<td>
+								<input type="text" value="{$svo.sort}" class="sort" onchange='sortMenu(this,{$svo.id})' />
+							</td>
+							<td>
+								<a href="{:url('@system/editMenu',['menuId'=>$svo.id])}" class="layui-btn layui-btn-xs">编辑</a>
+								<a href="{:url('@system/deleteMenu',['menuId'=>$svo.id])}" class="layui-btn layui-btn-danger layui-btn-xs" onclick="return showConfirmTs(this,'确认删除 {$svo.wx_name} ?')">删除</a>
+							</td>
+						</tr>
+					{/if}
+					{/volist}
+					
+					{/if}
+				{/volist}
+			</tbody>
+		</table>
+		
+		<div class="fenyeWrap">
+			<div id="fenye"></div>
+			<div>共 {$wxMenuList->total()} 条</div>
+		</div>
+	</div>
+</div>
+<script>
+	//权限排序
+	function sortMenu(obj,menuId){
+		var sortNum = $(obj).val();
+		$.get('sortMenu',{"menuId":menuId,"sortNum":sortNum},function(data){
+			if(data.isok==-1 || data.isok==false){
+				showTs(0,data.msg,3000);
+			}else if(data.isok==true){
+				showTs(1,data.msg,2000);
+			}else{
+				showTs(0,'网络异常',3000);
+			}
+		});
+	}
+	
+	layui.use(['table','form','laypage'], function(){
+		var table = layui.table;
+		//转换静态表格
+		table.init('table', {
+
+		});
+		
+		//分页
+		var laypage = layui.laypage;
+		var queryVar = getAllQueryVariableWithout(['page']);//不包含page的变量字符串
+		laypage.render({
+			elem: 'fenye',
+			count: "{:config('paginate')['list_rows'] * $wxMenuList->lastPage()}", //数据总数
+			limit: "{:config('paginate')['list_rows']}",//每页显示的条数
+		    curr: "{$Request.get.page}", //当前页
+		    groups: 5, //连续显示分页数
+		    layout: ['prev', 'page', 'next', 'skip'],
+		    jump: function(obj, first){
+		        if(!first){
+			    	var currPage = obj.curr;//得到了当前页，用于向服务端请求对应数据
+			    	location.href = "{:url('@system/menuList')}" + queryVar + 'page=' + currPage;
+		        }
+		    }
+		});
+	});
+</script>

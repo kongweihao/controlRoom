@@ -1,0 +1,279 @@
+<!-- 
+	$systemAdmin : 开发者帐号/系统管理员，Array
+	$passAdmins : 权限放行帐号白名单，Array
+	$adminInfo : 当前账号信息，Array
+-->
+
+<div class="layui-body" style="padding: 15px;">
+	<form class="layui-form" action="adminList">
+		<!-- 隐藏input后台接口要求 -->
+		<div class="layui-form-item">
+			<div class="layui-input-inline" style="float: right;width: 130px;">
+				<select name="role_id" lay-filter="role_id_search">
+					<option value="-1" selected>-- 所有角色 --</option>
+					{volist name="roleList" id="vo"}
+					{if condition="$vo.id == $roleList_selected"}
+					<option value="{$vo.id}" selected>{$vo.role_name}</option>
+					{else/}
+					<option value="{$vo.id}">{$vo.role_name}</option>
+					{/if}
+					{/volist}
+				</select>
+			</div>
+		</div>
+	</form>
+	<span>值日生系统今日登陆人数：<span style="font-size: 50px;">待开发</span></span>
+	<table id="adminTable" lay-filter="adminList_table"></table>
+</div>
+<script type="text/html" id="switchIsActive">
+	{in name="$adminInfo.admin_account" value="$systemAdmin"}
+	<input type="checkbox" name="status" value="{{d.id}}" lay-skin="switch" lay-text="激活|禁用" lay-filter="switchIsActive" {{ d.status == 1 ? 'checked' : '' }}>
+	{else/}
+	<input type="checkbox" name="status" disabled value="{{d.id}}" lay-skin="switch" lay-text="激活|禁用" lay-filter="switchIsActive" {{ d.status == 1 ? 'checked' : '' }}>
+	{/in}
+</script>
+
+<script type="text/html" id="switchIsEditVacations">
+	{in name="$adminInfo.admin_account" value="$systemAdmin"}
+	<input type="checkbox" name="is_edit_vacations" value="{{d.id}}" lay-skin="switch" lay-text="激活|禁用" lay-filter="switchIsEditVacations" {{ d.is_edit_vacations == 1 ? 'checked' : '' }}>
+	{else/}
+	<input type="checkbox" name="is_edit_vacations" disabled value="{{d.id}}" lay-skin="switch" lay-text="激活|禁用" lay-filter="switchIsEditVacations" {{ d.is_edit_vacations == 1 ? 'checked' : '' }}>
+	{/in}
+</script>
+
+<script type="text/html" id="switchIsEditHolidays">
+	{in name="$adminInfo.admin_account" value="$systemAdmin"}
+	<input type="checkbox" name="is_edit_holidays" value="{{d.id}}" lay-skin="switch" lay-text="激活|禁用" lay-filter="switchIsEditHolidays" {{ d.is_edit_holidays == 1 ? 'checked' : '' }}>
+	{else/}
+	<input type="checkbox" name="is_edit_holidays" disabled value="{{d.id}}" lay-skin="switch" lay-text="激活|禁用" lay-filter="switchIsEditHolidays" {{ d.is_edit_holidays == 1 ? 'checked' : '' }}>
+	{/in}
+</script>
+
+<script type="text/html" id="editBtn">
+	<a class="layui-btn layui-btn-xs" lay-event="edit" style="height:20px;line-height:20px;width:40px;padding:0">编辑</a>
+<!-- in 条件判断->范围判断 : in/notin/ between/ notbetween-->
+	{in name="$adminInfo.admin_account" value="$systemAdmin"}
+	<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del" style="height:20px;line-height:20px;width:40px;padding:0">删除</a>
+	{else/}
+		{in name="$adminInfo.admin_account" value="$passAdmins"}
+		<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del" style="height:20px;line-height:20px;width:40px;padding:0">删除</a>
+		{/in}
+	{/in}
+</script>
+
+<script>
+	layui.use('table', function(){
+		let adminRoleList = ''
+		let table = layui.table
+		,form = layui.form;
+		table.render({
+			elem: '#adminTable'
+			// ,height: 300
+			,url: 'adminList' //数据接口
+			,where: { 
+				adminList: 1
+				,role_id: '{$roleList_selected}'
+			}//接口的其他参数
+			// ,method: 'post' // 默认get
+			,page: true //开启分页
+			,defaultToolbar: ['add', 'filter', 'exports', 'print']
+			,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+			,totalRow: true //开启合计行
+			,request: {
+				// pageName: 'page' //页码的参数名称，默认：page
+				// ,limitName: 'nums' //每页数据量的参数名，默认：limit
+			}
+			,response: {
+				// statusName: 'code' //规定数据状态的字段名称，默认：code
+				// ,statusCode: 1 //规定成功的状态码，默认：0
+				// ,msgName: 'msg' //规定状态信息的字段名称，默认：msg
+				// countName: 'total' //规定数据总数的字段名称，默认：count
+				// ,dataName: 'data' //规定数据列表的字段名称，默认：data
+			}
+			,parseData: function(res){
+				adminRoleList = res.adminRoleList
+				// 返回数据之后才会进行渲染，所以可以把数据先拿出来
+			}
+			,cols: [[//表头
+			,{field:'id', title: 'ID', fixed: 'left'}
+			,{field:'admin_account', title: '帐号',fixed: 'left'} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+			,{field:'admin_fullname', title: '管理员', }
+			,{field:'adminRoleList',title: '角色', templet: function(d){
+				let role_name = ''
+				let arll = adminRoleList.length
+				for(let i = 0 ; i < arll ; i++){
+					if(adminRoleList[i].admin_id == d.id){
+						role_name+= adminRoleList[i].role_name+' '
+					}else if(d.admin_account == '{$systemAdmin[0]}'){
+						role_name = '开发者'
+					}
+				}
+				return role_name;
+			}}
+			,{field:'memberName',title: '关联监控人员'}
+			,{field:'admin_phone',sort:true,title: '手机号码'}
+			,{field:'is_edit_vacations', title: '调休资格', templet: '#switchIsEditVacations', unresize: true}
+			,{field:'is_edit_holidays', title: '年假资格', templet: '#switchIsEditHolidays', unresize: true}
+			,{field:'alm_num_of_holidays',sort:true,title: '年假余额'}
+			,{field:'status', title: '状态', templet: '#switchIsActive', unresize: true}
+			,{field:'update_time',sort:true,title: '上次登陆时间'}
+			,{field:'last_login_ip',title: '上次登陆IP'}
+			,{field:'handle', width:130, title: '操作', toolbar: '#editBtn',fixed: 'right'}
+			]]
+			//  width:130, 为了响应式
+			,done: function(res, curr, count){
+				showTs(1,'加载成功',500)
+			}
+		});
+		"{in name='$adminInfo.admin_account' value='$systemAdmin'}"
+		// 监听激活状态按钮
+		form.on('switch(switchIsActive)', function(obj){
+			let is_active = obj.elem.checked ? 1 : 0;
+			let monitor_post_id = this.value;
+			let params = {}
+			params.id = monitor_post_id;
+			params[this.name] = is_active;
+			params['update_one_ziduan'] = 1;
+			$.ajax({
+				data: params
+				,url: "editAdmin"
+				,type: 'get'
+				,data: { id: monitor_post_id, status: is_active,change_status: 1}
+				,success: function(res){
+					if(res == 1){
+						if(is_active == 1){
+							showTs(1, '激活成功', 500)
+						}else{
+							showTs(1, '禁用成功', 500)
+						}
+					}else if(res == -2){
+						showTs(0, '不能禁用系统管理员', 2000)
+					}else{
+						if(is_active == 1){
+							showTs(0, '激活失败', 2000)
+						}else{
+							showTs(0, '禁用失败', 2000)
+						}
+					}
+				}
+			})
+		});
+		// 监听调休资格按钮
+		form.on('switch(switchIsEditVacations)', function(obj){
+			let is_edit_vacations = obj.elem.checked ? 1 : 0;
+			let monitor_post_id = this.value;
+			let params = {}
+			params.id = monitor_post_id;
+			params[this.name] = is_edit_vacations;
+			const data = { id: monitor_post_id, is_edit_vacations: is_edit_vacations,change_editVacationsStatus: 1}
+			$.ajax({
+				data: params
+				,url: "editAdmin"
+				,type: 'get'
+				,data: data
+				,success: function(res){
+					if(res == 1){
+						if(is_edit_vacations == 1){
+							showTs(1, '激活成功', 500)
+						}else{
+							showTs(1, '禁用成功', 500)
+						}
+					}else if(res == -2){
+						showTs(0, '不能禁用系统管理员', 2000)
+					}else{
+						if(is_edit_vacations == 1){
+							showTs(0, '激活失败', 2000)
+						}else{
+							showTs(0, '禁用失败', 2000)
+						}
+					}
+				}
+			})
+		});
+		// 监听年假资格按钮
+		form.on('switch(switchIsEditHolidays)', function(obj){
+			let is_edit_holidays = obj.elem.checked ? 1 : 0;
+			let monitor_post_id = this.value;
+			let params = {}
+			params.id = monitor_post_id;
+			params[this.name] = is_edit_holidays;
+			const data = { id: monitor_post_id, is_edit_holidays: is_edit_holidays,change_editHolidaysStatus: 1}
+			$.ajax({
+				data: params
+				,url: "editAdmin"
+				,type: 'get'
+				,data: data
+				,success: function(res){
+					if(res == 1){
+						if(is_edit_holidays == 1){
+							showTs(1, '激活成功', 500)
+						}else{
+							showTs(1, '禁用成功', 500)
+						}
+					}else if(res == -2){
+						showTs(0, '不能禁用系统管理员', 2000)
+					}else{
+						if(is_edit_holidays == 1){
+							showTs(0, '激活失败', 2000)
+						}else{
+							showTs(0, '禁用失败', 2000)
+						}
+					}
+				}
+			})
+		});
+		"{/in}"
+		// 监听搜索框选择事件
+		form.on('select(role_id_search)', function(obj) {
+		    $(this).parents('form').submit();
+		});
+
+		//监听头工具栏事件
+		table.on('toolbar(adminList_table)', function(obj){
+			var checkStatus = table.checkStatus(obj.config.id)
+			,data = checkStatus.data; //获取选中的数据
+			switch(obj.event){
+			case 'add':
+				window.location.href = 'addAdmin'
+			break;
+			case 'update':
+				layer.msg('批量修改功能暂不开放~')
+				return
+			break;
+			case 'delete':
+				layer.msg('批量删除功能暂不开放~')
+				return
+			break;
+			};
+		});
+		
+		//监听行工具事件
+		table.on('tool(adminList_table)', function(obj){ //注：tool 是工具条事件名，test 是 table 原始容器的属性 lay-filter="对应的值"
+			var data = obj.data //获得当前行数据
+			,layEvent = obj.event; //获得 lay-event 对应的值
+			if(layEvent === 'detail'){
+			layer.msg('查看操作');
+			} else if(layEvent === 'del'){
+			layer.confirm('确定删除'+data.admin_account+'么', function(index){
+				$.ajax({
+					url: 'deleteAdmin'
+					,data: { adminId: data.id }
+					,type: 'get'
+					,success: function( res ){
+						if( res.code == 1 ){
+							showTs( 1, res.msg, 500 )
+							obj.del(); //删除对应行（tr）的DOM结构
+							layer.close(index);
+						}else{
+							showTs( 0, '删除失败，报错：' + res.msg, 2000 )
+						}
+					}
+				})
+			});
+			} else if(layEvent === 'edit'){
+				window.location.href = 'editAdmin?id='+data.id
+			}
+		});
+
+	});
+</script>

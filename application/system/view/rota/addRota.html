@@ -1,0 +1,343 @@
+
+<div class="layui-body" style="left:200px;">
+	
+	<div id="loading" style="position: fixed;display: none;width: 100%;height: 100%;background-color: rgba(255, 255, 255,1);top: 0;z-index: 100;">
+		<div id="bar" style="position: relative;margin:0 auto;display: inline-block;width: 100%;">
+			<img src="__ROOT__/public/uploads/imgs/emoticon/默认表情包.jpg" height="200" alt="">
+			<br>
+			<span id="loading_txt" style="font-size: 20px;">正在导入，请稍等，大约需要一分钟</span>
+		</div>
+	</div>
+	<blockquote class="layui-elem-quote layui-wran-color" style="margin: 15px;">
+			<p>【注意】</p>
+			<p>1、请确保附件中只保留一张值班表，且不含空表</p>
+			<p>2、默认按月导入（从1号开始）</p>
+			<p>3、目前仅支持xlsx格式导入</p>
+			<p>4、至少需包含以下岗位字段（其余字段将被忽略）：<br><br>
+				{volist name="$monitorPost" id="vo"}
+					【{$vo.post_name}】
+				{/volist}
+			</p>
+	</blockquote>
+	<div class="layui-tab-content" style="margin: 0 15px;">
+		<form id="form" class="layui-form" action="{:url('@system/addMorerota')}" method="post">
+			<div class="layui-form-item">
+				<div class="layui-form-mid layui-word-aux star">年份</div>
+				<div class="layui-input-inline">
+					<select name="year" id="select_option_year" lay-filter="select_option_year">
+					</select>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<div class="layui-form-mid layui-word-aux star">月份</div>
+				<div class="layui-input-inline">
+					<select name="mouth" id="select_option_month" lay-filter="select_option_month">
+					</select>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<div class="layui-form-mid layui-word-aux star">班表</div>
+				<div class="layui-input-inline">
+					<input type="hidden" name="admin_head" value="{$data.admin_head}" />
+					<label for="upload_excle" class="myUploadBtn">上传班表</label>
+					<input type="file" name="upload_excle" id="upload_excle" class="layui-upload-file">
+					<span class="excleName"></span>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<div class="layui-input-inline" style="width:50%">
+				<div id="submit" class="layui-btn" onclick="submit()">开始导入</div>
+				</div>
+				<div class="layui-form-mid layui-word-aux" style="width:38px"></div>
+			</div>
+		</form>
+	</div>
+</div>
+<script>
+	// 设计加载动画
+	function loading(){
+		this.begin = function(){
+			clearInterval(window.loadingTimer)
+			$('#loading').css('display','inline-block')
+			let barLeft = (parseInt($('#loading').css('width'))/2)-200
+			let barTop = (parseInt($('#loading').css('height'))/2)-100
+			$('#bar').css({'top':barTop+'px','left':barLeft+'px'})
+		}
+		this.stop = function(){
+			$('#loading').css('display','none')
+		}
+	}
+	let addRotaLoading = new loading()
+
+	let date = new Date()
+	let year_option = date.getFullYear();
+	$("#select_option_year").append("<option value='"+year_option+"'>"+year_option+"</option><option value='"+ ++year_option+"'>"+ year_option+"</option>");
+	//年份暂定只可选择今年以及明年，月份选项则根据年份进行渲染，但是这里我们还是给他一个初始值
+	let month_option = date.getMonth() + 1 
+	$("#select_option_month").empty();//先清空
+	for(let i = month_option ; i < 13 ; i++){
+		$("#select_option_month").append("<option value='"+i+"'>"+i+"</option>");
+	}
+	let rotaExcleData = []//存储值班表信息
+	let submitKey = 0;//值为1时说明文件符合要求可以正常提交
+	let isDataHandle = 0;//值为1时说明真正处理数据不可以提交
+	$('#upload_excle').change(function(e) {
+		let files = e.target.files;
+		// console.log(e)
+		// console.log($('#upload_excle'))
+
+		// 为空时不做处理
+		if(files[0] == undefined){
+			console.log('空文件')
+			return
+		}		
+		// 判断文件后缀
+		if(files[0].name.split('.')[1] == 'xlsx'){
+			submitKey = 1;			
+		}else{
+			layer.msg('文件类型不正确，目前仅支持xlsx格式')
+			$('#upload_excle').val('')
+			$('#upload_excle')[0].files[0] = undefined
+		}
+		$('.excleName').text($('#upload_excle').val())//显示班表名称
+    });
+
+	function submit(){
+		addRotaLoading.begin()
+		let check_result = 1;
+		let year = $("#select_option_year").val();
+		let month = $("#select_option_month").val();
+		if(!year){
+			layui.msg('请选择年份')
+			return
+		}else if(!month){
+			layui.msg('请选择月份')
+			return
+		}
+		month = month > 9 ? month : '0' + month
+		let time_stamp_y_m = year + month;//年月时间戳
+		//导入值班表前先进行检查，是否已存在导入月份的班表
+		$.ajax({
+			url: "{:url('@system/checkRota')}",
+			type: "POST",
+			data: {time_stamp_y_m:time_stamp_y_m},
+			async: false,//同步
+			success: function (res) {
+					//  res 0 不存在 1 存在
+				if(res){
+					check_result = 0
+				}
+			},
+			fail: function (res) {
+				showTs(0,res.url,2000)
+			}
+		})
+		if(!check_result){
+			showTs(0,'该月班表已存在，请先删除该月班表或重新选择月份',2000)
+			addRotaLoading.stop()
+			return;
+		}
+		if(submitKey == 0){
+			showTs(0,'文件不符合要求，请重新上传',2000)
+			return
+		}
+		if(isDataHandle == 1){
+			showTs(1,'正在处理数据，请勿频繁提交，如果处理时间过长，请刷新重试',2000)
+			return
+		}
+		// 处理数据
+		let files = $('#upload_excle')[0].files;
+		isDataHandle = 1;//开始处理数据
+		let fileReader = new FileReader();
+		let workbook,rotaJson;
+
+		fileReader.onload = function(ev) {
+			try {
+				let data = ev.target.result;
+				// XLSX来自 __COMMON__/xlsx.core.min.js插件
+				workbook = XLSX.read(data, {
+						type: 'binary'
+					}); // 以二进制流方式读取得到整份excel表格对象
+				rotaJson = []; // 存储获取到的数据
+			} catch (e) {
+				addRotaLoading.stop()
+				console.log('文件类型不正确');
+				return;
+			}
+			
+			// 判断表格数
+			if(workbook.SheetNames.length > 1){
+				addRotaLoading.stop()
+				showTs(0,'文件中包含多张表，请只保留一张表，如果存在空表，请删除空表',2000)
+				$('#upload_excle').val('')
+				$('#upload_excle')[0].files[0] = undefined
+				isDataHandle = 0;//文件不符合要求，重新处理
+				return
+			}
+			
+			// 获取导入必须字段
+			let needZiduan = []
+			// 必须字段其他信息，后面加入的需求，所以needZiduan，needZiduanDayOrNight分开写了。。。不过一一对应
+			needZiduanDayOrNight = []
+			// needZiduan 必备的字段
+			"{volist name='$monitorPost' id='vo'}"
+			needZiduan.push("{$vo.post_name}")
+			"{/volist}"
+
+			// 判断字段内内容是否符合，workbook中找到一个字段，needZiduan就删掉一个
+			let needZiduanLen = needZiduan.length
+			let workbookStringsLen = workbook.Strings.length
+			for(let i = 0 ; i < needZiduanLen ; i++){
+				for(let j = 0 ; j < workbookStringsLen ; j++){
+					if(needZiduan[i] == workbook.Strings[j].h){
+						needZiduan.splice(i,1);
+						// delete 和splice方法的区别
+						// 1）delete: 只是被删除的元素变成了 undefined 其他的元素的键值还是不变。
+						// 2) splice: 该方法会改变原始数组
+						j = 0//continue 之后原来不会将j置为0的
+						continue
+					}
+				}
+			}
+
+			// 如果needZiduan不为空，说明缺失了字段
+			if(needZiduan.length != 0){
+				addRotaLoading.stop()
+				layer.open({
+					type: 1
+					,title: '导入班表岗位' //不显示标题栏
+					// ,closeBtn: true
+					,btn: ['确定']
+					// ,area: ['600px;','80%']
+					,shade: 0.8
+					,id: 'LAY_addMonitorPost' //设定一个id，防止重复弹出
+					,moveType: 1 //拖拽模式，0或者1
+					,content: '<div style="padding: 50px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;">如下字段存在问题：'+needZiduan+'；请重新上传。（请勿缺失或重复字段）</div>'
+				});
+				$('#upload_excle').val('')
+				$('#upload_excle')[0].files[0] = undefined
+				isDataHandle = 0;//文件不符合要求，重新处理
+				return
+			}
+
+			//把值重新还给needZiduan，下面有用
+			let nzddonJson = {}
+			"{volist name='$monitorPost' id='vo'}"
+			needZiduan.push("{$vo.post_name}")
+			nzddonJson['mp_alias'] = "{$vo.mp_alias}"
+			nzddonJson['is_day'] = "{$vo.is_day}"
+			nzddonJson['is_night'] = "{$vo.is_night}"
+			nzddonJson['monitorPost_type'] = "{$vo.monitorPost_type}"
+			nzddonJson['sort_day'] = "{$vo.sort_day}"
+			nzddonJson['sort_night'] = "{$vo.sort_night}"
+			nzddonJson['is_show_for_rotaListOrdinary_page'] = "{$vo.is_show_for_rotaListOrdinary_page}"
+			nzddonJson['is_active'] = "{$vo.is_active}"
+			needZiduanDayOrNight.push(nzddonJson)
+			nzddonJson = {}
+			"{/volist}"
+			// 表格的表格范围，可用于判断表头数量是否正确
+			let fromTo = '';
+			let sheet = workbook.SheetNames[0];//经过前面的处理，到这一步之后只可能有一张表，因此这样写即可获取到
+			
+			if (workbook.Sheets.hasOwnProperty(sheet)) {
+				fromTo = workbook.Sheets[sheet]['!ref'];
+				rotaJson = rotaJson.concat(XLSX.utils.sheet_to_json(workbook.Sheets[sheet]));
+				// break; // 如果只取第一张表，就取消注释这行
+			}
+			let rotaJsonLen = rotaJson.length;
+
+			// 处理表格数据
+			for(let i = 0; i < rotaJsonLen; i++){
+				let d = i+1;
+				let weekDay = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+				let myDate = new Date(Date.parse(year+"/"+month+"/"+d))
+				let week = weekDay[myDate.getDay()];//星期
+				if(d < 10){
+					d =  '0' + d
+				}
+				
+				let time_stamp = time_stamp_y_m + d;//年月时间戳
+				let eachDayRotaData = [];
+				for(let j = 0; j < needZiduanLen; j++){
+					let rj = {}
+					rj.time_stamp = time_stamp
+					rj.week = week
+					rj.monitor_post_name = $.trim(needZiduan[j])
+					rj.member_name = $.trim(rotaJson[i][needZiduan[j]]) || ''//undefine时数据库无法保存数据会报错
+					rj.mp_alias = needZiduanDayOrNight[j].mp_alias || 0
+					rj.is_day = needZiduanDayOrNight[j].is_day || 0
+					rj.is_night = needZiduanDayOrNight[j].is_night || 0
+					rj.monitorPost_type = needZiduanDayOrNight[j].monitorPost_type || 0
+					rj.sort_day = needZiduanDayOrNight[j].sort_day || 0
+					rj.sort_night = needZiduanDayOrNight[j].sort_night || 0
+					rj.is_show_for_rotaListOrdinary_page = needZiduanDayOrNight[j].is_show_for_rotaListOrdinary_page || 0
+					rj.is_active = needZiduanDayOrNight[j].is_active || 0
+					eachDayRotaData.push(rj)
+				}
+				// php配置文件限制参数的长度，因此需要将班表按天上传，那一天有问题立马报错
+				// 此法不用修改配置文件，只不过需要后台再做一次处理，这样不影响配置文件的方法更有利于项目迁移
+				try{
+					$.ajax({
+						url: "{:url('@system/addRota')}",
+						type: "POST",
+						async: false,
+						data: {
+							rotaData: eachDayRotaData,
+							is_addRota: 1//开关
+						},
+						async: false,//同步
+						success: function (res) {
+							const code = res.code
+							console.log(res);
+							if (code == 1) {
+								addRotaLoading.stop()
+							} else if (code == -1) {
+								alert(res.msg)
+								rotaJsonLen = 0;
+							} else if (code == -2) {
+								alert('以下值班员不存在，请确认姓名是否有误：'+res.errName.join('、'))
+								rotaJsonLen = 0;
+							}
+						},
+						fail: function (res) {
+							addRotaLoading.stop()
+							showTs(0,'哦喔报错了：'+res+'，请联系管理员',2000)
+						}
+					})
+				}catch(err){
+					addRotaLoading.stop()
+					showTs(0,'数据导入失败，请联系管理员处理',2000)
+				}
+					
+			}
+			addRotaLoading.stop()
+			if (rotaJsonLen != 0) {
+				// rotaJsonLen 未被修改说明导入成功
+				showTs(1,'导入成功',1000)
+			} else {
+				showTs(0,'导入失败',1000)
+			}
+			isDataHandle = 0;
+		};
+
+		// 以二进制方式打开文件
+		fileReader.readAsBinaryString(files[0]);
+		
+	
+	}
+	layui.use(['form'], function(){
+		let form = layui.form
+		form.on('select(select_option_year)', function(data){
+			let date = new Date()
+			let year = date.getFullYear();
+			let chooseYear = data.value;
+			let month_option = year == chooseYear ? date.getMonth() + 1 : 1//跟进年份判断月份该取什么初始值
+			$("#select_option_month").empty();//先清空
+			for(let i = month_option ; i < 13 ; i++){
+				$("#select_option_month").append("<option value='"+i+"'>"+i+"</option>");
+			}
+			layui.form.render("select");
+		});	
+	});
+
+</script>

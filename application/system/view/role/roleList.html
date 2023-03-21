@@ -1,0 +1,75 @@
+<div class="layui-body" style="left:200px;">
+	<blockquote class="layui-elem-quote" style="margin:15px 15px 0 15px;">角色是一定操作权限的集合，属于该角色的管理员拥有该角色的权限！</blockquote>
+	<div class="ctrlWrap">
+		<a href="{:url('@system/addRole')}" class="layui-btn layui-btn-normal layui-btn-small" style="background: transparent;color: #1e9fff"><i style="color: #1e9fff" class="layui-icon">&#xe608;</i> 添加角色</a>
+	</div>
+	<div class="panel panel-default table-responsive" style="padding: 10px;border: none;">
+		<table class="layui-table" lay-data="{height: 'full-300', cellMinWidth: 120}" lay-filter="roleListTable">
+			<thead>
+				<tr>
+					<th lay-data="{field:'id', fixed:'left'}">ID</th>
+					<th lay-data="{field:'role_name'}">角色名称</th>
+					<th lay-data="{field:'remark', width: 375}">说明</th>
+					<th lay-data="{field:'create_time'}">创建时间</th>
+					<th lay-data="{field:'status'}">状态</th>
+					<th lay-data="{field:'handle', fixed:'right', width: 180}">操作</th>
+				</tr>
+			</thead>
+			<tbody>
+				{volist name="roleList" id="vo"}
+				<tr>
+					<td>{$vo.id}</td>
+					<td>{$vo.role_name}</td>
+					<td>{$vo.remark}</td>
+					<td>{$vo.create_time}</td>
+					<td>
+						{switch name="$vo.status"}
+						{case value="1"}{$vo.status_data}{/case}
+						{case value="2"}<span style="color:red;">{$vo.status_data}</span>{/case}
+						{/switch}
+					</td>
+					<td>
+						<a href="{:url('@system/editRole',['page'=>$Request.get.page,'roleId'=>$vo.id])}" class="layui-btn layui-btn-normal layui-btn-mini" style="background: transparent;color:#1e9fff">编辑</a>
+						<a href="{:url('@system/deleteRole',['roleId'=>$vo.id])}" class="layui-btn layui-btn-danger layui-btn-mini" onclick="return showConfirmTs(this,'确认删除 {$vo.role_name} ?')"  style="background: transparent;color:#ff5722">删除</a>
+					</td>
+				</tr>
+				{/volist}
+			</tbody>
+		</table>
+	</div>
+
+	<div class="fenyeWrap r">
+			<div id="fenye" style="min-width:300px;"></div>
+			<div >共 {$roleList->total()} 条</div>
+	</div>
+</div>
+<script>
+	layui.use(['table','form','laypage'], function(){
+		// layui 的静态table有个bug，当你加载所有数据的时候，table表格显示还是只有十条数据，
+		// 因此这里用重新渲染的方式解决该bug
+		var table = layui.table;
+		//转换静态表格
+		table.init('roleListTable', {
+			height: 315 //设置高度
+			,limit: 100000000000000 //注意：请务必确保 limit 参数（默认：10）是与你服务端限定的数据条数一致
+			//支持所有基础参数
+		}); 
+		//分页
+		var laypage = layui.laypage;
+		var queryVar = getAllQueryVariableWithout(['page']);//不包含page的变量字符串
+		laypage.render({
+			elem: 'fenye',
+			count: "{:config('paginate')['list_rows'] * $roleList->lastPage()}", //数据总数
+			limit: "{:config('paginate')['list_rows']}",//每页显示的条数
+		    curr: "{$Request.get.page}", //当前页
+		    groups: 5, //连续显示分页数
+		    layout: ['prev', 'page', 'next', 'skip'],
+		    jump: function(obj, first){
+		        if(!first){
+			    	var currPage = obj.curr;//得到了当前页，用于向服务端请求对应数据
+			    	location.href = "{:url('@system/roleList')}" + queryVar + 'page=' + currPage;
+		        }
+		    }
+		});
+	});
+</script>

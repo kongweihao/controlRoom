@@ -1,0 +1,184 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>规则设置——仅超级管理员</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-table
+			:data="rotaVacationSettingManagementList"
+			max-height="400"
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="rvs_time_liness"
+				label="调休时效"
+				sortable
+				width="150"
+				align="center">
+					<template slot-scope="scope">
+						<el-popover trigger="hover" placement="top">
+							<p>调休过期周期</p>
+							<p>如【1个月】代表调休要在一个月内使用，否则将会过期</p>
+							<div slot="reference" class="name-wrapper">
+								<el-span class="el-icon-minus" @click="editImNum(scope.row, 'minus', 'rvs_time_liness')" style="cursor: pointer;color: #409eff;"></el-span>
+								<el-input disabled v-model.number="scope.row.rvs_time_liness" @change="handleEdit(scope.row, 'rvs_time_liness')" style="width:50px;text-align:center;margin: auto 5px"></el-input>
+								个月
+								<el-span class="el-icon-plus" @click="editImNum(scope.row, 'plus', 'rvs_time_liness')" style="cursor: pointer;color: #409eff;"></el-span>
+							</div>
+						</el-popover>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="rvs_annual_leave_year"
+				label="年假当前计算年度"
+				show-overflow-tooltip
+				sortable
+				align="center"
+				width="160">
+					<template slot-scope="scope">
+						<el-popover trigger="hover" placement="top">
+							<p>顾名思义年假年度</p>
+							<p>为配合审计，设置为每年手动更新</p>
+							<div slot="reference" class="name-wrapper">
+								<el-span class="el-icon-minus" @click="editImNum(scope.row, 'minus', 'rvs_annual_leave_year')" style="cursor: pointer;color: #409eff;"></el-span>
+								<el-input disabled v-model.number="scope.row.rvs_annual_leave_year" @change="handleEdit(scope.row, 'rvs_annual_leave_year')" style="width:65px;text-align:center;margin: auto 5px"></el-input>
+								年
+								<el-span class="el-icon-plus" @click="editImNum(scope.row, 'plus', 'rvs_annual_leave_year')" style="cursor: pointer;color: #409eff;"></el-span>
+							</div>
+						</el-popover>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="rvs_calculate_everyone_s_vacation_timestamp"
+				label="假期余额系统计算的最近一次日期"
+				show-overflow-tooltip
+				sortable
+				width="150"
+				align="center">
+					<template slot-scope="scope">
+						<el-popover trigger="hover" placement="top">
+						<p>与【假期余额计算最近一次日期的班次】搭配使用</p>
+						<p>记录每个人调休余额的最近班次，为上一班次时不用计算</p>
+						<div slot="reference" class="name-wrapper">
+							<el-tag size="medium">{{ scope.row.rvs_calculate_everyone_s_vacation_timestamp }}</el-tag>
+						</div>
+						</el-popover>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="rvs_calculate_everyone_s_vacation_timestamp_day_or_night"
+				label="假期余额系统计算的最近一次日期的班次"
+				show-overflow-tooltip
+				sortable
+				width="180"
+				align="center">
+					<template slot-scope="scope">
+						<el-popover trigger="hover" placement="top">
+							<p>与前一个字段配合使用</p>
+							<div slot="reference" class="name-wrapper">
+								<el-span>{{scope.row.rvs_calculate_everyone_s_vacation_timestamp_day_or_night == 1 ? '白班' : '夜班'}}</el-span>
+							</div>
+						</el-popover>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="rvs_remarks"
+				label="备注"
+				sortable
+				width="200"
+				align="center">
+					<template slot-scope="scope">
+						<el-input type="textarea" v-model="scope.row.rvs_remarks" @change="handleEdit(scope.row, 'rvs_remarks')"></el-input>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="create_time"
+				label="录入时间"
+				sortable
+				width="155"
+				align="center"></el-table-column>
+				<el-table-column
+				prop="update_time"
+				sortable
+				label="上一次操作时间"
+				width="155"
+				align="center"></el-table-column>
+				<el-table-column
+				fixed="right"
+				label="操作"
+				width="100"
+				align="center">
+				</el-table-column>
+			</el-table>
+		</el-card>
+	</div>
+</div>
+<script>
+const rotaVacationSettingManagementList = {:json_encode($rotaVacationSettingManagementList)};
+const app = new Vue({
+	el: '#app',
+	data() {
+		return {
+			rotaVacationSettingManagementList: rotaVacationSettingManagementList,
+		}
+	},
+	methods: {
+		handleEdit(row, key){
+			const _this = this;
+			row['key'] = key
+			$.ajax({
+				url: 'editrotaVacationSettingManagementList',
+				type: 'post',
+				data: row,
+				success: function (res) {
+					const code = res.code
+					const msg = res.msg
+					if(code === 0){
+						_this.$message({
+									type: 'info',
+									message: msg
+								});
+					}else if(code > 0){
+						_this.$message({
+							type: 'success',
+							message: msg
+						});
+					}else{
+						_this.$message({
+							type: 'error',
+							message: '操作失败，请刷新重试：' + msg
+						});
+					}
+				},
+				error: function (err) {
+					_this.$message({
+							type: 'error',
+							message: '发生未知错误，请刷新重试'
+						});
+				}
+			})
+		},
+		editImNum(row, type, prop) {
+			const _this = this;
+			row[prop] = parseInt(row[prop])
+			if (type === 'minus') {
+				row[prop]--
+			} else if (type === 'plus') {
+				row[prop]++
+			} else {
+				_this.$message({
+					type: 'error',
+					message: '出现未知错误，请联系管理员，错误信息：编辑物资数量时发生函数参数错误' 
+				});
+			}
+			_this.handleEdit(row, prop)
+		}
+	}
+})
+</script>

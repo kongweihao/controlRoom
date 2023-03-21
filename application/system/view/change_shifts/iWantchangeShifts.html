@@ -1,0 +1,1259 @@
+
+<style>
+	/* 交接班树形主键样式重写 */
+	#taskTree .el-tree-node__content {
+		height: auto;
+	}
+</style>
+<div class="layui-body">
+	<div class="layui-field-box">
+		<div id="app" style="margin-top: -40px;" v-if="allTaskTreeAndAuth">
+			<h2 style="text-align:center">{{ time_stampMsg.time_stamp.month + '月' + time_stampMsg.time_stamp.day + '日（' + time_stampMsg.dayOrNight + '）——' +  time_stampMsg.stateStr}}</h1>
+			<el-collapse :value="['1', '2']">
+				<el-collapse-item title="收起交接班" name="1">
+					<el-button style="position: absolute;z-index:10; padding-left: 20px" type="text" @click="handleShowLatestData()">{{latestDataSignBoardTxt}}</el-button>
+					<el-row :gutter="20">
+						<el-col :span="latestDataColSpan">
+							<div class="grid-content bg-purple">
+								<el-form>
+									<el-card class="box-card">
+										<div slot="header" class="clearfix" style="text-align: center">
+											最新数据看板
+										</div>
+										<el-tree
+											id="taskTree"
+											:data="latestData"
+											:props="{label: 'tim_name', value: 'tim_id'}"
+											node-key="id"
+											default-expand-all
+											:expand-on-click-node="false">
+											<div class="custom-tree-node" slot-scope="{ node, data }" style="width:100%;">
+												<!-- 构造引用类型数据 -->
+												<!-- 加载叶子节点 -->
+												<div v-if="data.type2ChildrenDataStr !== '' || data.is_leaf.toString() !== 'false'" >
+													{{ indexArr[data.tim_level-1][(data.index.split('|').pop() || data.index )] + '、' + node.label }}
+													<el-span v-if="is_monitor">
+														<!-- 仅交接班时，才有【同步】按钮 -->
+														<el-tooltip class="item" effect="dark" content="将最新数据同步至对应交接班内容中" placement="top-start">
+															<el-button v-if="!(data.confirmMsg.is_confirm.toString() === 'true') && !data.disabled && (state === '交班' || state === '接班')"
+															@click="handleSynchronization(data.tim_level, data.index, data)" size="mini" style="float: right;">同步</el-button>
+														</el-tooltip>
+													</el-span>
+													<!-- 制作错误信息并激活数据响应式 -->
+													<el-span v-show='0'>{{errorMsg[data.tim_name] = data.type2ChildrenDataStr}}</el-span>
+													<el-form-item style="padding-top: 6px; margin-bottom: 0px" :prop="data.tim_name">
+														<el-span v-show='0'>{{data.type2ChildrenDataStr || (data.type2ChildrenDataStr = '正常') }}</el-span>
+														<el-input v-model="data.type2ChildrenDataStr" disabled type="textarea" :autosize="{ minRows: 2, maxRows: 10 }"></el-input>
+													</el-form-item>
+												</div>
+												<div v-else>{{ indexArr[data.tim_level-1][(data.index.split('|').pop() || data.index )] + '、' + node.label }}</div>
+											</div>
+										</el-tree>
+									</el-card>
+								</el-form>
+							</div>
+						</el-col>
+						<el-col :span="allTaskTreeAndAuthColSpan">
+							<div class="grid-content bg-purple">
+								<el-form>
+									<el-card class="box-card">
+										<div slot="header" class="clearfix" style="text-align: center">
+											<el-tooltip class="item" effect="dark" placement="top-start"
+											content="【值班长权限】可将本班次交接班数据一键换成当前最新数据，会覆盖当前交接班数据，请谨慎操作">
+												<el-button @click="handleGetNewDraft" v-if="{:$is_shiftLeader} && state" style="float: right; padding: 3px 0" type="text">
+												一键获取最新数据
+												</el-button>
+											</el-tooltip>
+										</div>
+										<el-tree
+											id="taskTree"
+											:data="allTaskTreeAndAuth"
+											:props="{label: 'tim_name', value: 'tim_id'}"
+											node-key="id"
+											default-expand-all
+											:expand-on-click-node="false">
+											<div class="custom-tree-node" slot-scope="{ node, data }" style="width:100%;">
+												<!-- 构造引用类型数据 -->
+												<!-- 加载叶子节点 -->
+												<div v-if="data.type2ChildrenDataStr !== '' || data.is_leaf.toString() !== 'false'" >
+													{{ indexArr[data.tim_level-1][(data.index.split('|').pop() || data.index )] + '、' + node.label }}
+													<el-span v-if="is_monitor">
+														<!-- 仅交班时，才有【提交】、【驳回】按钮 -->
+														<el-button @click="handleReject(data.confirmMsg, '{:$adminInfo['admin_account']}', data)" size="mini" style="float: right;"
+														v-if="{:$is_shiftLeader} && (data.confirmMsg.is_confirm.toString() === 'true') && state === '交班'" >驳回</el-button>
+														<el-button @click="handleConfirm(data.confirmMsg, '{:$adminInfo['admin_account']}', data)" size="mini" style="float: right;"
+														v-if="!(data.confirmMsg.is_confirm.toString() === 'true') && !data.disabled && state === '交班'">提交值班长</el-button>
+													</el-span>
+													<!-- 制作错误信息并激活数据响应式 -->
+													<el-span v-show='0'>{{errorMsg[data.tim_name] = data.type2ChildrenDataStr}}</el-span>
+													<el-form-item style="padding-top: 6px; margin-bottom: 0px" :prop="data.tim_name">
+														<el-span v-show='0'>{{data.type2ChildrenDataStr || (data.type2ChildrenDataStr = '正常') }}</el-span>
+														<el-input v-model="data.type2ChildrenDataStr" @change="broadcastEditData(data.tim_level, data.index, data)" :disabled="data.disabled || (data.confirmMsg.is_confirm.toString() === 'true') || !is_monitor || !state" type="textarea" :autosize="{ minRows: 2, maxRows: 10 }"/>
+													</el-form-item>
+													<p v-if="data.confirmMsg.msg !== ' '" style="color:red;height: auto;white-space:normal">{{ '流程：' + data.confirmMsg.msg }}</p>
+												</div>
+												<div v-else>{{ indexArr[data.tim_level-1][(data.index.split('|').pop() || data.index )] + '、' + node.label }}</div>
+											</div>
+										</el-tree>
+									</el-card>
+								</el-form>
+							</div>
+						</el-col>
+					</el-row>
+				</el-collapse-item>
+				<el-collapse-item title="收起人员评价" name="2" v-if="is_monitor && state === '交班' && rateDetailsArr" >
+					<el-card class="box-card" style="margin-top: 15px">
+						<div slot="header" class="clearfix" style="text-align: center">
+							<h1>人员评价</h1>
+						</div>
+						<div v-for="(v, k) in rateDetailsArr" class="text item" style="margin-top: 10px">
+							{{ '【' + v.appraisee_post + '】（' + v.appraisee + '）' }}
+							<div class="block">
+								<el-rate
+									show-score
+									allow-half
+									@change="handleEditRate(v)"
+									v-model="v.score"
+									:colors="colors"
+									style="display: inline-block;margin: 10px auto">
+								</el-rate>
+							</div>
+							<el-input
+							v-model="v.evaluate"
+							@change="handleEditRate(v)"
+							placeholder="评价一下"
+							type="textarea"></el-input>
+						</div>
+					</el-card>
+				</el-collapse-item>
+			</el-collapse>
+			<el-form>
+				<el-form-item style="text-align:center">
+					<el-button v-if="is_changeShifts_time && is_monitor &&( state === '接班' || {:$is_shiftLeader} && state === '交班')" v-loading="submitLoading" :disabled="submitLoading" @click="handleSubmit" style="margin-top: 20px">{{state}}</el-button>
+					<el-span v-if="!is_changeShifts_time">非交接班时间</el-span>
+				</el-form-item>
+			</el-form>
+		</div>
+	</div>
+	
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>- 仅当班次值班人员有交接班权限</p>
+		<p>-交接班规则
+			<p>1、时间：上午8~10点以及下午17~19点，其余时间只能查看/编辑交接班内容</p> 
+			<p>2、交接：任何岗位可以接班，仅值班长可以交班；值班长交班后当班次数据将变为不可编辑状态，同时页面自动刷新</p> 
+			<p>3、交接班超时：当某一班次未确认交接时将会一直停留在某一班次</p> 
+		</p>
+		<p>- 每次编辑默认保存当班次草稿，但不会影响【值班信息】模块中的源数据</p>
+	</blockquote>
+</div>
+<script>
+// 判断当前用户是否值班人员
+const is_monitor = {:json_encode($is_monitor)};
+const latestData = {:json_encode($latestData)};
+const adminInfo = {:json_encode($adminInfo)};
+// 用户值班岗位信息
+const user = {:json_encode($user)};
+// 获取当班次值班人员信息 注：仅对当前班次人员进行评价，历史班次不做人员评价
+const rateDetailsArr = {:json_encode($rateDetailsArr)};
+// 将人员评价中的分数强制转化为Number类型
+if (rateDetailsArr) {
+	for (let i = 0; i < rateDetailsArr.length; i++) {
+		rateDetailsArr[i]['score'] = Number(rateDetailsArr[i]['score'])
+		rateDetailsArr[i]['score'] == '' && (rateDetailsArr[i]['score'] = 5)
+	}
+}
+// 获取交接班草稿
+const draft = {:json_encode($draft)};
+const is_time_division = {:json_encode($is_time_division)}; // 交接班是否出现班次断层，既是否存在未完成的交接班
+const is_changeShifts = {:json_encode($is_changeShifts)}; // 是否可交接
+// console.log(is_time_division);
+// console.log( {:json_encode($lastDraftTime)});
+// 判断交班，接班以及非交接班状态
+const state = {:json_encode($state)};
+const time_stampMsg = {:json_encode($time_stampMsg)}; // 时间信息标题
+const time_stamp = {:json_encode($time_stamp)}; // 时间戳
+const now = new Date(); // 当前时间
+// 当前时间戳
+const now_time_stamp =  '' + now.getFullYear() + ((now.getMonth()+1) > 9 ? (now.getMonth()+1) : '0' + (now.getMonth()+1)) + (now.getDate() > 9 ? now.getDate() : '0' + now.getDate())
+const is_changeShifts_time = is_changeShifts && (is_time_division || (now.getHours() >= 8 && now.getHours() < 10) || (now.getHours() >= 17 && now.getHours() < 19)) ? true : false
+const is_day_shift = {:json_encode($is_day_shift)}; // 是否白班
+/** 索引设计器——为树形结构构建序号
+ * 6个级别，每个级别序号最大值为20
+**/
+const indexArr = [
+	// 第1级工作项
+	['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'],
+	// 第2级工作项
+	[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+	// 第3级工作项
+	['（1）','（2）','（3）','（4）','（5）','（6）','（7）','（8）','（9）','（10）','（11）','（12）','（13）','（14）','（15）','（16）','（17）','（18）','（19）','（20）'],
+	// 第4级工作项
+	['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],
+	// 第5级工作项
+	['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'],
+	// 第6级工作项
+	['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ','Ⅹ','Ⅺ','Ⅻ','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'],
+];
+const allTaskTreeAndAuth = {:json_encode($allTaskTreeAndAuth)};
+
+// 保存2~3级所有字段数据
+let l2_to_l3_allFiled = {:json_encode($l2_to_l3_allFiled)};
+
+// console.log(allTaskTreeAndAuth, latestData);
+let app = new Vue({
+	el: '#app',
+	data() {
+		return {
+			user: user, // 用户值班岗位信息
+			submitLoading: false,
+			state: state, // 三个状态：交班、接班、false   交接班之后以及非交接班时段为false，页面可以查看但是不可编辑
+			is_changeShifts_time: is_changeShifts_time, // 是否在交接班时间范围内
+			indexArr: indexArr,
+			is_monitor: is_monitor,  // 是否当班次值班人员
+			rateDetailsArr: rateDetailsArr,  // 待评价人员信息，注：不对历史班次进行人员评价
+			allTaskTreeAndAuth: allTaskTreeAndAuth,
+			lastEditTreeIndex: '' , // 保存最近一次编辑的树结构索引，后台广播本端传播过去的数据回来时本地端不用响应
+			errorMsg: {}, // 表单校验错误信息
+			// 人员评价
+			colors: ['#99A9BF', '#F7BA2A', '#FF9900'],  // 等同于 { 2: '#99A9BF', 4: { value: '#F7BA2A', excluded: true }, 5: '#FF9900' }
+			// layout 布局配置数据
+			latestDataColSpan: 0,
+			allTaskTreeAndAuthColSpan: 24,
+			latestDataSignBoardTxt: '打开最新数据看板',
+			// 生成岗位日志（复用大值班总结）
+			time_stampMsg: time_stampMsg, // 班次时间信息
+			dateFormatReg: /^\d{2,4}\/\d{2}\/\d{2}\s\d{2}\:\d{2}\:\d{2}/, // 匹配时间格式： yyyy/MM/dd HH:mm:ss
+			l2_to_l3_allFiled: l2_to_l3_allFiled,// 1~3级字段所有数据
+			dutySummaryTimeRange: [], // 大值班总结时间范围搜索条件
+			dutySummary:{
+				// 一、告警核查
+				faultCondition: {
+					head:'一、告警核查\n', // 头部总结信息
+					incompletedData:'', // 待跟进故障
+					completedData:'', // 已消除故障
+				},
+				// 二、投诉处理
+				complaintHandling: {
+					head:'二、投诉处理\n', // 头部总结信息
+					incompletedData:'', // 待跟进投诉
+					completedData:'', // 已消除投诉
+				},
+				// 三、工单处理
+				workOrderProcessing: {
+					head:'三、工单处理\n', // 头部总结信息
+					incompletedData: 0, // 遗留工单数
+					completedData: 0, // 本班派发故障工单数
+				},
+				
+			}, 
+		}	
+	},
+	methods: {
+		// 重新获取值班数据，此操作会覆盖草稿，仅值班长有权限
+		handleGetNewDraft () {
+			const _this = this;
+			this.$confirm('此操作将覆盖当前班次交接班草稿, 包括其他岗位数据，确认重新获取交接班数据?', '提示', {
+				confirmButtonText: '确定',
+				cancelButtonText: '取消',
+				type: 'warning'
+			}).then(() => {
+				const params = {
+					title: '值班长已强制获取最新数据并将原始草稿覆盖',
+					type: 3,
+					is_shiftOver: _this.state === '交班' ? "{:$adminInfo['admin_account']}" : '',
+					is_succession: _this.state === '接班' ? "{:$adminInfo['admin_account']}" : '',
+					time_stamp: time_stamp,
+					is_day_shift: is_day_shift,
+				}
+				$.ajax({
+					url: 'editDraft',
+					data: params,
+					type: 'post',
+					success: function (res) {
+						const code = res.code
+						const msg = res.msg
+						if ( code === 1 ) {
+							// 数据被覆盖需要广播出去，强制页面刷新
+							ws.send(JSON.stringify(params));
+							_this.$notify({
+								title: '操作成功',
+								message: '数据获取成功，原草稿已被覆盖',
+								type: 'success',
+								duration: 500
+							})
+						} else {
+							_this.$notify({
+								title: '操作失败',
+								message: msg,
+								type: 'error',
+								duration: 0
+							})
+						}
+					},
+					error: function (err) {
+						console.log(err);
+						_this.$notify({
+							title: '未知错误',
+							message: msg,
+							type: 'error',
+							duration: 0
+						})
+					}
+				})
+			}).catch(() => {
+				this.$message({
+					type: 'info',
+					message: '已取消'
+				});          
+			});
+		},
+		// 将编辑数据广播出去
+		broadcastEditData(tim_level, index, data) {
+			const _this = this;
+			const lastInx = index.split('|').pop() || index
+			const params = {
+				account: "{:$adminInfo['admin_account']}",
+				tim_level: tim_level,
+				index: index,
+				lastInx: lastInx,
+				type2ChildrenDataStr: data.type2ChildrenDataStr,
+				confirmMsg: data.confirmMsg,
+				is_succession: '',
+			}
+			this.lastEditTreeIndex = index;
+			const editDraft = {
+				type: 0,
+				csh_id: {:$csh_id},
+				csh_data: this.allTaskTreeAndAuth
+			}
+			$.ajax({
+				url: 'editDraft',
+				data: editDraft,
+				type: 'post',
+				success: function (res) {
+					const code = res.code
+					const msg = res.msg
+					if ( code === 1 ) {
+						// 草稿更新成功则广播出去
+						ws.send(JSON.stringify(params));
+						_this.$notify({
+							title: '操作成功',
+							message: '内容已自动保存',
+							type: 'success',
+							duration: 500
+						})
+					} else if ( code === 0 ) {
+						_this.$notify({
+							message: msg,
+							duration: 500
+						})
+					} else {
+						_this.$notify({
+							title: '操作失败',
+							message: msg,
+							type: 'error',
+							duration: 0
+						})
+					}
+				},
+				error: function (err) {
+					console.log(err);
+					_this.$notify({
+						title: '未知错误',
+						message: msg,
+						type: 'error',
+						duration: 0
+					})
+				}
+			})
+		},
+		// 交接班内容确认
+		handleConfirm (confirmMsg, account, data) {
+			confirmMsg.is_confirm = true;
+			confirmMsg.msg += account + '（提交值班长）->'
+			this.broadcastEditData(data.tim_level, data.index, data)
+		},
+		// 交接班内容驳回
+		handleReject (confirmMsg, account, data) {
+			confirmMsg.is_confirm = false;
+			confirmMsg.msg += account + '（驳回）->'
+			this.broadcastEditData(data.tim_level, data.index, data)
+		},
+		// 值班长确认交接班
+		handleSubmit () {
+			this.submitLoading = true
+			const _this = this;
+			const rules = []
+			// 校验交接班内容——不能为空
+			for (const k in this.errorMsg) {
+				if (this.errorMsg[k] === '') {
+					rules.push('【' + k + '】不能为空')
+				} 
+			}
+			if (rules.length) {
+				const msg = '<p>' + rules.join('</p><p>') + '</p>'
+				_this.$notify({
+					title: '提交内容有误',
+					dangerouslyUseHTMLString: true, // 启用html片段
+					message: msg,
+					type: 'error',
+					duration: 100000
+				})
+				this.submitLoading = false
+				return false
+			}
+			const saveState = this.state
+			// 点击交接班之后便不再可编辑
+			this.state = false
+			const params = {
+				type: saveState === '交班' ? 1 : 2,
+				csh_id: {:$csh_id},
+				account: "{:$adminInfo['admin_account']}"
+			}
+			$.ajax({
+				url: 'editDraft',
+				data: params,
+				type: 'post',
+				success: function (res) {
+					const code = res.code
+					const msg = res.msg
+					if ( code === 1 ) {
+						_this.$notify({
+							title: '操作成功',
+							message: '已成功'+ saveState +'，3s后页面自动刷新',
+							type: 'success'
+						})
+						// 将值班长交班的消息广播出去
+						if (_this.state === '交班') {
+							const params = {
+								account: "{:$adminInfo['admin_account']}",
+								is_succession: "{:$adminInfo['admin_account']}",
+							}
+							ws.send(JSON.stringify(params));
+						}
+						setInterval(() => {
+							location.reload()
+						}, 3000);
+					} else {
+						_this.$notify({
+							title: '操作失败',
+							message: msg,
+							type: 'error',
+							duration: 0
+						})
+					}
+				},
+				error: function (err) {
+					_this.$notify({
+						title: '未知错误',
+						message: msg,
+						type: 'error',
+						duration: 0
+					})
+					console.log(err);
+				}
+			})
+		},
+		// 提交人员评价
+		handleEditRate (params) {
+			const _this = this
+			$.ajax({
+				url: 'editRate',
+				data: params,
+				type: 'post',
+				success: function (res) {
+					const code = res.code
+					const msg = res.msg
+					if ( code === 1 ) {
+						_this.$notify({
+							title: '操作成功',
+							message: msg,
+							type: 'success'
+						})
+					} else {
+						_this.$notify({
+							title: '操作失败',
+							message: '发生未知错误刷新重试或请联系管理员',
+							type: 'error',
+							duration: 0
+						})
+					}
+				},
+				error: function (err) {
+					_this.$notify({
+						title: '未知错误',
+						message: msg,
+						type: 'error',
+						duration: 0
+					})
+					console.log(err);
+				}
+			})
+		},
+		// 同步最新数据
+		handleSynchronization (tim_level, index, data) {
+			// 同步最新数据
+			const indexArr =  index.split('|') || index
+			const res = TraversalAndEdit_allTaskTreeAndAuth(app.allTaskTreeAndAuth, indexArr, data, "{:$adminInfo['admin_account']}", 'synchronization');
+			if (res !== -1) {
+				// res = -1 说明该数据已被提交值班长，不可将其广播出去
+				this.broadcastEditData(tim_level, index, data)
+			}
+			// console.log(tim_level, index, data);
+			// broadcastEditData(data.tim_level, data.index, data)
+		},
+		// 显示或隐藏最新数据看板
+		handleShowLatestData () {
+			if (this.latestDataColSpan === 0) {
+				this.latestDataColSpan = 12
+				this.allTaskTreeAndAuthColSpan = 12
+				this.latestDataSignBoardTxt = '收起'
+			} else {
+				this.latestDataColSpan = 0
+				this.allTaskTreeAndAuthColSpan = 24
+				this.latestDataSignBoardTxt = '打开最新数据看板'
+			}
+		},
+		// 交接班内容中的故障情况字段其实就是大值班总结，未来的岗位日志填写其实也是复用大值班总结功能即可
+		handlGetADutySummary(){
+			// 大值班规则
+			// 
+			// 待跟进故障：结束时间（督办获取）为空的数据
+			// 已消除的故障：结束时间（督办获取）在用户选定的时间范围内的数据
+			// 
+			const _this = this;
+			// 大值班总结时间范围搜索条件
+			const dateNow = new Date()
+			// 白班
+			if (dateNow.getHours() >= 9 && dateNow.getHours() <= 18) {
+				const ymd = dateNow.getFullYear() + '/' + (dateNow.getMonth()+1) + '/' + dateNow.getDate();
+				_this.dutySummaryTimeRange[0] = ymd + '/9/0/0'
+				_this.dutySummaryTimeRange[1] = ymd + '/18/0/0'
+			} 
+			// 下半夜
+			else if (dateNow.getHours() >= 0 && dateNow.getHours() < 9) {
+				const yesterday = dateNow.getFullYear() + '/' + (dateNow.getMonth()+1) + '/' + (dateNow.getDate()-1);
+				const today = dateNow.getFullYear() + '/' + (dateNow.getMonth()+1) + '/' + dateNow.getDate();
+				_this.dutySummaryTimeRange[0] = yesterday + '/18/0/0'
+				_this.dutySummaryTimeRange[1] = today + '/9/0/0'
+			} 
+			// 上半夜
+			else {
+				const today = dateNow.getFullYear() + '/' + (dateNow.getMonth()+1) + '/' + dateNow.getDate();
+				const tomorrow = dateNow.getFullYear() + '/' + (dateNow.getMonth()+1) + '/' + (dateNow.getDate()+1);
+				_this.dutySummaryTimeRange[0] = today + '/18/0/0'
+				_this.dutySummaryTimeRange[1] = tomorrow + '/9/0/0'
+			}
+			const timeRangeArr = _this.hangdleStart_end_time(_this.dutySummaryTimeRange[0], _this.dutySummaryTimeRange[1])
+			$.ajax({
+				type: 'POST',
+				url: 'getPostLogData',
+				data: {
+					timeRangeArr: timeRangeArr
+				},
+				success:function(res){
+					const code = res.code
+					const msg = res.msg
+					const faultOrdersData = res.faultOrdersData
+					const complaintWorkOrdersData = res.complaintWorkOrdersData
+					if (code === 0) {
+						showTs(0, msg, 2000)
+						return
+					}
+					// 制作岗位日志中的故障类数据
+					function makeFaultOrdersData(faultOrdersData) {
+						/**
+						 * faultOrdersData 故障数据
+						 * */
+						let incompletedData = []
+						let completedData = []
+						const constructField = ['开始时间', '故障描述', '故障原因', '处理进展', '结束时间（督办获取）', '业务网络', '是否引起SDH倒换', '是否引起倒换']
+						// 业务类型，既业务网络字段
+						const bussinessTypeArr = ['国际光传送网', '国际政企专网', '铁通国际传输网', '一干PTN', '一干SDH']
+						// head 的 total 数据
+						const total = {incompletedData: 0, completedData: 0}
+						// 国际光传送网数据  switching - 引起倒换次数
+						const gjgcsw = {incompletedData: 0, completedData: 0, switching: 0}
+						// 国际政企专网数据  switching - 引起倒换次数
+						const gjzqzw = {incompletedData: 0, completedData: 0, switching: 0}
+						// 铁通国际传输网数据  switching - 引起倒换次数
+						const ttgjcsw = {incompletedData: 0, completedData: 0, switching: 0}
+						// 一干PTN数据  switching - 引起倒换次数
+						const ygptn = {incompletedData: 0, completedData: 0, switching: 0}
+						// 一干SDH数据  switching - 引起倒换次数
+						const ygsdh = {incompletedData: 0, completedData: 0, switching: 0}
+
+						let constructFieldName_id = {}
+						// 构造 constructFieldName_id 
+						for(const key in _this.l2_to_l3_allFiled){
+							constructFieldName_id[key] = {}
+							for(const keykey in _this.l2_to_l3_allFiled[key]){
+								for(let i = 0; i < constructField.length; i++){
+									if(constructField[i] == _this.l2_to_l3_allFiled[key][keykey].ctrr_rsrm_name){
+										constructFieldName_id[key][constructField[i]] = keykey
+									}
+								}
+							}
+						}
+						
+						// 将不同表格数据取出放在一起
+						for(let i = 0; i < faultOrdersData.incompletedData.length; i++){
+							for(let j = 0; j < faultOrdersData.incompletedData[i].length; j++){
+								let incompletedData_item = JSON.parse(JSON.stringify(faultOrdersData.incompletedData[i][j]));
+								incompletedData_item.ctrr_rsrmD_data = JSON.parse(incompletedData_item.ctrr_rsrmD_data.replace(/\n/g,"")) // 去掉回车符号
+								incompletedData.push(incompletedData_item)
+							}
+						}
+						for(let i = 0; i < faultOrdersData.completedData.length; i++){
+							for(let j = 0; j < faultOrdersData.completedData[i].length; j++){
+								let completedData_item = JSON.parse(JSON.stringify(faultOrdersData.completedData[i][j]));
+								completedData_item.ctrr_rsrmD_data = JSON.parse(completedData_item.ctrr_rsrmD_data.replace(/\n/g,"")) // 去掉回车符号
+								completedData.push(completedData_item)
+							}
+						}
+						// 按开始时间升序：快速排序
+						// 解析：快速排序是对冒泡排序的一种改进，第一趟排序时将数据分成两部分，一部分比另一部分的所有数据都要小。然后递归调用，在两边都实行快速排序。
+						function quickSort(arr){
+							if(arr.length < 1){
+								return arr;
+							}
+							let pivotIndex = Math.floor(arr.length / 2)
+							let pivot = arr.splice(pivotIndex, 1)[0]
+							let left = []
+							let right = []
+							for(let i = 0; i < arr.length; i++){
+								let d1 = new Date(arr[i].ctrr_rsrmD_data[constructFieldName_id[arr[i].ctrr_rsrm_id_l2]['开始时间']])
+								let d2 = new Date(pivot.ctrr_rsrmD_data[constructFieldName_id[pivot.ctrr_rsrm_id_l2]['开始时间']])
+								if(d1 < d2){
+									left.push(arr[i])
+								} else {
+									right.push(arr[i])
+								}
+							}
+							return quickSort(left).concat([pivot], quickSort(right))
+						}
+						const incompletedDataSort = quickSort(incompletedData)
+						const completedDataSort = quickSort(completedData)
+						total.incompletedData = incompletedDataSort.length
+						total.completedData = completedDataSort.length
+						// 本班次遗留工单数
+						_this.dutySummary.workOrderProcessing.incompletedData = total.incompletedData
+
+
+						// 拼接字段
+						// _this.dutySummary.faultCondition.incompletedData = '\n待跟进故障如下：\n'
+						for(let i = 0; i < incompletedDataSort.length; i++){
+							let startDate = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[0]]]
+							let startDateFormate
+							// 判断开始时间是否符合格式
+							if(_this.dateFormatReg.test(startDate)){
+								// 遗留工单中挑出本班次派发的工单
+								if (_this.time_stampMsg.dayOrNight === '白班') {
+									if (startDate >= _this.time_stampMsg.time_stamp.year + '/' + _this.time_stampMsg.time_stamp.month + '/' + _this.time_stampMsg.time_stamp.day + ' 09:00:00') {
+										// 本班次遗留工单数
+										_this.dutySummary.workOrderProcessing.completedData++
+									}
+								} else {
+									if (startDate >= _this.time_stampMsg.time_stamp.year + '/' + _this.time_stampMsg.time_stamp.month + '/' + _this.time_stampMsg.time_stamp.day + ' 18:00:00') {
+										// 本班次遗留工单数
+										_this.dutySummary.workOrderProcessing.completedData++
+									}
+								}
+								startDate = new Date(startDate)
+								startDateFormate = (startDate.getMonth()+1) + '月' + startDate.getDate() + '日' + startDate.getHours() + ':' + (startDate.getMinutes() > 9 ? startDate.getMinutes() : '0' + startDate.getMinutes()) + '，'
+							} else {
+								startDateFormate = startDate + '，'
+							}
+							const faultDescription = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[1]]] || '暂无故障描述'
+							const faultCause = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[2]]] || '暂无故障原因'
+							const progress = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[3]]] || '暂无进展'
+							const bussinessType = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[5]]] || ''
+							const isSwitching = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[6]]] || incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[7]]]
+							// 统计开头数据
+							switch (bussinessType) {
+								case bussinessTypeArr[0]:
+									gjgcsw.incompletedData++;
+									isSwitching == '是' && gjgcsw.switching++
+									break;
+								case bussinessTypeArr[1]:
+									gjzqzw.incompletedData++;
+									isSwitching == '是' && gjzqzw.switching++
+									break;
+								case bussinessTypeArr[2]:
+									ttgjcsw.incompletedData++;
+									isSwitching == '是' && ttgjcsw.switching++
+									break;
+								case bussinessTypeArr[3]:
+									ygptn.incompletedData++;
+									isSwitching == '是' && ygptn.switching++
+									break;
+								case bussinessTypeArr[4]:
+									ygsdh.incompletedData++;
+									isSwitching == '是' && ygsdh.switching++
+									break;
+								default:
+									break;
+							}
+							_this.dutySummary.faultCondition.incompletedData += (i+1) + '、【待跟进故障】'
+							// 开始时间
+							_this.dutySummary.faultCondition.incompletedData += startDateFormate
+							// 故障描述
+							_this.dutySummary.faultCondition.incompletedData += faultDescription
+							// 故障原因
+							_this.dutySummary.faultCondition.incompletedData += '\n故障原因：'
+							_this.dutySummary.faultCondition.incompletedData += faultCause
+							// 处理进展
+							_this.dutySummary.faultCondition.incompletedData += '\n处理进展：'
+							_this.dutySummary.faultCondition.incompletedData +=  progress
+							_this.dutySummary.faultCondition.incompletedData += '\n'
+						}
+						// _this.dutySummary.faultCondition.completedData = '\n已消除故障如下：\n'
+						for(let i = 0; i < completedDataSort.length; i++){
+							let startDate = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[0]]]
+							let startDateFormate
+							// 判断开始时间是否符合格式
+							if(_this.dateFormatReg.test(startDate)){
+								// 已消除故障中挑出本班次派发的工单
+								if (_this.time_stampMsg.dayOrNight === '白班') {
+									if (startDate >= _this.time_stampMsg.time_stamp.year + '/' + _this.time_stampMsg.time_stamp.month + '/' + _this.time_stampMsg.time_stamp.day + ' 09:00:00') {
+										// 本班次遗留工单数
+										_this.dutySummary.workOrderProcessing.completedData++
+									}
+								} else {
+									if (startDate >= _this.time_stampMsg.time_stamp.year + '/' + _this.time_stampMsg.time_stamp.month + '/' + _this.time_stampMsg.time_stamp.day + ' 18:00:00') {
+										// 本班次遗留工单数
+										_this.dutySummary.workOrderProcessing.completedData++
+									}
+								}
+								
+								startDate = new Date(startDate)
+								startDateFormate = (startDate.getMonth()+1) + '月' + startDate.getDate() + '日' + startDate.getHours() + ':' + (startDate.getMinutes() > 9 ? startDate.getMinutes() : '0' + startDate.getMinutes()) + '，'
+							} else {
+								startDateFormate = startDate + '，'
+							}
+							const faultDescription = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[1]]] || '暂无故障描述'
+							const faultCause = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[2]]] || '暂无故障原因'
+							const progress = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[3]]] || '暂无进展'
+							const bussinessType = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[5]]] || ''
+							const isSwitching = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[6]]] || completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[7]]]
+							console.log(isSwitching);
+							// 统计开头数据
+							switch (bussinessType) {
+								case bussinessTypeArr[0]:
+									gjgcsw.completedData++;
+									isSwitching == '是' && gjgcsw.switching++
+									break;
+								case bussinessTypeArr[1]:
+									gjzqzw.completedData++;
+									isSwitching == '是' && gjzqzw.switching++
+									break;
+								case bussinessTypeArr[2]:
+									ttgjcsw.completedData++;
+									isSwitching == '是' && ttgjcsw.switching++
+									break;
+								case bussinessTypeArr[3]:
+									ygptn.completedData++;
+									isSwitching == '是' && ygptn.switching++
+									break;
+								case bussinessTypeArr[4]:
+									ygsdh.completedData++;
+									isSwitching == '是' && ygsdh.switching++
+									break;
+								default:
+									break;
+							}
+							_this.dutySummary.faultCondition.completedData += (i+incompletedDataSort.length+1) + '、【已恢复】'
+							// 开始时间
+							_this.dutySummary.faultCondition.completedData += startDateFormate
+							// 故障描述
+							_this.dutySummary.faultCondition.completedData += faultDescription
+							// 故障原因
+							_this.dutySummary.faultCondition.completedData += '\n故障原因：'
+							_this.dutySummary.faultCondition.completedData += faultCause
+							// 处理进展
+							_this.dutySummary.faultCondition.completedData += '\n处理进展：'
+							_this.dutySummary.faultCondition.completedData +=  progress
+							_this.dutySummary.faultCondition.completedData += '\n'
+						}
+
+						// 开头数据
+						_this.dutySummary.faultCondition.head += 
+							'本班次共发生一干传输网故障' + _this.dutySummary.workOrderProcessing.completedData
+							+ '起。跟踪上班次遗留故障' + (total.completedData + total.incompletedData - _this.dutySummary.workOrderProcessing.completedData)
+							+ '起；合计' + (total.completedData + total.incompletedData)
+							+ '起。\n其中，国际光传送网故障' + (gjgcsw.completedData + gjgcsw.incompletedData)
+							+ '起（引起相关SDH系统倒换' + gjgcsw.switching
+							+ '起）；\n国际政企专网故障' + (gjzqzw.completedData + gjzqzw.incompletedData)
+							+ '起（引起相关SDH系统倒换' + gjzqzw.switching
+							+ '起）；\n铁通国际传输网故障' + (ttgjcsw.completedData + ttgjcsw.incompletedData)
+							+ '起（引起相关SDH系统倒换' + ttgjcsw.switching
+							+ '起）；\n一干PTN故障' + (ygptn.completedData + ygptn.incompletedData)
+							+ '起（引起相关SDH系统倒换' + ygptn.switching
+							+ '起）；\n一干SDH故障' + (ygsdh.completedData + ygsdh.incompletedData)
+							+ '起（引起相关SDH系统倒换' + ygsdh.switching
+							+ '起）；\n截至目前，已消除' + total.completedData 
+							+ '起，待跟进' + total.incompletedData + '起。\n' // 总结信息
+					}
+					
+					// 制作岗位日志中的投诉情况数据
+					function makeComplaintWorkOrdersData(complaintWorkOrdersData) {
+						/**
+						 * complaintWorkOrdersData 投诉数据
+						 * */
+						let incompletedData = []
+						let completedData = []
+						const constructField = ['开始时间', '工单标题', '处理进展', '结束时间（督办获取）', '业务网络']
+						// 业务类型，既业务网络字段
+						const bussinessTypeArr = ['国际专线', '集客专线']
+						// head 的 total 数据
+						const total = {incompletedData: 0, completedData: 0}
+						// 国际专线数据
+						const gjzx = {incompletedData: 0, completedData: 0}
+						// 集客专线数据
+						const jkzx = {incompletedData: 0, completedData: 0}
+						// 上班次遗留故障数据
+						const lastFault = {incompletedData: 0, completedData: 0}
+
+						let constructFieldName_id = {}
+						// 构造 constructFieldName_id 
+						for(const key in _this.l2_to_l3_allFiled){
+							constructFieldName_id[key] = {}
+							for(const keykey in _this.l2_to_l3_allFiled[key]){
+								for(let i = 0; i < constructField.length; i++){
+									if(constructField[i] == _this.l2_to_l3_allFiled[key][keykey].ctrr_rsrm_name){
+										constructFieldName_id[key][constructField[i]] = keykey
+									}
+								}
+							}
+						}
+						
+						// 将不同表格数据取出放在一起
+						for(let i = 0; i < complaintWorkOrdersData.incompletedData.length; i++){
+							for(let j = 0; j < complaintWorkOrdersData.incompletedData[i].length; j++){
+								let incompletedData_item = JSON.parse(JSON.stringify(complaintWorkOrdersData.incompletedData[i][j]));
+								incompletedData_item.ctrr_rsrmD_data = JSON.parse(incompletedData_item.ctrr_rsrmD_data.replace(/\n/g,"")) // 去掉回车符号
+								incompletedData.push(incompletedData_item)
+							}
+						}
+						for(let i = 0; i < complaintWorkOrdersData.completedData.length; i++){
+							for(let j = 0; j < complaintWorkOrdersData.completedData[i].length; j++){
+								let completedData_item = JSON.parse(JSON.stringify(complaintWorkOrdersData.completedData[i][j]));
+								completedData_item.ctrr_rsrmD_data = JSON.parse(completedData_item.ctrr_rsrmD_data.replace(/\n/g,"")) // 去掉回车符号
+								completedData.push(completedData_item)
+							}
+						}
+						// 按开始时间升序：快速排序
+						// 解析：快速排序是对冒泡排序的一种改进，第一趟排序时将数据分成两部分，一部分比另一部分的所有数据都要小。然后递归调用，在两边都实行快速排序。
+						function quickSort(arr){
+							if(arr.length < 1){
+								return arr;
+							}
+							let pivotIndex = Math.floor(arr.length / 2)
+							let pivot = arr.splice(pivotIndex, 1)[0]
+							let left = []
+							let right = []
+							for(let i = 0; i < arr.length; i++){
+								let d1 = new Date(arr[i].ctrr_rsrmD_data[constructFieldName_id[arr[i].ctrr_rsrm_id_l2]['开始时间']])
+								let d2 = new Date(pivot.ctrr_rsrmD_data[constructFieldName_id[pivot.ctrr_rsrm_id_l2]['开始时间']])
+								if(d1 < d2){
+									left.push(arr[i])
+								} else {
+									right.push(arr[i])
+								}
+							}
+							return quickSort(left).concat([pivot], quickSort(right))
+						}
+						const incompletedDataSort = quickSort(incompletedData)
+						const completedDataSort = quickSort(completedData)
+						total.incompletedData = incompletedDataSort.length
+						total.completedData = completedDataSort.length
+
+						// 拼接字段
+						// _this.dutySummary.complaintHandling.incompletedData = '\n待跟进投诉如下：\n'
+						
+						for(let i = 0; i < incompletedDataSort.length; i++){
+							let startDate = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[0]]]
+							let startDateFormate
+							// 判断开始时间是否符合格式
+							if(_this.dateFormatReg.test(startDate)){
+								// 上班次遗留投诉·未消除
+								// 构造班次的开始时间
+								const banciStarTimeArr = _this.dutySummaryTimeRange[0].split('/')
+								const banciStarTime = banciStarTimeArr[0] + '/' + banciStarTimeArr[1] + '/' + banciStarTimeArr[2]
+									+ ' ' + (banciStarTimeArr[3] > 9 ? banciStarTimeArr[3] : '0'+banciStarTimeArr[3])
+									+ ':' + (banciStarTimeArr[4] > 9 ? banciStarTimeArr[4] : '0'+banciStarTimeArr[4])
+									+ ':' + (banciStarTimeArr[5] > 9 ? banciStarTimeArr[5] : '0'+banciStarTimeArr[5])
+								if(startDate < banciStarTime){
+									lastFault.incompletedData++
+								}
+								startDate = new Date(startDate)
+								startDateFormate = (startDate.getMonth()+1) + '月' + startDate.getDate() + '日' + startDate.getHours() + ':' + (startDate.getMinutes() > 9 ? startDate.getMinutes() : '0' + startDate.getMinutes()) + '，'
+							} else {
+								startDateFormate = startDate + '，'
+							}
+							const faultDescription = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[1]]] || '暂无工单标题'
+							const faultCause = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[2]]] || '暂无处理进展'
+							const bussinessType = incompletedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[incompletedDataSort[i].ctrr_rsrm_id_l2][constructField[4]]] || ''
+							// 统计开头数据
+							switch (bussinessType) {
+								case bussinessTypeArr[0]:
+									gjzx.incompletedData++;
+									break;
+								case bussinessTypeArr[1]:
+									jkzx.incompletedData++;
+									break;
+								default:
+									break;
+							}
+							_this.dutySummary.complaintHandling.incompletedData += (i+1) + '、【待跟进】'
+							// 开始时间
+							_this.dutySummary.complaintHandling.incompletedData += startDateFormate
+							// 工单标题
+							_this.dutySummary.complaintHandling.incompletedData += faultDescription
+							// 处理进展
+							_this.dutySummary.complaintHandling.incompletedData += '。'
+							_this.dutySummary.complaintHandling.incompletedData += faultCause
+							_this.dutySummary.complaintHandling.incompletedData += '。\n'
+						}
+						// _this.dutySummary.complaintHandling.completedData = '\n已消除投诉如下：\n'
+						for(let i = 0; i < completedDataSort.length; i++){
+							let startDate = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[0]]]
+							let startDateFormate
+							// 判断开始时间是否符合格式
+							if(_this.dateFormatReg.test(startDate)){
+								// 上班次遗留投诉·已消除
+								// 构造班次的开始时间
+								const banciStarTimeArr = _this.dutySummaryTimeRange[0].split('/')
+								const banciStarTime = banciStarTimeArr[0] + '/' + banciStarTimeArr[1] + '/' + banciStarTimeArr[2]
+									+ ' ' + (banciStarTimeArr[3] > 9 ? banciStarTimeArr[3] : '0'+banciStarTimeArr[3])
+									+ ':' + (banciStarTimeArr[4] > 9 ? banciStarTimeArr[4] : '0'+banciStarTimeArr[4])
+									+ ':' + (banciStarTimeArr[5] > 9 ? banciStarTimeArr[5] : '0'+banciStarTimeArr[5])
+								if(startDate < banciStarTime){
+									lastFault.completedData++
+								}
+								startDate = new Date(startDate)
+								startDateFormate = (startDate.getMonth()+1) + '月' + startDate.getDate() + '日' + startDate.getHours() + ':' + (startDate.getMinutes() > 9 ? startDate.getMinutes() : '0' + startDate.getMinutes()) + '，'
+							} else {
+								startDateFormate = startDate + '，'
+							}
+							const faultDescription = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[1]]] || '无工单标题，请检查值班信息数据'
+							const faultCause = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[2]]] || '暂无处理进展'
+							const bussinessType = completedDataSort[i].ctrr_rsrmD_data[constructFieldName_id[completedDataSort[i].ctrr_rsrm_id_l2][constructField[4]]] || ''
+							
+							// 统计开头数据
+							switch (bussinessType) {
+								case bussinessTypeArr[0]:
+									gjzx.completedData++;
+									break;
+								case bussinessTypeArr[1]:
+									jkzx.completedData++;
+									break;
+								default:
+									break;
+							}
+							_this.dutySummary.complaintHandling.completedData += (i+incompletedDataSort.length+1) + '、【已恢复】'
+							// 开始时间
+							_this.dutySummary.complaintHandling.completedData += startDateFormate
+							// 工单标题
+							_this.dutySummary.complaintHandling.completedData += faultDescription
+							// 处理进展
+							_this.dutySummary.complaintHandling.completedData += '。'
+							_this.dutySummary.complaintHandling.completedData += faultCause
+							_this.dutySummary.complaintHandling.completedData += '。\n'
+						}
+
+						// 开头数据
+						_this.dutySummary.complaintHandling.head += 
+							'本班次响应及处理专线投诉' + (total.incompletedData + total.completedData)
+							+ '起。上班次遗留投诉' + (lastFault.incompletedData + lastFault.completedData)
+							+ '起；其中国际专线投诉' + (gjzx.completedData + gjzx.incompletedData)
+							+ '起、集客专线投诉' + (jkzx.completedData + jkzx.incompletedData)
+							+ '起，目前' + total.incompletedData + '起待跟进。\n' // 总结信息
+					}
+					// 制作岗位日志中的告警核查部分
+					makeFaultOrdersData(faultOrdersData)
+
+					// 制作岗位日志中的投诉情况部分
+					makeComplaintWorkOrdersData(complaintWorkOrdersData)
+
+					/** 制作【岗位日志】交接内容 **/
+					/** 规则
+					 * 1.默认allTaskTreeAndAuth[0].children[0] 就是【岗位日志】工作项
+					 * 2.allTaskTreeAndAuth的【岗位日志】工作项字段若存在值，则不做处理，若为空值，则将最新数据写入，同时该字段也可用于未来岗位日志
+					 * 3.latestData 为最新数据看板，初始化时就把最新数据写入该容器
+					 * 4.数据引用类型暂时保留能力但是不做能力展现
+					 * **/
+					// 岗位日志
+					const postLog = 
+						// 一、告警核查
+						_this.dutySummary.faultCondition.head
+						+ _this.dutySummary.faultCondition.incompletedData 
+						+ _this.dutySummary.faultCondition.completedData
+						// 二、投诉处理
+						+ _this.dutySummary.complaintHandling.head
+						+ _this.dutySummary.complaintHandling.incompletedData 
+						+ _this.dutySummary.complaintHandling.completedData
+						// 三、工单处理
+						+ _this.dutySummary.workOrderProcessing.head
+						+ '本班次派发故障工单' + _this.dutySummary.workOrderProcessing.completedData + '张，'
+						+ '遗留工单' + _this.dutySummary.workOrderProcessing.incompletedData + '张。'
+					if (_this.allTaskTreeAndAuth[0].children[0]['type2ChildrenDataStr'].trim() === '' || _this.allTaskTreeAndAuth[0].children[0]['type2ChildrenDataStr'].trim() === '正常') {
+						_this.allTaskTreeAndAuth[0].children[0]['type2ChildrenDataStr'] = JSON.parse(JSON.stringify(postLog))
+					}
+					// 最新数据看板
+					latestData[0].children[0]['type2ChildrenDataStr'] = postLog
+				},
+				error: function(e){
+					showTs(0, '获取大值班出错了，请联系管理员', 10000)
+					console.log(e)
+				}
+			})
+		},
+		// 将开始时间和结束时间（督办获取）进行切割用于区间搜索
+		hangdleStart_end_time(startdate, enddate, ctrr_rsrm_id=''){
+			// startdate yyyy/M/d/H/m/s
+			// enddate yyyy/M/d/H/m/s
+			// ctrr_rsrm_id 字段id
+			let arr = []
+			startdate = startdate.split('/')
+			enddate = enddate.split('/')
+
+			// startdateStr,enddateStr用于拼接字符串
+			let startdateStr = []
+			let enddateStr = []
+			// 字符串转数字类型
+			for(let i = 0; i < startdate.length; i++){
+				startdate[i] = Number(startdate[i])
+				enddate[i] = Number(enddate[i])
+				startdateStr[i] = startdate[i]
+				enddateStr[i] = enddate[i]
+				startdateStr[i] = startdate[i] > 9 ? startdate[i] : '0' + startdate[i]
+				enddateStr[i] = enddate[i] > 9 ? enddate[i] : '0' + enddate[i]
+			}
+			function getYRange(startdate, enddate){
+				if(startdate[0] != enddate[0]){
+					for(let i = (startdate[0] + 1) ; i < enddate[0]; i++){
+						arr.push(i)
+					}
+				}
+			}
+			function getMRange(startdate, enddate){
+				if(startdate[0] == enddate[0]){
+					for(let i = (startdate[1] + 1) ; i < enddate[1]; i++){
+						const M = i > 9 ? i : '0' + i
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + M)
+					}
+				} else {
+					for( let i = (startdate[1] + 1) ; i <= 12; i++ ){
+						const M = i > 9 ? i : '0' + i
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + M)
+					}
+					for(let i = (enddate[1] - 1); i >= 1; i--){
+						const M = i > 9 ? i : '0' + i
+						arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + M)
+					}
+				}
+			}
+			function getDRange(startdate, enddate){
+				if(startdate[0] == enddate[0] && startdate[1] == enddate[1]){
+					for(let i = (startdate[2] + 1); i < enddate[2]; i++){
+						const D = i > 9 ? i : '0' + i
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + D)
+					}
+				} else {
+					for(let i = (startdate[2]+1); i <= 31; i++){
+						const D = i > 9 ? i : '0' + i
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + D)
+					}
+					for(let i = 1; i < enddate[2]; i++){
+						const D = i > 9 ? i : '0' + i
+						arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + D)
+					}
+				}
+			}
+			function getHRange(startdate, enddate){
+				if(startdate[0] == enddate[0] && startdate[1] == enddate[1] && startdate[2] == enddate[2]){
+					for(let i = (startdate[3] + 1); i < enddate[3]; i++){
+						let H = i > 9 ? i : '0' + i.toString();
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + H)
+					}
+				} else {
+					for(let i = (startdate[3]+1); i <= 24; i++){
+						let H = i > 9 ? i : '0' + i.toString();
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + H)
+					}
+					for(let i = 1; i < enddate[3]; i++){
+						let H = i > 9 ? i : '0' + i.toString();
+						arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + enddateStr[2] + ' ' + H)
+					}
+				}
+			}
+			function getminRange(startdate, enddate){
+				if(startdate[0] == enddate[0] && startdate[1] == enddate[1] && startdate[2] == enddate[2] && startdate[3] == enddate[3]){
+					for(let i = (startdate[4] + 1); i < enddate[4]; i++){
+						let min = i > 9 ? i : '0' + i;
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + min)
+					}
+				} else {
+					for(let i = (startdate[4]+1); i < 60; i++){
+						let min = i > 9 ? i : '0' + i;
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + min)
+					}
+					for(let i = 1; i < enddate[4]; i++){
+						let min = i > 9 ? i : '0' + i;
+						arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + enddateStr[2] + ' ' + enddateStr[3] + ':' + min)
+					}
+					
+				}
+			}
+			function getSRange(startdate, enddate){
+				if(startdate[0] == enddate[0] && startdate[1] == enddate[1] && startdate[2] == enddate[2] && startdate[3] == enddate[3] && startdate[4] == enddate[4]){
+					for(let i = (startdate[5] + 1); i < enddate[5]; i++){
+						let S = i > 9 ? i : '0' + i;
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + startdateStr[4] + ':' + S)
+					}
+				} else {
+					for(let i = (startdate[5]+1); i < 60; i++){
+						let S = i > 9 ? i : '0' + i;
+						arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + startdateStr[4] + ':' + S)
+					}
+					for(let i = 1; i < enddate[5]; i++){
+						let S = i > 9 ? i : '0' + i;
+						arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + enddateStr[2] + ' ' + enddateStr[3] + ':' + enddateStr[4] + ':' + S)
+					}
+					
+				}
+			}
+			// 构造年份
+			getYRange(startdate, enddate)
+			// 构造月份
+			getMRange(startdate, enddate)
+			// 构造日份
+			getDRange(startdate, enddate)
+			// 构造小时
+			getHRange(startdate, enddate)
+			// 构造分钟
+			getminRange(startdate, enddate)
+			// 构造秒钟
+			getSRange(startdate, enddate)
+			// 最后包括区间的两端点
+			arr.push(ctrr_rsrm_id + '":"' + startdateStr[0] + '/' + startdateStr[1] + '/' + startdateStr[2] + ' ' + startdateStr[3] + ':' + startdateStr[4] + ':' + startdateStr[5])
+			arr.push(ctrr_rsrm_id + '":"' + enddateStr[0] + '/' + enddateStr[1] + '/' + enddateStr[2] + ' ' + enddateStr[3] + ':' + enddateStr[4] + ':' + enddateStr[5])
+			return arr;
+		},
+	}
+})
+app.handlGetADutySummary()
+/** 制作故障情况交接内容 **/
+if (!allTaskTreeAndAuth) {
+	app.$notify({
+		title: '加载失败',
+		message: '可能因为您不是值班人员',
+		type: 'error',
+		duration: 0
+	});
+}
+// 建立通信，WebSocket(仅当班次值班人员)
+let ws
+if (is_monitor) {
+	// ip地址一定要是服务器地址，不能是127.0.0.1
+	// ws = new WebSocket("ws://127.0.0.1:36276"); // 本地 // location 与 0.0.0.0 均会报错
+	// ws = new WebSocket("wss://47.104.2.154:36276"); // 阿里云 此处需把后端也改为ssl协议，
+	ws = new WebSocket("ws://192.168.162.12:36276"); // 园区公网
+	ws.onopen = function() {
+		console.log("连接成功");
+	};
+	// 接收消息
+	ws.onmessage = function(e) {
+		// 返回0，说明某个进程关闭了这个时候return即可
+		if (e.data === 0 || e.data === '0') {
+			return
+		}
+		
+		const params = JSON.parse(e.data)
+		//本地端发给后台的数据被广播回来时不做响应
+		if (params.account === "{:$adminInfo['admin_account']}") {
+			return
+		}
+		// 检测是否已被值班长强制获取最新数据
+		if (params.title === '值班长已强制获取最新数据并将原始草稿覆盖') {
+			app.$alert('值班长已强制获取最新数据并将原始草稿覆盖', '不可编辑', {
+				confirmButtonText: '确定',
+				callback: action => {
+					location.reload()
+				}
+			});
+			return
+		}
+		// 检测是否已被交班
+		if (params.is_succession) {
+			app.$alert('该班次已交班（值班长：'+ params.account +'）', '提示', {
+				confirmButtonText: '确定',
+				callback: action => {
+					location.reload()
+				}
+			});
+			return
+		}
+		const indexArr =  params.index.split('|') || params.index
+		const data = {
+			// 广播编辑的数据
+			type2ChildrenDataStr: params.type2ChildrenDataStr,
+			// 广播确认驳回相关信息
+			confirmMsg: params.confirmMsg
+		}
+		TraversalAndEdit_allTaskTreeAndAuth(app.allTaskTreeAndAuth, indexArr, data, params.account, 'change');
+		
+	};
+	// 检测连接是否被关闭
+	ws.onclose = () => {
+		console.log("websocket close!");    
+		app.allTaskTreeAndAuth = ''    
+		alert('服务器出现故障，请联系管理员')
+	};
+} else {
+	app.$notify({
+		title: '提示',
+		message: '您不是当前值班人员，只有查看权限',
+	})
+}
+// 遍历allTaskTreeAndAuth树形数据并更新编辑数据
+function TraversalAndEdit_allTaskTreeAndAuth(tree, indexArr, data, account, type) {
+	// type = 'change' / 'synchronization' 数据更新有两中方式，change-直接编辑交接班数据，synchronization-同步最新数据
+	// 两种方式的处理手段不同
+	if (indexArr.length !== 0 && tree) {
+		tree = tree[indexArr[0]].children || tree[indexArr[0]]
+		// 删除第一个元素
+		indexArr.splice(0,1)
+		return TraversalAndEdit_allTaskTreeAndAuth(tree, indexArr, data, account, type)
+	} else {
+		// 没想到传入参数也不是深拷贝的，这里刚好对我的需求很有用，数据响应式
+		// 数据更新
+		// 直接编辑时
+		if (type === 'change') {
+			// 确认状态更新，同时为确保数据保留响应式，需要以下形式进行赋值
+			// !tree.confirmMsg && (tree.confirmMsg = {}) // 如果没有该字段则初始化一个给他
+			tree.confirmMsg.is_confirm = data.confirmMsg.is_confirm
+			tree.confirmMsg.msg = data.confirmMsg.msg
+			tree.type2ChildrenDataStr = data.type2ChildrenDataStr
+			app.$notify({
+				title: '提示',
+				message: account + '刚刚修改了【' + tree.tim_name + '】的交接班内容',
+				duration: 2000
+			});
+		} else if (type === 'synchronization' && tree.confirmMsg.is_confirm.toString() === 'true') {
+			// 以数据同步的形式编辑时
+			// 如果是同步方式且数据内容已提交值班长则不更新数据
+			app.$notify({
+				title: '提示',
+				message: '该内容已提交值班长不可同步',
+				duration: 2000
+			});
+			return -1;
+		} else if (type === 'synchronization') {
+			// 以数据同步的形式编辑时
+			tree.type2ChildrenDataStr = data.type2ChildrenDataStr
+		}
+	}
+}
+</script>

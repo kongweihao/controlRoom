@@ -1,0 +1,125 @@
+<style>
+	.layui-table td:nth-child(2){
+		text-align: left;
+	}
+	.ctrlWrap>a{
+		float: left;
+	}
+	.ctrlWrap>form{
+		float: right;
+	}
+	.ctrlWrap>form .layui-form-item .layui-input-inline{
+		width: 90%;
+		float: right;
+	}
+	input{
+		text-align: center;
+	}
+</style>
+<div class="layui-body" style="left:200px;">
+	<blockquote class="layui-elem-quote" style="margin:15px 15px 0 15px;">欢迎使用智慧大楼 — 人脸识别系统</blockquote>
+	<blockquote class="layui-elem-quote" style="margin:15px 15px 0 15px;">
+		<p>- 现支持PNG、JPG、JPEG、BMP，不支持GIF图片</p>
+		<p>- 图片大小不超过10M</p>
+		<p>- 仅检测图片中面积最大的10个人脸</p>
+	</blockquote>
+	<div style="padding:15px;clear: both;">
+		<div class="layui-upload">
+			<div class="layui-upload-list">
+			  <img class="layui-upload-img" id="faceImgPrev" height="200" >
+			  <p id="faceImgText"></p>
+			</div>
+			<button type="button" class="layui-btn" id="faceImg">选择图片</button>
+			<button type="button" class="layui-btn" id="faceImgUpload">开始检测</button>
+		</div>   
+	</div>
+</div>
+<script>
+layui.use('upload', function(){
+	let $ = layui.jquery
+	,upload = layui.upload;
+	let imgBase64 = '';
+	let access_token = "{$AccessToken}";
+
+	//普通图片上传
+	let uploadInst = upload.render({
+		elem: '#faceImg'
+		,url: 'faceDetect' //改成您自己的上传接口
+		,auto: false
+		,bindAction: '#faceImgUpload'
+		,method: 'post'  //可选项。HTTP类型，默认post
+		,accept:'images'//仅支持图片
+		,choose: function(obj){
+		//预读本地文件示例，不支持ie8
+			obj.preview(function(index, file, result){
+				imgBase64 = result.split(',')[1]
+				$('#faceImgPrev').attr('src', result); //图片链接（base64）
+			});
+		}
+		,data:{
+			access_token:access_token
+			,image:function(){
+				return imgBase64;//支持参数动态获取
+			}
+			,image_type:'BASE64'
+			,max_face_num:10
+			,detect:1//人脸检测
+			,face_field:'age,beauty,expression,face_shape,gender,glasses,landmark,landmark150,race,quality,eye_status,emotion,face_type'
+		}
+		,done: function(res){
+			console.log(res)
+			let content
+			if(res.error_msg == "SUCCESS"){
+				content = '<div style="padding: 50px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;">检测结果如下！<br>'
+				content += '检测到的人脸数为：'+ res.result.face_num + '个<br>'
+				for(let i = 0; i < res.result.face_num; i++){
+					content += '人脸'+ i 
+					content +='：年龄（'+ res.result.face_list[i].age 
+					content += ')、性别（'+ (res.result.face_list[i].gender.type == 'male' ? '男' : '女') 
+					content += ')、颜值（'+res.result.face_list[i].beauty
+					content += ')、表情（'+(res.result.face_list[i].expression.type == 'none' ? '面无表情' : res.result.face_list[i].expression.type == 'smile' ? '微笑': '大笑')
+					content += ')、眼镜（'+(res.result.face_list[i].glasses.type == 'none' ? '无' : '有')
+					content += ')、肤色（'+(res.result.face_list[i].race.type == 'white' ? '白种人' : res.result.face_list[i].race.type == 'yellow' ? '黄种人' : res.result.face_list[i].race.type == 'black' ? '黑种人' : res.result.face_list[i].race.type) + '）'
+					content +='<br><br>'
+				}
+			}else{
+				content = '<div style="padding: 50px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;">检测结果如下！<br>'
+				content += '检测不到人脸'
+			}
+			
+			layer.open({
+				type: 1
+				,title: false //不显示标题栏
+				,closeBtn: false
+				,area: '600px;'
+				,shade: 0.8
+				,id: 'LAY_layuipro' //设定一个id，防止重复弹出
+				,btn: ['确定', '取消']
+				,btnAlign: 'c'
+				,moveType: 1 //拖拽模式，0或者1
+				,content: content
+				,success: function(layero){
+				var btn = layero.find('.layui-layer-btn');
+				btn.find('.layui-layer-btn0').attr({
+					target: '_blank'
+					,target: '_blank'
+				});
+				}
+			});
+			//如果上传失败
+			// if(res.code > 0){
+			// 	return layer.msg('上传失败');
+			// }
+			//上传成功
+		}
+		,error: function(){
+			//演示失败状态，并实现重传
+			// let faceImgText = $('#faceImgText');
+			// faceImgText.html('<span style="color: #FF5722;">上传失败</span> <a class="layui-btn layui-btn-xs demo-reload">重试</a>');
+			// faceImgText.find('.demo-reload').on('click', function(){
+			// 	uploadInst.upload();
+			// });
+		}
+	});
+  });
+</script>

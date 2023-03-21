@@ -1,0 +1,411 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>休假日历</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px 15px;max-height: 600px;overflow:auto" v-loading="isAppLoading">			
+			<el-button size="mini" @click="getMonths('prev')">上月</el-button>
+			<el-button size="mini" @click="getMonths('now')">本月</el-button>
+			<el-button size="mini" @click="getMonths('next')">下月</el-button>
+			<el-button size="mini" @click="isShowNight = !isShowNight" type="primary" style="float: right;">{{isShowNight ? '隐藏' : '显示'}}夜班</el-button>
+		</el-card>
+		<el-card style="display: block;margin: auto 15px 15px;max-height: 600px;overflow:auto" v-loading="isAppLoading">
+			<el-divider>
+				<span v-if="thisYear != year">{{year + '年' }}</span><span style="font-size:40px">{{ month }}</span> 月
+			</el-divider>
+			<el-table
+			:data="everyoneSScheduleTableData"
+			style="width: 100%"
+			height="500">
+				<el-table-column
+				fixed
+				prop="date"
+				label="日期"
+				width="90">
+				</el-table-column>
+				<el-table-column
+				prop="am"
+				label="上午">
+					<template slot-scope="scope">
+						<!-- 年假 -->
+						<el-tag v-for="am_item in scope.row.am.annual_leave_request_list" style="margin-bottom:5px;display:inline-block;">
+							<el-tooltip :content="am_item.admin_phone" placement="top">
+								<el-span>
+									<el-span style="display:inline-block;margin-right:5px;">
+										{{am_item.admin_fullname}}
+									</el-span>
+									<el-button style="color:red;margin: 0 -3px 0 -5px" size="mini" circle>年</el-button>
+									<el-button style="margin:0px" size="mini" circle>
+										<a class="el-icon-phone" :href="'tel:' + am_item.admin_phone"></a>
+									</el-button>
+								</el-span>
+							</el-tooltip>
+						</el-tag>
+						<!-- 调休 -->
+						<el-tag v-for="am_item in scope.row.am.vacation_request_list" style="margin-bottom:5px;display:inline-block;">
+							<el-tooltip :content="am_item.admin_phone" placement="top">
+								<el-span>
+									<el-span style="display:inline-block;margin-right:5px;">
+										{{am_item.admin_fullname}}
+									</el-span>
+									<el-button style="color:#ff9800;margin: 0 -3px 0 -5px" size="mini" circle>调</el-button>
+									<el-button style="margin:0px" size="mini" circle>
+										<a class="el-icon-phone" :href="'tel:' + am_item.admin_phone"></a>
+									</el-button>
+								</el-span>
+							</el-tooltip>
+						</el-tag>
+						<!-- 监控夜前 -->
+						<el-tag v-if="isShowNight" v-for="am_item in scope.row.am.nightRota.jiankong.yeqian" style="margin-bottom:5px;display:inline-block;">
+							<el-span>
+								<el-span style="display:inline-block;margin-right:5px;">
+									{{am_item.member_name}}
+								</el-span>
+								<el-button style="color:#000000;margin: 0 -3px 0 -5px" size="mini" circle>夜前</el-button>
+							</el-span>
+						</el-tag>
+						<!-- 监控夜后 -->
+						<el-tag v-if="isShowNight" v-for="am_item in scope.row.am.nightRota.jiankong.yehou" style="margin-bottom:5px;display:inline-block;">
+							<el-span>
+								<el-span style="display:inline-block;margin-right:5px;">
+									{{am_item.member_name}}
+								</el-span>
+								<el-button style="color:#000000;margin: 0 -3px 0 -5px" size="mini" circle>夜后</el-button>
+							</el-span>
+						</el-tag>
+						<!-- 支撑24后 -->
+						<el-tag v-if="isShowNight" v-for="am_nrzc_item in scope.row.am.nightRota.zhicheng" style="margin-bottom:5px;display:inline-block;">
+							<el-span>
+								<el-span style="display:inline-block;margin-right:5px;">
+									{{am_nrzc_item.member_name}}
+								</el-span>
+								<el-button style="color:#000000;margin: 0 -3px 0 -5px" size="mini" circle>24后</el-button>
+							</el-span>
+						</el-tag>
+					</template>
+				</el-table-column>
+				<el-table-column
+				prop="pm"
+				label="下午">
+					<template slot-scope="scope">
+						<!-- 年假 -->
+						<el-tag v-for="pm_item in scope.row.pm.annual_leave_request_list" style="margin-bottom:5px;display:inline-block;">
+							<el-tooltip :content="pm_item.admin_phone" placement="top">
+								<el-span>
+									<el-span style="display:inline-block;margin-right:5px;">
+										{{pm_item.admin_fullname}}
+									</el-span>
+									<el-button style="color:red;margin: 0 -3px 0 -5px" size="mini" circle>年</el-button>
+									<el-button style="margin:0px" size="mini" circle>
+										<a class="el-icon-phone" :href="'tel:' + pm_item.admin_phone"></a>
+									</el-button>
+								</el-span>
+							</el-tooltip>
+						</el-tag>
+						<!-- 调休 -->
+						<el-tag v-for="pm_item in scope.row.pm.vacation_request_list" style="margin-bottom:5px;display:inline-block;">
+							<el-tooltip :content="pm_item.admin_phone" placement="top">
+								<el-span>
+									<el-span style="display:inline-block;margin-right:5px;">
+										{{pm_item.admin_fullname}}
+									</el-span>
+									<el-button style="color:#ff9800;margin: 0 -3px 0 -5px" size="mini" circle>调</el-button>
+									<el-button style="margin:0px" size="mini" circle>
+										<a class="el-icon-phone" :href="'tel:' + pm_item.admin_phone"></a>
+									</el-button>
+								</el-span>
+							</el-tooltip>
+						</el-tag>
+						<!-- 监控夜前 -->
+						<el-tag v-if="isShowNight" v-for="pm_item in scope.row.pm.nightRota.jiankong.yeqian" style="margin-bottom:5px;display:inline-block;">
+							<el-span>
+								<el-span style="display:inline-block;margin-right:5px;">
+									{{pm_item.member_name}}
+								</el-span>
+								<el-button style="color:#000000;margin: 0 -3px 0 -5px" size="mini" circle>夜前</el-button>
+							</el-span>
+						</el-tag>
+						<!-- 监控夜后 -->
+						<el-tag v-if="isShowNight" v-for="pm_item in scope.row.am.nightRota.jiankong.yehou" style="margin-bottom:5px;display:inline-block;">
+							<el-span>
+								<el-span style="display:inline-block;margin-right:5px;">
+									{{pm_item.member_name}}
+								</el-span>
+								<el-button style="color:#000000;margin: 0 -3px 0 -5px" size="mini" circle>夜后</el-button>
+							</el-span>
+						</el-tag>
+						<!-- 支撑24后 -->
+						<el-tag v-if="isShowNight" v-for="pm_nrzc_item in scope.row.pm.nightRota.zhicheng" style="margin-bottom:5px;display:inline-block;">
+							<el-span>
+								<el-span style="display:inline-block;margin-right:5px;">
+									{{pm_nrzc_item.member_name}}
+								</el-span>
+								<el-button style="color:#000000;margin: 0 -3px 0 -5px" size="mini" circle>24后</el-button>
+							</el-span>
+						</el-tag>
+					</template>
+				</el-table-column>
+			</el-table>
+		</el-card>
+		<el-card style="display: block;margin: auto 15px;max-height: 600px;overflow:auto" v-loading="isAppLoading">			
+			<el-button @click="(isAppLoading = !isAppLoading) && (location.href = 'leaveApplication')" type="primary" icon="el-icon-plus" circle></el-button>
+		</el-card>
+	</div>
+</div>
+<style>
+.is-selected {
+	color: #1989FA;
+}
+/* el-drawer 滚动条 */
+.el-drawer__body{
+    overflow: scroll;
+}
+</style>
+<script>
+if (window.orientation != undefined && window.orientation != 90 && window.orientation != -90) {
+	alert("手机端建议使用横屏模式")
+}
+const everyoneSSchedule = {:json_encode($everyoneSSchedule)};
+const Dates = new Date();
+const Y = Dates.getFullYear();
+const M = Dates.getMonth() + 1;
+const D = Dates.getDate();
+const nowDate = Y + (M < 10 ? "-0" : "-") + M + (D < 10 ? "-0" : "-") + D;
+
+const app = new Vue({
+	el: '#app',
+	data() {
+		return {
+			isAppLoading: false,
+			isShowNight: false,
+			thisYear: Y,
+			year: Y,
+			month: M,
+			day: D,
+			nowDate: nowDate,
+			monthDayNum: this.getMonthDays(Y,M), // 制作休假日历的table数据
+			everyoneSScheduleTableData: this.makeEveryoneSScheduleTableData(everyoneSSchedule, this.getMonthDays(Y,M), Y + (M < 10 ? "0" : "") + M),
+		}
+	},
+	methods: {
+		getMonths(monthType) {
+			const _this = this;
+			let ym
+			if (monthType == 'prev') {
+				if(--_this.month <= 0) {
+					_this.year--
+					_this.month = 12
+				}
+			}
+			if (monthType == 'now') {
+				_this.year = Y;
+				_this.month = M;
+			}
+			if (monthType == 'next') {
+				if(++_this.month >= 13) {
+					_this.year++
+					_this.month = 1
+				}
+			}
+			ym = _this.year + (_this.month > 9? ''+_this.month : '0' + _this.month)
+			const data = {
+				isSearch: 1,
+				ym: ym
+			}
+			$.ajax({
+				url: 'everyoneSSchedule',
+				data: data,
+				type: 'get',
+				success: function (res) {
+					const code = res.code
+					const msg = res.msg
+					if (code > 0){
+						_this.$message({
+							type: 'success',
+							message: msg
+						});
+						_this.monthDayNum =_this.getMonthDays(_this.year,_this.month) // 制作休假日历的table数据
+						_this.everyoneSScheduleTableData = _this.makeEveryoneSScheduleTableData(res.data, _this.monthDayNum, ym)
+					} else {
+						_this.$message({
+							type: 'error',
+							message: '操作失败，请刷新重试：' + msg
+						});
+					}
+				},
+				error: function (err) {
+					console.log(err);
+				}
+			})
+		},
+		makeEveryoneSScheduleTableData (everyoneSSchedule, monthDayNum, ym) {
+			// 休假申请数据原始材料
+			// 当前加载月的天数
+			// 当前加载年月，格式为：yyyymm
+			const everyoneSScheduleTableData = []
+			for (let i = 1; i <= monthDayNum; i++) {
+				const time_stamp = ym + (i < 10 ? "0" : "") + i
+				const am_list = {
+					annual_leave_request_list:[],
+					vacation_request_list:[],
+					nightRota:{
+						jiankong:{
+							yeqian: [], // 夜前
+							yehou: []   // 夜后
+						}, // 监控
+						zhicheng:[]  // 支撑
+					}
+				}
+				const pm_list = {
+					annual_leave_request_list:[],
+					vacation_request_list:[],
+					nightRota:{
+						jiankong:{
+							yeqian: [], // 夜前
+							yehou: []   // 夜后
+						}, // 监控
+						zhicheng:[]  // 支撑
+					}
+				}
+				// 制作年假数据
+				for (let j = 0; j < everyoneSSchedule.annual_leave_request_list.length; j++) {
+					const element = everyoneSSchedule.annual_leave_request_list[j];
+					// 判断是否同一天
+					if (time_stamp == element['alrl_timestamp_start'] && time_stamp == element['alrl_timestamp_end']) {
+						if (element['alrl_half_day_start'] == 1 && element['alrl_half_day_end'] == 2) {
+							am_list.annual_leave_request_list.push(element)
+							pm_list.annual_leave_request_list.push(element)
+						} else if (element['alrl_half_day_start'] == 1) {
+							am_list.annual_leave_request_list.push(element)
+						} else if (element['alrl_half_day_end'] == 2) {
+							pm_list.annual_leave_request_list.push(element)
+						}
+					}
+					// 以下为非同一天
+					// 判断开始时间
+					else if (time_stamp == element['alrl_timestamp_start'] ) {
+						if (element['alrl_half_day_start'] == 1) {
+							am_list.annual_leave_request_list.push(element)
+							pm_list.annual_leave_request_list.push(element)
+						}
+						if (element['alrl_half_day_start'] == 2) {
+							pm_list.annual_leave_request_list.push(element)
+						}
+					}
+					// 判断中间时间
+					else if (time_stamp > element['alrl_timestamp_start'] && time_stamp < element['alrl_timestamp_end']) {
+						am_list.annual_leave_request_list.push(element)
+						pm_list.annual_leave_request_list.push(element)
+					}
+					// 判断结束时间
+					else if (time_stamp == element['alrl_timestamp_end']) {
+						if (element['alrl_half_day_end'] == 1) {
+							am_list.annual_leave_request_list.push(element)
+						}
+						if (element['alrl_half_day_end'] == 2) {
+							am_list.annual_leave_request_list.push(element)
+							pm_list.annual_leave_request_list.push(element)
+						}
+					}
+				}
+				// 制作调休数据
+				for (let j = 0; j < everyoneSSchedule.vacation_request_list.length; j++) {
+					const element = everyoneSSchedule.vacation_request_list[j];
+					// 判断是否同一天
+					if (time_stamp == element['vrl_timestamp_start'] && time_stamp == element['vrl_timestamp_start']) {
+						if (element['vrl_half_day_start'] == 1 && element['vrl_half_day_end'] == 2) {
+							am_list.vacation_request_list.push(element)
+							pm_list.vacation_request_list.push(element)
+						} else if (element['vrl_half_day_start'] == 1) {
+							am_list.vacation_request_list.push(element)
+						} else if (element['vrl_half_day_end'] == 2) {
+							pm_list.vacation_request_list.push(element)
+						}
+					}
+					// 以下为非同一天
+					// 判断开始时间
+					else if (time_stamp == element['vrl_timestamp_start']) {
+						if (element['vrl_half_day_start'] == 1) {
+							am_list.vacation_request_list.push(element)
+							pm_list.vacation_request_list.push(element)
+						}
+						if (element['vrl_half_day_start'] == 2) {
+							pm_list.vacation_request_list.push(element)
+						}
+					}
+					// 判断中间时间
+					else if (time_stamp > element['vrl_timestamp_start'] && time_stamp < element['vrl_timestamp_end']) {
+						am_list.vacation_request_list.push(element)
+						pm_list.vacation_request_list.push(element)
+					}
+					// 判断结束时间
+					else if (time_stamp == element['vrl_timestamp_end']) {
+						if (element['vrl_half_day_end'] == 1) {
+							am_list.vacation_request_list.push(element)
+						}
+						if (element['vrl_half_day_end'] == 2) {
+							am_list.vacation_request_list.push(element)
+							pm_list.vacation_request_list.push(element)
+						}
+					}
+				}
+				// 制作夜班数据
+				for (let j = 0; j < everyoneSSchedule.nightRota.length; j++) {
+					const element = everyoneSSchedule.nightRota[j];
+					// 同一天——监控夜前
+					if (time_stamp == element['time_stamp'])  
+					{
+						// 监控组数据
+						if (element['is_day'] == 0) {
+							am_list.nightRota.jiankong.yeqian.push(element)
+							pm_list.nightRota.jiankong.yeqian.push(element)
+						}
+					}
+					// 获取指定日期的上一天日期 输入指定格式
+					const designatedDayNestDayTimeStamp = this.getDesignatedDatesLastDay(time_stamp)
+					// 前一天——监控夜后
+					if (designatedDayNestDayTimeStamp == element['time_stamp'])  
+					{
+						// 监控组数据
+						if (element['is_day'] == 0) {
+							am_list.nightRota.jiankong.yehou.push(element)
+							pm_list.nightRota.jiankong.yehou.push(element)
+						}
+						// 支撑组数据
+						if (element['is_day'] == 1) {
+							am_list.nightRota.zhicheng.push(element)
+							pm_list.nightRota.zhicheng.push(element)
+						}
+					}
+				}
+
+				const thisDate = new Date(ym.substr(0,4),ym.substr(4,2)-1,i); //当天数为0 js自动处理为上一月的最后一天
+				everyoneSScheduleTableData.push({
+					date: i + "号/" + "周" + "日一二三四五六".charAt(thisDate.getDay()),
+					am: am_list,
+					pm: pm_list
+				})
+			}
+			return everyoneSScheduleTableData
+		},
+		// 获取指定月份天数的方法
+		//传入年份和月份 获取该年对应月份的天数
+		getMonthDays(year,month){
+			const thisDate = new Date(year,month,0); //当天数为0 js自动处理为上一月的最后一天
+			return thisDate.getDate();
+		},
+		// 获取指定日期的下一天
+		getDesignatedDatesLastDay(designatedDates){
+			// Date()要求yyyy-mm-dd格式
+			designatedDates = new Date(designatedDates.substr(0,4)+'-'+designatedDates.substr(4,2)+'-'+designatedDates.substr(6,2));
+			let lastDay = new Date(designatedDates.getTime() - 1000*60*60*24)
+			const lastDayMonth = lastDay.getMonth() + 1;
+			const lastDayDay = lastDay.getDate();
+			let lastDayTimeStamp = lastDay.getFullYear() 
+				+ (lastDayMonth < 10 ? '0'+lastDayMonth : lastDayMonth) 
+				+ (lastDayDay < 10 ? '0'+lastDayDay : lastDayDay) 
+			return lastDayTimeStamp;
+		}
+	}
+})
+</script>

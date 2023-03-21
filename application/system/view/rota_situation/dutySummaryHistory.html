@@ -1,0 +1,163 @@
+
+<div class="layui-body">
+	<blockquote class="layui-elem-quote" style="margin:15px;">
+		<p>-大值班历史纪录</p>
+	</blockquote>
+	<div id="app" style="padding: 15px;">
+		<el-card class="box-card">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="内容搜索" prop="dsmH_d">
+						<el-tooltip>
+							<div slot="content">暂不支持输入‘/’进行搜索</div>
+							<el-input v-model="searchForm.dsmH_d"></el-input>
+						</el-tooltip>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<el-table
+			:data="dutySummaryList">
+				<el-table-column
+				type="expand">
+					<template slot-scope="props">
+						<el-divider>
+						大值班总结
+						</el-divider>
+						
+						<el-button
+						size="mini"
+						@click="handleCopy(props.row.dsmH_id)"
+						style="margin-bottom: 15px">复制</el-button>
+						<el-input
+						autosize
+						type="textarea"
+						:id="'dutySummary' + props.row.dsmH_id"
+						style="max-height:400px;overflow: scroll;display: block;width: 100%;"
+						v-model="props.row.dsmH_d">
+						</el-input>
+					</template>
+				</el-table-column>
+				 <el-table-column
+				type="index"
+				label="序号"
+				width="50"></el-table-column>
+				<el-table-column
+				label="大值班总结"
+				prop="dsmH_d"
+				show-overflow-tooltip
+				style="width:60%"></el-table-column>
+				<el-table-column
+				prop="create_time"
+				label="大值班生成时间"></el-table-column>
+			</el-table>
+			<div>
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 2000]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script>
+	const getTableData = {:json_encode($getTableData)};
+	console.log(getTableData);
+	const pagination = {
+				current_page: getTableData.current_page,
+				last_page: getTableData.last_page,
+				per_page: getTableData.per_page,
+				total: getTableData.total
+			};
+	new Vue({
+		el: '#app',
+		data() {
+			return {
+				isShowSearch: false, // 打开搜索面板
+				searchForm: {
+					dsmH_d: '',
+					create_time: [],
+					update_time: []
+				},
+				dutySummaryList: getTableData.data,
+				pagination: pagination,
+			}
+		},
+		methods: {
+			search(){
+				const _this = this;
+				$.ajax({
+					url:'dutySummaryHistory',
+					type:'post',
+					data:{
+						isSearch: 1,
+						pagination: _this.pagination,
+						searchForm: _this.searchForm
+					},
+					success:function (res) {
+						_this.dutySummaryList = res.data
+						_this.pagination = {
+							current_page: res.current_page,
+							last_page: res.last_page,
+							per_page: res.per_page,
+							total: res.total
+						}
+						console.log(res)
+					},
+					error:function(e){
+						console.log(e)
+						showTs(0, '发生错误，请联系管理员瞄一下~', 10000)
+					}
+				})
+			},
+			// 重置
+			resetForm(formName){
+				this.$refs[formName].resetFields();
+			},
+			// pagination时
+			handleSizeChange(per_page){
+				const _this = this;
+				_this.pagination.per_page = per_page
+				_this.search();
+			},
+			handleCurrentChange(current_page){
+				const _this = this;
+				_this.pagination.current_page = current_page
+				_this.search();
+			},
+			handleCopy(dsmH_id){
+				const _this = this;
+				const selectedElId = 'dutySummary'+dsmH_id
+				let dutySummaryTxt = document.getElementById(selectedElId)
+				dutySummaryTxt.focus()
+				dutySummaryTxt.select()
+				if(document.execCommand('copy')){
+					document.execCommand('copy')
+					showTs(1, '复制成功', 1000)
+				}else{
+					showTs(0, '被浏览器禁用，复制失败，请更换浏览器~', 2000)
+				}
+			},
+			// pagination时
+			handleSizeChange(per_page){
+				const _this = this;
+				_this.pagination.per_page = per_page
+				_this.search();
+			},
+			handleCurrentChange(current_page){
+				const _this = this;
+				_this.pagination.current_page = current_page
+				_this.search();
+			}
+		}
+	})
+</script>

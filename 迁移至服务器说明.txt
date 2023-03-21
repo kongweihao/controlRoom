@@ -1,0 +1,24 @@
+1.新建项目的时候thinkphp文件内包含.git文件不会被上传，部署到新的服务器的时候需要检查一下
+2.部署到linux中时，需要重新设置文件权限
+3.数据库密码记得修改
+4.配置nodejs环境（短信定时任务）
+npm install request -S //nodejs调用外部接口 
+5.【阿里云短信接口】
+服务提供商：阿里云短信接口服务（需要定期续费，不贵）
+环境要求：nodejs
+开启命令：进入frontend目录运行：nodejs messageTask.js即可
+（1）国内短信内容长度计算规则：
+短信字数＝短信模板内容字数 + 签名字数
+短信字数<=70个字数，按照70个字数一条短信计算
+短信字数>70个字数，即为长短信，按照67个字数记为一条短信计算
+（2）短信计费规则
+在统计短信字数时，小数点、字母、汉字以及其他符号均按照一个字符位进行统计。
+详情请查看阿里云计费规则：https://help.aliyun.com/document_detail/44340.html?spm=a2c4g.11186623.6.554.4b0116b5Rj2XfA
+超出套餐包条数时：10w条以内，0.045元/条，10~30w条，0.04元/条（仅验证码类与通知类短信，推广短信费用稍贵，而且要企业认证）
+详情请查看国内短信定价规则：https://help.aliyun.com/document_detail/44350.htm?spm=a2c4g.11186623.2.7.5d99f9fbVT5gHq#topic1201
+5.安装workerman
+安装包下载（不知道为啥当时window方式不能下载，可以尝试先按晚上方式安装，如果仍然无法下载，可以通过下面的方式绕个弯下载安装）
+a、找一台linux主机： wget http://www.workerman.net/download/workermanzip
+b、把下载好的安装包下载到window，并修改文件名workermanzip为workerman.zip，并解压
+c、复制Workerman-master文件夹下所有文件到/vendor/workerman/workerman/目录下即可
+controlroom目录下运行：composer require workerman/workerman

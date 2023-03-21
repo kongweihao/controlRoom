@@ -1,0 +1,51 @@
+<!-- 用于js提取excle数据 -->
+<script defer src="__COMMON__/xlsx.core.min.js"></script>
+<div class="layui-footer" style="left:200px;">{$settingInfo.copyright_data}</div>
+<div class="cover"></div>
+{//顶部下拉提示}
+<div class="topTs">
+	<div class="sysTs"></div>
+</div>
+{notempty name="successTs"}
+<script>showTs(1,"{$successTs}",2000);</script>
+{/notempty}
+{notempty name="$Think.session.successTs"}
+<script>showTs(1,"{$Think.session.successTs}",2000);</script>
+{/notempty}
+
+{notempty name="errorTs"}
+<script>showTs(0,"{$errorTs}",3000);</script>
+{/notempty}
+{notempty name="$Think.session.errorTs"}
+<script>showTs(0,"{$Think.session.errorTs}",3000);</script>
+{/notempty}
+
+{//操作确认弹窗}
+<script>
+	//询问框
+	function showConfirmTs(obj,title){
+		layer.confirm(title, {
+			btn: ['确认','取消'] //按钮
+		}, function(){
+			location.href = $(obj).attr('href');
+		}, function(){
+			
+		});
+		return false;
+	}
+</script>
+
+<script>
+	//加载layui模块绑定
+	layui.config({
+		base: '__ROOT__/public/static/js/system/modules/' //模块目录
+	}).use('common'); //加载入口
+</script>
+<script src="__JS__/system/common.js?v={$VERSION}"></script>
+<script src="__JS__/util.js?v={$VERSION}"></script>
+<script>
+    $(document).ready(function () {
+        $('#think_page_trace_open img,#think_page_trace').remove();
+        $('#think_page_trace_open div').css({'background':'transparent','color':'#cccccc'});//去掉tp5默认logo以及加载时间
+    });
+</script>

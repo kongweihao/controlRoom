@@ -1,0 +1,15 @@
+2020-08-26 07:25:13 pid:10448 Workerman[workermanTest.php] start in DEBUG mode
+2020-08-26 07:27:08 pid:10448 Workerman[workermanTest.php] stopping ...
+2020-08-26 07:27:08 pid:10448 Workerman[workermanTest.php] has been stopped
+2020-08-27 04:57:31 pid:1 Worker process terminated with ERROR: E_RECOVERABLE_ERROR "Object of class Workerman\Connection\TcpConnection could not be converted to string in Z:\anzhuanlujing\xampp\htdocs\controlRoom\workermanTest.php on line 24"
+2020-08-27 05:29:59 pid:1 Error: Call to undefined function json() in Z:\anzhuanlujing\xampp\htdocs\controlRoom\workermanTest.php:24
+Stack trace:
+#0 Z:\anzhuanlujing\xampp\htdocs\controlRoom\vendor\workerman\workerman\Connection\TcpConnection.php(660): handle_message(Object(Workerman\Connection\TcpConnection), '[object Object]')
+#1 Z:\anzhuanlujing\xampp\htdocs\controlRoom\vendor\workerman\workerman\Events\Select.php(293): Workerman\Connection\TcpConnection->baseRead(Resource id #18)
+#2 Z:\anzhuanlujing\xampp\htdocs\controlRoom\vendor\workerman\workerman\Worker.php(2416): Workerman\Events\Select->loop()
+#3 Z:\anzhuanlujing\xampp\htdocs\controlRoom\vendor\workerman\workerman\Worker.php(1404): Workerman\Worker->run()
+#4 Z:\anzhuanlujing\xampp\htdocs\controlRoom\vendor\workerman\workerman\Worker.php(1347): Workerman\Worker::forkWorkersForWindows()
+#5 Z:\anzhuanlujing\xampp\htdocs\controlRoom\vendor\workerman\workerman\Worker.php(546): Workerman\Worker::forkWorkers()
+#6 Z:\anzhuanlujing\xampp\htdocs\controlRoom\workermanTest.php(48): Workerman\Worker::runAll()
+#7 {main}
+2020-08-27 05:29:59 pid:1 Worker process terminated
