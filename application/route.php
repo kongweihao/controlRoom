@@ -13,6 +13,9 @@ Route::group(['prefix' => 'customer/Rota/'], function () {
 	Route::get('customer/editRotaList', 'editRotaList'); // 更换班表
 	Route::get('customer/getTMMonitor', 'getTMMonitor'); // 获取今明两天值班人员信息——短信接口
 	Route::get('customer/getTodayMonitor', 'getTodayMonitor'); // 获取当日值班信息
+
+	Route::any('customer/getHolidayByDay', 'getHolidayByDay'); // 按天获取节假日信息
+	Route::any('customer/getHolidayByMonth', 'getHolidayByMonth'); // 按月获取节假日信息
 });
 // rota_situation控制器 值班信息模块
 Route::group(['prefix' => 'customer/rota_situation/'], function () {
@@ -28,26 +31,26 @@ Route::group(['prefix' => 'customer/schedule_management/'], function () {
 
 // 小程序 值班表管理模块
 Route::group(['prefix' => 'customer/WxUser/'], function () {
-	Route::get('total/:date','total',[],['date'=>'\d{16}']);
-	Route::rule('wxlogin','wxlogin');
-	Route::rule('index','index');
-	Route::rule('changedata','changedata');
+	Route::get('total/:date', 'total', [], ['date' => '\d{16}']);
+	Route::rule('wxlogin', 'wxlogin');
+	Route::rule('index', 'index');
+	Route::rule('changedata', 'changedata');
 });
 
 /***************************************************微信模块***************************************************************************/
 Route::group(['prefix' => 'test/index/'], function () {
-    Route::any('testIf', 'testIf'); // 微信通知url
-    Route::any('testBCode', 'testBCode'); // 微信通知url
-    Route::any('testHttp', 'testHttp'); // 微信通知url
-    Route::any('testUpload', 'testUpload'); // 微信通知url
-    Route::any('testSevenTime', 'testSevenTime'); // 微信通知url
-    Route::any('testWeekData', 'testWeekData'); // 微信通知url
-    Route::any('testMonthData', 'testMonthData'); // 微信通知url
-    Route::any('testFileWrite', 'testFileWrite'); // 微信通知url
-    Route::any('getExercises', 'getExercises'); // 微信通知url
-    Route::any('getTheCharts', 'getTheCharts'); // 微信通知url
-    Route::any('getQuestion', 'getQuestion'); // 微信通知url
-    Route::any('testKC', 'testKC'); // 微信通知url
+	Route::any('testIf', 'testIf'); // 微信通知url
+	Route::any('testBCode', 'testBCode'); // 微信通知url
+	Route::any('testHttp', 'testHttp'); // 微信通知url
+	Route::any('testUpload', 'testUpload'); // 微信通知url
+	Route::any('testSevenTime', 'testSevenTime'); // 微信通知url
+	Route::any('testWeekData', 'testWeekData'); // 微信通知url
+	Route::any('testMonthData', 'testMonthData'); // 微信通知url
+	Route::any('testFileWrite', 'testFileWrite'); // 微信通知url
+	Route::any('getExercises', 'getExercises'); // 微信通知url
+	Route::any('getTheCharts', 'getTheCharts'); // 微信通知url
+	Route::any('getQuestion', 'getQuestion'); // 微信通知url
+	Route::any('testKC', 'testKC'); // 微信通知url
 });
 
 /****************************index模块***********************************/
@@ -119,7 +122,7 @@ Route::group(['prefix' => 'system/wx_menu/'], function () {
 Route::group(['prefix' => 'system/wx_material/'], function () {
 	Route::get('system/getNewsList', 'getNewsList'); // 获取永久图文素材列表
 	Route::get('system/getImageList', 'getImageList'); // 获取永久素材图片列表
-	Route::get('system/get_contents','get_contents'); // 输出文件图片流
+	Route::get('system/get_contents', 'get_contents'); // 输出文件图片流
 });
 
 
@@ -252,7 +255,7 @@ Route::group(['prefix' => 'system/change_shifts/'], function () {
 
 	Route::any('system/complaintHandover', 'complaintHandover'); // 投诉交班·查
 	Route::any('system/editComplaintHandover', 'editComplaintHandover'); // 投诉交班·改
-	
+
 });
 
 // inventory_management控制器 社区物资申领模块
@@ -354,4 +357,4 @@ Route::group(['prefix' => 'system/for_demo/'], function () {
 
 
 /***************************************************404模块***************************************************************************/
-Route::miss('system/error/notFound','GET'); // 404未找到页面
+Route::miss('system/error/notFound', 'GET'); // 404未找到页面

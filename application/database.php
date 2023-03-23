@@ -21,9 +21,7 @@ return [
     'database' => 'controlroom',
     // 用户名
     'username' => 'root',
-    // 密码
-    // 'password'        => 'shiyishou**helloSIAm--2018',
-    // 'password'        => 'Hello!nfjk@2020',
+    // 密码 —— 尽量所有主机统一
     'password' => 'root123456.',
     // 端口
     'hostport' => '3306',
