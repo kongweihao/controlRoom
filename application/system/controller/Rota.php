@@ -679,27 +679,49 @@ class Rota extends Auth
 					if ($holidayData['data'][$i]['type'] == 0) {
 						// type 类型 0 工作日 1 假日 2 节假日 如果ignoreHoliday参数为true，这个字段不返回
 						$rs['data'][$i]['time_stamp'] =
-							'<div><span>'
+							'<div>'
 							. $rs['data'][$i]['time_stamp']
-							. '</span><br><span style="color:red;font-size: 5px">'
+							. '<div><span>'
+							. $holidayData['data'][$i]['typeDes']
+							. '</span>   <span>'
 							. $holidayData['data'][$i]['lunarCalendar']
-							. "</span></div>";
+							. '</span>   <span>'
+							. $holidayData['data'][$i]['solarTerms']
+							. '</span></div><div><span>宜：'
+							. $holidayData['data'][$i]['suit']
+							. '</span><br><span>忌：'
+							. $holidayData['data'][$i]['avoid']
+							. "</span></div></div>";
 					} else if ($holidayData['data'][$i]['type'] == 1) {
 						$rs['data'][$i]['time_stamp'] =
 							'<div><span style="font-weight:bold">'
 							. $rs['data'][$i]['time_stamp']
-							. '</span><br><span style="color:red">'
+							. '</span><div><span>'
+							. $holidayData['data'][$i]['typeDes']
+							. '</span>   <span>'
 							. $holidayData['data'][$i]['lunarCalendar']
-							. "</span></div>";
+							. '</span>   <span>'
+							. $holidayData['data'][$i]['solarTerms']
+							. '</span></div><div><span>宜：'
+							. $holidayData['data'][$i]['suit']
+							. '</span><br><span>忌：'
+							. $holidayData['data'][$i]['avoid']
+							. "</span></div></div>";
 					} else if ($holidayData['data'][$i]['type'] == 2) {
 						$rs['data'][$i]['time_stamp'] =
-							'<div style="color:red">'
-							. $holidayData['data'][$i]['typeDes']
-							. '  <span>'
+							'<div style="color:red;transform:translateY(-5px)">'
 							. $rs['data'][$i]['time_stamp']
-							. '</span><br><span>'
+							. '<div style="transform: scale(0.6) translateY(-28px)"><span>'
+							. $holidayData['data'][$i]['typeDes']
+							. '</span>   <span>'
 							. $holidayData['data'][$i]['lunarCalendar']
-							. "</span></div>";
+							. '</span>   <span>'
+							. $holidayData['data'][$i]['solarTerms']
+							. '</span></div><div><span>宜：'
+							. $holidayData['data'][$i]['suit']
+							. '</span><br><span>忌：'
+							. $holidayData['data'][$i]['avoid']
+							. "</span></div></div>";
 					}
 				}
 			}

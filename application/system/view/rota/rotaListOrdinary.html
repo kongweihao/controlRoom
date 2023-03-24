@@ -182,7 +182,7 @@
 		app.cols_monitorPostList.push("{$monitorPostList[$i]['post_name']}")
 		"{/for}"
 		// 值班表表头
-		let cols_rotaList = [{ field: 'time_stamp', title: '日期', fixed: 'left', width: 130 }];
+		let cols_rotaList = [{ field: 'time_stamp', title: '日期', fixed: 'left', width: 160 }];
 		cols_rotaList.push({
 			field: "week",
 			title: "星期",
@@ -247,7 +247,7 @@
 			, done: function (res, curr, count) {
 				showTs(1, '加载成功', 500)
 				if (res.data[0].holidayData == undefined) {
-					showTs(1, '日历数据接口限制，如需要可以刷新重新获取', 500)
+					showTs(1, '日历数据接口限制，如需要可以刷新重新获取', 1500)
 				}
 				console.log(res.data[0].holidayData, res);
 			}
