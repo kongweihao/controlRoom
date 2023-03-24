@@ -1,10 +1,25 @@
 <div id="app" class="layui-body">
-	<blockquote class="layui-elem-quote" style="margin:15px">
-
+	<blockquote class="layui-elem-quote" style="margin:0 15px">
 		<el-tabs>
-			<el-tab-pane label="收起">
+			<el-tab-pane label="搜索班表">
+				<div style="text-align: center;">
+					<form id="form" class="layui-form layui-input-inline" action="{:url('@system/rotaList')}"
+						method="post">
+						<el-button type="primary" @click="handleReduceMonth"
+							style="background-color:#009688;border:none;border-radius:3px">上一月
+						</el-button>
+						<div class="layui-inline" style="width: 120px;">
+							<el-date-picker v-model="time_stamp" type="month" value-format="yyyyMM"
+								@change="handleChangeMonth" placeholder="选择月" style="width: 100%;">
+							</el-date-picker>
+						</div>
+						<el-button type="primary" @click="handleAddMonth"
+							style="background-color:#009688;border:none;border-radius:3px">下一月
+						</el-button>
+					</form>
+				</div>
 			</el-tab-pane>
-			<el-tab-pane label="今日">
+			<el-tab-pane label="今日天气">
 				<p>
 					<el-tag type="success">今日{{weatherForecasts.address.split(' ')[1]}}</el-tag>
 					<el-tag type="warning">白天{{weatherForecasts.forecasts[0].dayTemp}}&nbsp;&nbsp;&nbsp;</el-tag>
@@ -38,23 +53,8 @@
 			</el-tab-pane>
 		</el-tabs>
 	</blockquote>
-	<div style="text-align: center;">
-		<form id="form" class="layui-form layui-input-inline" action="{:url('@system/rotaList')}" method="post">
-			<el-button type="primary" @click="handleReduceMonth"
-				style="background-color:#009688;border:none;border-radius:3px">上一月
-			</el-button>
-			<div class="layui-inline" style="width: 120px;">
-				<el-date-picker v-model="time_stamp" type="month" value-format="yyyyMM" @change="handleChangeMonth"
-					placeholder="选择月" style="width: 100%;">
-				</el-date-picker>
-			</div>
-			<el-button type="primary" @click="handleAddMonth"
-				style="background-color:#009688;border:none;border-radius:3px">下一月
-			</el-button>
-		</form>
-	</div>
 	<!-- 值班表 -->
-	<div style="padding:15px">
+	<div style="padding:0 15px">
 		<table id="rotaListTable" lay-filter="rotaList_table"></table>
 		<!-- 表格工具栏模板： -->
 		<script type="text/html" id="toolbarDemo">
