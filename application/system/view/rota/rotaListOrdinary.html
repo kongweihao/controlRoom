@@ -246,7 +246,7 @@
 			, cols: [cols_rotaList]
 			, done: function (res, curr, count) {
 				showTs(1, '加载成功', 500)
-				console.log(res);
+				console.log(res.data[0].holidayData, res);
 			}
 		}
 		// 开始渲染表格
