@@ -14,8 +14,7 @@ Route::group(['prefix' => 'customer/Rota/'], function () {
 	Route::get('customer/getTMMonitor', 'getTMMonitor'); // 获取今明两天值班人员信息——短信接口
 	Route::get('customer/getTodayMonitor', 'getTodayMonitor'); // 获取当日值班信息
 
-	Route::any('customer/getHolidayByDay', 'getHolidayByDay'); // 按天获取节假日信息
-	Route::any('customer/getHolidayByMonth', 'getHolidayByMonth'); // 按月获取节假日信息
+	Route::any('customer/getWeatherForecasts', 'getWeatherForecasts'); // 按天获取节假日信息
 });
 // rota_situation控制器 值班信息模块
 Route::group(['prefix' => 'customer/rota_situation/'], function () {

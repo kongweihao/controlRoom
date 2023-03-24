@@ -10,32 +10,18 @@ use app\common\model\Rota as RotaModel;
 class Rota extends Controller
 {
 	/**
-	 * 按天获取节假日数据
+	 * 获取最近四天天气数据
 	 * ROLLAPI
 	 * 普通会员限制QPS为1
 	 * 既每秒只能请求一次接口
 	 */
-	public function getHolidayByDay()
+	public function getWeatherForecasts()
 	{
-		$time_stamp = input()['time_stamp'];
-		$rollHolidayAPI = 'https://www.mxnzp.com/api/holiday/single/' . $time_stamp . '?ignoreHoliday=false&app_id=n0suksemrqafttpd&app_secret=T1d6Z0wraTdYeTRjZktnc2VoeDUrQT09';
-		$holidayData = file_get_contents($rollHolidayAPI);
-		return json_decode($holidayData);
+		// %E5%B9%BF%E5%B7%9E%E5%B8%82 = 广州市
+		$weatherForecastsApi = 'https://www.mxnzp.com/api/weather/forecast/%E5%B9%BF%E5%B7%9E%E5%B8%82?app_id=n0suksemrqafttpd&app_secret=T1d6Z0wraTdYeTRjZktnc2VoeDUrQT09';
+		$weatherForecasts = json_decode(file_get_contents($weatherForecastsApi), true);
+		return json($weatherForecasts);
 	}
-	/**
-	 * 按月获取节假日数据
-	 * ROLLAPI
-	 * 普通会员限制QPS为1
-	 * 既每秒只能请求一次接口
-	 */
-	public function getHolidayByMonth()
-	{
-		$month = input()['month'];
-		$rollHolidayAPI = 'https://www.mxnzp.com/api/holiday/list/month/' . $month . '?ignoreHoliday=false&app_id=n0suksemrqafttpd&app_secret=T1d6Z0wraTdYeTRjZktnc2VoeDUrQT09';
-		$holidayData = file_get_contents($rollHolidayAPI);
-		return json_decode($holidayData);
-	}
-
 	/**
 	 * 每日值班表列表
 	 */

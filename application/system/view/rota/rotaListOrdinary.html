@@ -1,17 +1,54 @@
 <div id="app" class="layui-body">
 	<blockquote class="layui-elem-quote" style="margin:15px">
-		<p>- 星号代表该班次含换班记录</p>
+
+		<el-tabs>
+			<el-tab-pane label="今日">
+				<p>
+					<el-tag type="success">今日{{weatherForecasts.address.split(' ')[1]}}</el-tag>
+					<el-tag type="warning">白天{{weatherForecasts.forecasts[0].dayTemp}}&nbsp;&nbsp;&nbsp;</el-tag>
+					<el-tag type="warning">{{weatherForecasts.forecasts[0].dayWeather}}&nbsp;&nbsp;&nbsp;</el-tag>
+					<el-tag type="warning">刮{{weatherForecasts.forecasts[0].dayWindDirection}}风&nbsp;&nbsp;&nbsp;
+					</el-tag>
+					<el-tag type="warning">风力{{weatherForecasts.forecasts[0].dayWindPower}}&nbsp;&nbsp;&nbsp;
+					</el-tag>
+					<el-tag>晚间{{weatherForecasts.forecasts[0].nightTemp}}&nbsp;&nbsp;&nbsp;</el-tag>
+					<el-tag>{{weatherForecasts.forecasts[0].nightWeather}}&nbsp;&nbsp;&nbsp;</el-tag>
+					<el-tag>刮{{weatherForecasts.forecasts[0].nightWindDirection}}风&nbsp;&nbsp;&nbsp;
+					</el-tag>
+					<el-tag>风力{{weatherForecasts.forecasts[0].nightWindPower}}</el-tag>
+				</p>
+			</el-tab-pane>
+			<el-tab-pane label="未来">
+				<p v-for="i in weatherForecasts.forecasts">
+					<el-tag type="success">{{i.date}}</el-tag>
+					<el-tag type="warning">白天{{i.dayTemp}}&nbsp;&nbsp;&nbsp;</el-tag>
+					<el-tag type="warning">{{i.dayWeather}}&nbsp;&nbsp;&nbsp;</el-tag>
+					<el-tag type="warning">刮{{i.dayWindDirection}}风&nbsp;&nbsp;&nbsp;
+					</el-tag>
+					<el-tag type="warning">风力{{i.dayWindPower}}&nbsp;&nbsp;&nbsp;
+					</el-tag>
+					<el-tag>晚间{{i.nightTemp}}&nbsp;&nbsp;&nbsp;</el-tag>
+					<el-tag>{{i.nightWeather}}&nbsp;&nbsp;&nbsp;</el-tag>
+					<el-tag>刮{{i.nightWindDirection}}风&nbsp;&nbsp;&nbsp;
+					</el-tag>
+					<el-tag>风力{{i.nightWindPower}}</el-tag>
+				</p>
+			</el-tab-pane>
+		</el-tabs>
 	</blockquote>
 	<div style="text-align: center;">
 		<form id="form" class="layui-form layui-input-inline" action="{:url('@system/rotaList')}" method="post">
-			<div class="layui-inline" style="margin-left: 15px;">
+			<el-button type="primary" @click="handleReduceMonth"
+				style="background-color:#009688;border:none;border-radius:3px">上一月
+			</el-button>
+			<div class="layui-inline" style="width: 120px;">
 				<el-date-picker v-model="time_stamp" type="month" value-format="yyyyMM" @change="handleChangeMonth"
-					placeholder="选择月">
+					placeholder="选择月" style="width: 100%;">
 				</el-date-picker>
 			</div>
-			<br>
-			<el-button type="primary" @click="handleReduceMonth" style="margin: 15px 15px 0 15px;">上一月</el-button>
-			<el-button type="primary" @click="handleAddMonth">下一月</el-button>
+			<el-button type="primary" @click="handleAddMonth"
+				style="background-color:#009688;border:none;border-radius:3px">下一月
+			</el-button>
 		</form>
 	</div>
 	<!-- 值班表 -->
@@ -28,10 +65,14 @@
 	</div>
 	<div style="text-align: center;">
 		<form id="form" class="layui-form layui-input-inline" action="{:url('@system/rotaList')}" method="post">
-			<el-button v-loading="isExportLoading" @click="handleDownload(cols_data,cols_monitorPostList,true)">导出班表
+			<el-button v-loading="isExportLoading" @click="handleDownload(cols_data,cols_monitorPostList,true)"
+				style="background-color:#009688;border:none;border-radius:3px;color:white">
+				导出班表
 			</el-button>
-			<el-button v-loading="isExportLoading" @click="handleDownload(cols_data,cols_monitorPostList,false)">
-				导出班表（带换班记录）</el-button>
+			<el-button v-loading="isExportLoading" @click="handleDownload(cols_data,cols_monitorPostList,false)"
+				style="background-color:#009688;border:none;border-radius:3px;color:white">
+				导出班表（带换班记录）
+			</el-button>
 		</form>
 	</div>
 </div>
@@ -44,7 +85,39 @@
 				isExportLoading: false,
 				cols_monitorPostList: [], //值班表表头数据，从下面layUI模板中获取
 				cols_data: [], //值班表表身数据，从下面layUI模板中获取
+				weatherForecasts: {
+					address: "广东省 加载中...",
+					forecasts: [{
+						date: " 加载中...",
+						dayOfWeek: " 加载中...",
+						dayTemp: " 加载中...",
+						dayWeather: " 加载中...",
+						dayWindDirection: " 加载中...",
+						dayWindPower: " 加载中...",
+						nightTemp: " 加载中...",
+						nightWeather: " 加载中...",
+						nightWindDirection: " 加载中...",
+						nightWindPower: " 加载中...",
+					}]
+				}, //获取最近四天天气数据
 			}
+		},
+		mounted() {
+			const _this = this
+			setTimeout(function () {
+				// 定个时等待其他内容先加载完成
+				$.ajax({
+					url: "{:url('@customer/getWeatherForecasts')}",
+					type: 'get',
+					success: function (weatherForecasts) {
+						_this.weatherForecasts = weatherForecasts.data
+						console.log(weatherForecasts);
+					},
+					error: function (err) {
+						console.log(err);
+					}
+				})
+			}, 4000)
 		},
 		methods: {
 			// 导出班表
@@ -247,7 +320,7 @@
 			, done: function (res, curr, count) {
 				showTs(1, '加载成功', 500)
 				if (res.data[0].holidayData == undefined) {
-					showTs(1, '日历数据接口限制，如需要可以刷新重新获取', 1500)
+					showTs(1, '日历接口不可用，可能已被限制', 1500)
 				}
 				console.log(res.data[0].holidayData, res);
 			}
