@@ -113,7 +113,6 @@
 					type: 'get',
 					success: function (weatherForecasts) {
 						_this.weatherForecasts = weatherForecasts.data
-						console.log(weatherForecasts);
 					},
 					error: function (err) {
 						console.log(err);
@@ -124,7 +123,6 @@
 		methods: {
 			// 导出班表
 			handleDownload(data, th, is_hide_shift_change) {
-				console.log(data, th, is_hide_shift_change)
 				/* 通用导出数据  需要引入 xlsx.core.js
 				* data：数据
 				*  格式：[
@@ -316,7 +314,6 @@
 					app.cols_data[i]['星期'] = app.cols_data[i].week
 					app.cols_data[i]['日期'] = app.cols_data[i].time_stamp
 				}
-				// console.log(res)
 			}
 			, cols: [cols_rotaList]
 			, done: function (res, curr, count) {
@@ -324,7 +321,6 @@
 				if (res.data[0].holidayData == undefined) {
 					showTs(1, '日历接口不可用，可能已被限制', 1500)
 				}
-				console.log(res.data[0].holidayData, res);
 			}
 		}
 		// 开始渲染表格
@@ -346,9 +342,6 @@
 					$(form).append(input1, input2);
 					$('body').append(form);  //将表单放置在web中  
 					form.submit();  //表单提交  
-					// window.location = 'editRotaOrdinary?time_stamp={$time_stamp}'
-					// console.log("{$time_stamp}")
-					// layer.msg('批量修改功能暂不开放~')
 					break;
 				case 'showAll':
 					for (let i = 0; i < cols_rotaList.length; i++) {
