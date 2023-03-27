@@ -368,6 +368,8 @@
 			}
 		});
 		// 默认打开全部班表
-		$('#showAllData').click()
+		if ("{$is_get_all_monitor}" == '1') {
+			$('#showAllData').click()
+		}
 	});
 </script>

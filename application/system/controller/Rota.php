@@ -735,6 +735,17 @@ class Rota extends Auth
 		$monitorPostList = Db::table('monitor_post')->where(['is_active' => 1])->select();
 		$monitorPostList_len = sizeof($monitorPostList);
 		// return json($monitorPostList);
+		$member_id = Db::table('admin_member')->where('admin_id', Session::get('adminId'))->find()['member_id'];
+		$monitorPost_type_id_arr = explode(',', Db::table('member')->where('id', $member_id)->find()['monitorPost_type_id']);
+		$is_get_all_monitor = 0;
+		for ($i = 0; $i < sizeof($monitorPost_type_id_arr); $i++) {
+			if ($monitorPost_type_id_arr[$i] == 1 || $monitorPost_type_id_arr[$i] == 3) {
+				// 1代表值班长 3代表一干传输，只要这两个岗位，则默认加载全部班表
+				$is_get_all_monitor = 1;
+				break;
+			}
+		}
+		$this->assign('is_get_all_monitor', $is_get_all_monitor);
 		$this->assign('time_stamp', $time_stamp);
 		$this->assign('monitorPostList', $monitorPostList);
 		$this->assign('monitorPostList_len', $monitorPostList_len);
