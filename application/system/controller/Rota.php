@@ -687,9 +687,9 @@ class Rota extends Auth
 							. $holidayData['data'][$i]['lunarCalendar']
 							. '</span>   <span>'
 							. $holidayData['data'][$i]['solarTerms']
-							. '</span></div><div><span>宜：'
+							. '</span></div><div><span>宜：值班.美食.'
 							. $holidayData['data'][$i]['suit']
-							. '</span><br><span>忌：'
+							. '</span><br><span>忌：不开心.'
 							. $holidayData['data'][$i]['avoid']
 							. "</span></div></div>";
 					} else if ($holidayData['data'][$i]['type'] == 1) {
@@ -702,7 +702,7 @@ class Rota extends Auth
 							. $holidayData['data'][$i]['lunarCalendar']
 							. '</span>   <span>'
 							. $holidayData['data'][$i]['solarTerms']
-							. '</span></div><div><span>宜：'
+							. '</span></div><div><span>宜：值班.开心.'
 							. $holidayData['data'][$i]['suit']
 							. '</span><br><span>忌：'
 							. $holidayData['data'][$i]['avoid']
@@ -717,9 +717,9 @@ class Rota extends Auth
 							. $holidayData['data'][$i]['lunarCalendar']
 							. '</span>   <span>'
 							. $holidayData['data'][$i]['solarTerms']
-							. '</span></div><div><span>宜：'
+							. '</span></div><div><span>宜：值班.享受生活.'
 							. $holidayData['data'][$i]['suit']
-							. '</span><br><span>忌：'
+							. '</span><br><span>忌：不开心.'
 							. $holidayData['data'][$i]['avoid']
 							. "</span></div></div>";
 					}
