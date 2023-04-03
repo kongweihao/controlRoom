@@ -656,10 +656,10 @@ class Rota extends Auth
 					}
 					if ($shiftRecordListLen != 0) {
 						for ($k = 0; $k < $shiftRecordListLen; $k++) {
-							$shiftRecord = $shiftRecord . $shiftRecordList[$k]['guy_be_replaced'] . '->';
+							$shiftRecord = $shiftRecord . $shiftRecordList[$k]['guy_be_replaced'] . ' > ';
 						}
-						$shiftRecord = $shiftRecord . $shiftRecordList[$shiftRecordListLen - 1]['replacement'] . '->';
-						$eachDay[$thisMon_monitorPost[$j]['monitor_post_name']] = $rotaList[$i + $j]['member_name'] . '<span style="color:red">*</span><br>（换班记录：' . $shiftRecord . '）';
+						$shiftRecord = $shiftRecord . $shiftRecordList[$shiftRecordListLen - 1]['replacement'] . ' > ';
+						$eachDay[$thisMon_monitorPost[$j]['monitor_post_name']] = $rotaList[$i + $j]['member_name'] . '<span style="color:red">*</span><br>换班记录：' . $shiftRecord;
 					} else {
 						$eachDay[$thisMon_monitorPost[$j]['monitor_post_name']] = $rotaList[$i + $j]['member_name'];
 					}
