@@ -54,7 +54,11 @@
 		</el-tabs>
 	</blockquote>
 	<!-- 值班表 -->
-	<div style="padding:0 15px">
+	<div style="padding:10px 15px">
+		<!-- <el-divider v-if="!isMobile()">由于外部接口原因，若无法加载农历信息，可切换我的班表/全部班表重新加载</el-divider>
+		<el-card v-else>由于外部接口原因，若无法加载农历信息，可切换我的班表/全部班表重新加载</el-card> -->
+		<el-card>由于外部接口原因，若无法加载农历信息，可切换我的班表/全部班表尝试重新加载</el-card>
+
 		<table id="rotaListTable" lay-filter="rotaList_table"></table>
 		<!-- 表格工具栏模板： -->
 		<script type="text/html" id="toolbarDemo">
