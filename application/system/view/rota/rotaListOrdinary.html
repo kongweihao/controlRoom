@@ -1,3 +1,5 @@
+<allow-navigation href="*" />
+<allow-intent href="*" />
 <div id="app" class="layui-body">
 	<blockquote class="layui-elem-quote" style="margin:0 15px">
 		<el-tabs>
@@ -117,6 +119,9 @@
 						nightWindPower: " 加载中...",
 					}]
 				}, //获取最近四天天气数据
+				
+				isAndroid: /android/i.test(navigator.userAgent.toLowerCase()),
+				isIOS: /iPhone|iPad|iOS|Macintosh/i.test(navigator.userAgent.toLowerCase()),
 				// iframe高度自适应
 				weiboFrameHeight:1000,
 				baiduFrameHeight:1000,
