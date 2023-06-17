@@ -84,11 +84,11 @@
 	<el-card style="margin:10px 15px">
 		<el-tabs>
 			<el-tab-pane label="微博热搜">
-				<el-card v-if="isIOS">暂不支持苹果设备</el-card>
+				<el-card v-if="isIOS">微博热搜暂不支持苹果设备</el-card>
 				<iframe v-else id="baiduFrameId" id="weiboFrameId" src="https://s.weibo.com/top/summary?cate=realtimehot" frameborder="0" scrolling="no" :style="{width:'100%',height: weiboFrameHeight+'px'}"></iframe>
 			</el-tab-pane>
 			<el-tab-pane label="百度热搜">
-				<el-card v-if="isMobile()">百度热搜请用电脑打开</el-card>
+				<el-card v-if="isMobile()">百度热搜暂不支持移动设备</el-card>
 				<iframe v-else id="baiduFrameId" src="https://top.baidu.com/board?tab=realtime&sa=fyb_realtime_31065" frameborder="0" scrolling="no" :style="{width:'100%',height: baiduFrameHeight+'px'}"></iframe>
 			</el-tab-pane>
 		</el-tabs>
