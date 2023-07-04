@@ -88,9 +88,7 @@ class Rota extends Controller
 		}
 		// $rs['date_hour'] = 12;
 		$rs['date_hour'] = getdate()['hours'];
-		// return json($rs);
-		$this->assign('rotaList_day', $rs);
-		return $this->fetch();
+		return json($rs);
 	}
 	/**
 	 * 每日值班表列表
@@ -158,7 +156,9 @@ class Rota extends Controller
 		}
 		// $rs['date_hour'] = 12;
 		$rs['date_hour'] = getdate()['hours'];
-		return json($rs);
+		// return json($rs);
+		$this->assign('rotaList_day', $rs);
+		return $this->fetch();
 	}
 	/**
 	 * 通用春节版——每日值班表列表
