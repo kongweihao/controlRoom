@@ -4,6 +4,7 @@ use think\Route;
 /***************************************************customer模块***************************************************************************/
 // Rota控制器 前端值班新增展示模块
 Route::group(['prefix' => 'customer/Rota/'], function () {
+	Route::get('customer/get_rotaList_day_for_alarm_topo', 'get_rotaList_day_for_alarm_topo'); // 获取每日值班表列表_告警topo共享接口
 	Route::get('customer/rotaList_day', 'rotaList_day'); // 打开值班表页面，同时获取每日值班信息
 	Route::get('customer/rotaList_day_happyNewYear2020', 'rotaList_day_happyNewYear2020'); // 打开值班表页面，同时获取每日值班信息
 	Route::get('customer/rotaList_day_happyNewYear2021', 'rotaList_day_happyNewYear2021'); // 打开值班表页面，同时获取每日值班信息

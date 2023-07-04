@@ -23,9 +23,9 @@ class Rota extends Controller
 		return json($weatherForecasts);
 	}
 	/**
-	 * 每日值班表列表
+	 * 获取每日值班表列表_告警topo共享接口
 	 */
-	public function rotaList_day(RotaModel $rota)
+	public function get_rotaList_day_for_alarm_topo(RotaModel $rota)
 	{
 		//每日值班表列表，仅查看当天班表，并且展示详细信息
 		$y = getdate()['year'];
@@ -91,6 +91,74 @@ class Rota extends Controller
 		// return json($rs);
 		$this->assign('rotaList_day', $rs);
 		return $this->fetch();
+	}
+	/**
+	 * 每日值班表列表
+	 */
+	public function rotaList_day(RotaModel $rota)
+	{
+		//每日值班表列表，仅查看当天班表，并且展示详细信息
+		$y = getdate()['year'];
+		$m = getdate()['mon'];
+		$h = getdate()['hours'];
+		if ($h >= 9 && $h < 18) {
+			// 白班
+			$m = getdate()['mon'] > 9 ? getdate()['mon'] : '0' . getdate()['mon'];
+			$d = getdate()['mday'] > 9 ? getdate()['mday'] : '0' . getdate()['mday'];
+			$time_stamp = $y . $m . $d;
+
+			$rs = Db::table('rota')
+				->alias(['rota' => 'r', 'member' => 'm'])
+				->where(['r.time_stamp' => $time_stamp, 'r.is_day' => 1])
+				->where('r.monitorPost_type', '<>', '代维')
+				->join('member m', 'r.member_name=m.name')
+				->order(['r.sort_day ASC']) //DESC降序
+				->select();
+			$rs['banci'] = 1; //白班
+		} else {
+			// 夜班 由于经过凌晨12点，时间段被 分隔成两段，情况比较特殊因此还需要对时间戳进一步处理
+			if ($h < 9) {
+				$m = getdate()['mon'] > 9 ? getdate()['mon'] : '0' . getdate()['mon'];
+				$d = getdate()['mday'] - 1 > 9 ? getdate()['mday'] - 1 : '0' . (getdate()['mday'] - 1);
+			} else {
+				$m = getdate()['mon'] > 9 ? getdate()['mon'] : '0' . getdate()['mon'];
+				$d = getdate()['mday'] > 9 ? getdate()['mday'] : '0' . (getdate()['mday']);
+			}
+			$time_stamp = $y . $m . $d;
+			$rs = Db::table('rota')
+				->alias(['rota' => 'r', 'member' => 'm'])
+				->where(['r.time_stamp' => $time_stamp, 'r.is_night' => 1])
+				->where('r.monitorPost_type', '<>', '代维')
+				->join('member m', 'r.member_name=m.name')
+				->order(['r.sort_night ASC']) //DESC降序
+				->select();
+			$rs['banci'] = 0; //夜班
+		}
+		// <!-- 此处为所有空白情况做特殊处理，至少保证前端展示不要出现乱版 -->
+		if (!$rs['2']) {
+			$rs['2'] = $rs['1'];
+			$rs['3'] = $rs['1'];
+			$rs['4'] = $rs['1'];
+			$rs['5'] = $rs['1'];
+			$rs['6'] = $rs['1'];
+		} else if (!$rs['3']) {
+			$rs['3'] = $rs['1'];
+			$rs['4'] = $rs['1'];
+			$rs['5'] = $rs['1'];
+			$rs['6'] = $rs['1'];
+		} else if (!$rs['4']) {
+			$rs['4'] = $rs['1'];
+			$rs['5'] = $rs['1'];
+			$rs['6'] = $rs['1'];
+		} else if (!$rs['5']) {
+			$rs['5'] = $rs['1'];
+			$rs['6'] = $rs['1'];
+		} else if (!$rs['6']) { //夜班没有投诉岗
+			$rs['6'] = $rs['1'];
+		}
+		// $rs['date_hour'] = 12;
+		$rs['date_hour'] = getdate()['hours'];
+		return json($rs);
 	}
 	/**
 	 * 通用春节版——每日值班表列表
