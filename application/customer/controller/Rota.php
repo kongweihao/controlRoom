@@ -9,6 +9,11 @@ use app\common\model\Rota as RotaModel;
 
 class Rota extends Controller
 {
+	// 广运精灵现场演示视频
+	public function bs()
+	{
+		return $this->fetch();
+	}
 	/**
 	 * 获取最近四天天气数据
 	 * ROLLAPI

@@ -16,6 +16,8 @@ Route::group(['prefix' => 'customer/Rota/'], function () {
 	Route::get('customer/getTodayMonitor', 'getTodayMonitor'); // 获取当日值班信息
 
 	Route::any('customer/getWeatherForecasts', 'getWeatherForecasts'); // 按天获取节假日信息
+
+	Route::any('customer/bs', 'bs'); // 广运精灵现场演示视频
 });
 // rota_situation控制器 值班信息模块
 Route::group(['prefix' => 'customer/rota_situation/'], function () {
