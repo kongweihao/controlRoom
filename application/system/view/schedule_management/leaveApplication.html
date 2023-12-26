@@ -99,10 +99,10 @@
 								<br>
 								<!-- 年假 -->
 								<el-span v-if="ruleForm.vacation_type == 1 && (myAnnualLeaveBalance < ruleForm.num_of_days_off)" style="color:red">
-									{{'年假余额：'+ myAnnualLeaveBalance +'天（不足）'}}
+									{{'年假余额：'+ myAnnualLeaveBalance +'天（仅供参考）'}}
 								</el-span>
 								<el-span v-else-if="ruleForm.vacation_type == 1" style="color:#67c23a">
-									{{'年假余额：'+ myAnnualLeaveBalance +'天'}}
+									{{'年假余额：'+ myAnnualLeaveBalance +'天（仅供参考）'}}
 								</el-span>
 								<!-- 调休 -->
 								<el-span v-if="ruleForm.vacation_type == 2 && (myVacationBalance < ruleForm.num_of_days_off)" style="color:red">
