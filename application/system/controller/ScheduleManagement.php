@@ -233,8 +233,8 @@ class ScheduleManagement extends Auth{ // 上线用的
 		$nextMonth = date('Y', strtotime($time_stamp.' +1 month')).date('m', strtotime($time_stamp.' +1 month'));
 		// 获取前中后三个月的夜班数据
 		$nightRota = Db::table('rota')
-		// ->where(['is_night'=>'1','time_stamp'=>['like','%'.$time_stamp.'%']])
-		->where(['is_night'=>'1','monitorPost_type'=>['<>', '代维'],'time_stamp'=>['like',['%'.$time_stamp.'%','%'.$lastMonth.'%','%'.$nextMonth.'%'], 'OR']])
+		->where(['is_night'=>'1','time_stamp'=>['like','%'.$time_stamp.'%']])
+		// ->where(['is_night'=>'1','monitorPost_type'=>['<>', '代维'],'time_stamp'=>['like',['%'.$time_stamp.'%','%'.$lastMonth.'%','%'.$nextMonth.'%'], 'OR']])
 		->select();
 		$everyoneSSchedule['vacation_request_list'] = $vacation_request_list;
 		$everyoneSSchedule['annual_leave_request_list'] = $annual_leave_request_list;
