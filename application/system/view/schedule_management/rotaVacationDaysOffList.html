@@ -7,6 +7,11 @@
 			<legend>调休配额日历</legend>
 		</fieldset>
 		<el-card style="display: block;margin: auto 15px;">
+			<el-date-picker
+			v-model="calendarValue"
+			type="month"
+			placeholder="选择月">
+			</el-date-picker>
 			<el-calendar v-model="calendarValue">
 				<!-- 这里使用的是 2.5 slot 语法，对于新项目请使用 2.6 slot 语法-->
 				<template

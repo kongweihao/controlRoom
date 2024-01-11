@@ -12,6 +12,11 @@
 		</fieldset>
 		<el-card style="display: block;margin: auto 15px;">
 			<el-button @click="isShowAddDrawer = true" type="primary" icon="el-icon-plus" circle></el-button>
+			<el-date-picker
+			v-model="calendarValue"
+			type="month"
+			placeholder="选择月">
+			</el-date-picker>
 			<el-calendar v-model="calendarValue">
 				<!-- 这里使用的是 2.5 slot 语法，对于新项目请使用 2.6 slot 语法-->
 				<template
@@ -403,6 +408,7 @@ const app = new Vue({
 	watch: {
 		calendarValue: {	//深度监听，可监听到对象、数组的变化
 			handler(val, oldVal){
+				console.log(val, '////',oldVal)
 				const _this = this;
 				// 月份/年份发生变化时重新获取后台数据
 				if (val.getMonth() !== oldVal.getMonth() || val.getFullYear() !== oldVal.getFullYear()) {
@@ -417,7 +423,7 @@ const app = new Vue({
 						}
 					$.ajax({
 						url: 'rotaVacationDaysOffManagementList',
-						data:data,
+						data: data,
 						type: 'post',
 						success: function (res) {
 							const code = res.code

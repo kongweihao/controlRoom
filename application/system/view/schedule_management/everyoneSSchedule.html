@@ -11,7 +11,14 @@
 		</el-card>
 		<el-card style="display: block;margin: auto 15px 15px;max-height: 600px;overflow:auto" v-loading="isAppLoading">
 			<el-divider>
-				<span v-if="thisYear != year">{{year + '年' }}</span><span style="font-size:40px">{{ month }}</span> 月
+				<el-date-picker
+				v-model="nowDate"
+				type="month"
+				value-format="yyyy-MM"
+				@change="getMonths('nowDate')"
+				placeholder="选择月">
+				</el-date-picker>
+				<!-- <span v-if="thisYear != year">{{year + '年' }}</span><span style="font-size:40px">{{ month }}</span> 月 -->
 			</el-divider>
 			<el-table
 			:data="everyoneSScheduleTableData"
@@ -170,13 +177,11 @@
 // 	alert("手机端建议使用横屏模式")
 // }
 const everyoneSSchedule = {:json_encode($everyoneSSchedule)};
-console.log(everyoneSSchedule);
 const Dates = new Date();
 const Y = Dates.getFullYear();
 const M = Dates.getMonth() + 1;
 const D = Dates.getDate();
-const nowDate = Y + (M < 10 ? "-0" : "-") + M + (D < 10 ? "-0" : "-") + D;
-
+const nowDate = Y + (M < 10 ? "-0" : "-") + M;
 function isMobile(){
 	let userAgentInfo = navigator.userAgent;
 	let Agents = ['Android','iPhone','SymbianOS','Windows Phone']
@@ -219,7 +224,14 @@ const app = new Vue({
 					_this.month = 1
 				}
 			}
-			ym = _this.year + (_this.month > 9? ''+_this.month : '0' + _this.month)
+			if (monthType == 'nowDate') {
+				_this.year = _this.nowDate.split('-')[0]
+				_this.month = _this.nowDate.split('-')[1]
+				ym = _this.year.toString() + _this.month
+			} else {
+				ym = _this.year + (_this.month > 9? ''+_this.month : '0' + _this.month)
+				_this.nowDate = _this.year + (_this.month > 9? '-'+_this.month : '-0' + _this.month)
+			}
 			const data = {
 				isSearch: 1,
 				ym: ym
@@ -398,7 +410,6 @@ const app = new Vue({
 					pm: pm_list
 				})
 			}
-			// console.log(everyoneSScheduleTableData);
 			return everyoneSScheduleTableData
 		},
 		// 获取指定月份天数的方法
