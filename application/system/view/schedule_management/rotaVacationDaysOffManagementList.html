@@ -1,11 +1,12 @@
 <div class="layui-body" style="left:200px;">
 	<div id="app">
 		<blockquote class="layui-elem-quote" style="margin:15px">
-			<p>- 周五夜~周日夜1个班次1天调休、节假日则由管理员手动配额，其他正常工作时间0调休</p>
-			<p>- 由于配额可以再次编辑会出现以下两个问题：</p>
-			<p>- 1、每个人的值班调休余额都是实时计算的</p>
-			<p>- 2、历史已调休的班次，如果配额被修改了将无法撤回已调休的班次</p>
-			<p>- 一期解决方案：只需判断被编辑日期是否历史日期，若是则不可编辑（毕竟不是历史日期，用户也无法使用）</p>
+			<p>- 【备注要求】</p>
+			<p>- 但凡节假日，从节假日前夕夜班开始备注，备注做到节假日最后一天的夜班为止</p>
+			<p>- 【补班注意项】</p>
+			<p>- ①只有周六补班周日不用补，把前一天周五夜班和周六白班改成0，要改两个班次；</p>
+			<p>- ②只有周日补班周六不用补，把周日白班和夜班改成0，要改两个班次；</p>
+			<p>- ③周六周日均要补班，把周五夜班至周日夜班共5个班次均设为0。</p>
 		</blockquote>
 		<fieldset class="layui-elem-field layui-field-title">
 			<legend>调休配额管理</legend>
@@ -15,6 +16,7 @@
 			<el-date-picker
 			v-model="calendarValue"
 			type="month"
+			style="width: 120px;top: 44px;left: -44px;"
 			placeholder="选择月">
 			</el-date-picker>
 			<el-calendar v-model="calendarValue">
@@ -246,6 +248,10 @@
 .is-selected {
 	color: #1989FA;
 }
+/* 隐藏日历时间标题 */
+/* .el-calendar__title {
+	display: none;
+} */
 </style>
 <script>
 if (window.orientation != undefined && window.orientation != 90 && window.orientation != -90) {
