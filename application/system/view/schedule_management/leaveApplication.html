@@ -279,8 +279,6 @@
 								multiple
 								style="width: 250px;"
 								placeholder="请选择">
-								<!-- :disabled="!ruleForm.timestamp_start || !ruleForm.half_day_start || !ruleForm.timestamp_end || !ruleForm.half_day_end || Date.parse(ruleForm.timestamp_end.substr(0, 4)+'-'+ruleForm.timestamp_end.substr(4, 2)+'-'+ruleForm.timestamp_end.substr(6, 2)) - Date.parse(item.dol_timestamp.substr(0, 4)+'-'+item.dol_timestamp.substr(4, 2)+'-'+item.dol_timestamp.substr(6, 2))"> -->
-									
 									<el-option
 									v-for="item in days_off_balance_list"
 									:key="item.dbl_id"
@@ -288,16 +286,16 @@
 									:value="item.dbl_id"
 									:disabled="!ruleForm.timestamp_start || !ruleForm.half_day_start || !ruleForm.timestamp_end || !ruleForm.half_day_end 
 									|| (ruleForm.timestamp_end.substr(0, 4) == item.dol_timestamp.substr(0, 4) 
-											? parseInt(ruleForm.timestamp_end.substr(4, 2)) - 3 > parseInt(item.dol_timestamp.substr(4, 2)) 
+											? parseInt(ruleForm.timestamp_end.substr(4, 2)) - rvs_time_liness > parseInt(item.dol_timestamp.substr(4, 2)) 
 												? true
-												: parseInt(ruleForm.timestamp_end.substr(4, 2)) - 3 == parseInt(item.dol_timestamp.substr(4, 2))
+												: parseInt(ruleForm.timestamp_end.substr(4, 2)) - rvs_time_liness == parseInt(item.dol_timestamp.substr(4, 2))
 														? parseInt(ruleForm.timestamp_end.substr(6, 2)) > parseInt(item.dol_timestamp.substr(6, 2))
 															? true
 															: false
 														: false
-											: (12 - parseInt(item.dol_timestamp.substr(4, 2)) + parseInt(ruleForm.timestamp_end.substr(4, 2)) > 3 )
+											: (12 - parseInt(item.dol_timestamp.substr(4, 2)) + parseInt(ruleForm.timestamp_end.substr(4, 2)) > rvs_time_liness )
 												? true
-												: (12 - parseInt(item.dol_timestamp.substr(4, 2)) + parseInt(ruleForm.timestamp_end.substr(4, 2)) == 3 )
+												: (12 - parseInt(item.dol_timestamp.substr(4, 2)) + parseInt(ruleForm.timestamp_end.substr(4, 2)) == rvs_time_liness )
 													? parseInt(ruleForm.timestamp_end.substr(6, 2)) > parseInt(item.dol_timestamp.substr(6, 2))
 														? true
 														: false
@@ -321,7 +319,7 @@
 									{{'请选择结束日期午次'}}
 								</el-span>
 								<el-span v-else style="color:#67c23a">
-									{{'注：结束日期超过调休日期3月则无法使用'}}
+									{{'注：结束日期超过调休日期'+rvs_time_liness+'月则无法使用'}}
 								</el-span>
 							</el-col>
 						</el-form-item><br>
@@ -387,6 +385,7 @@ function isMobile(){
 	return getArr.length ? true : false
 }
 const leaveApplication = {:json_encode($leaveApplication)};
+console.log(leaveApplication)
 const Dates = new Date();
 const Y = Dates.getFullYear();
 const M = Dates.getMonth() + 1;
@@ -400,6 +399,7 @@ const app = new Vue({
 			isAppLoading: false,
 			calendarValue:  new Date(),
 			leaveApplication: leaveApplication,
+			rvs_time_liness: leaveApplication[0].rvs_time_liness, // 调休时限 目前为 3 单位月
 			isShowAddDrawer: true,
         	direction: 'ltr',
         	nowDate: nowDate,
