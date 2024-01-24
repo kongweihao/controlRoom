@@ -158,6 +158,23 @@
 					</template>
 				</el-table-column>
 				<el-table-column
+				prop="create_time"
+				label="申请时间"
+				show-overflow-tooltip
+				sortable
+				align="center">
+				</el-table-column>
+				<el-table-column
+				prop="vrl_state"
+				label="状态"
+				show-overflow-tooltip
+				sortable
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.vrl_state != -1 ? '正常' : '撤回'}}
+					</template>
+				</el-table-column>
+				<el-table-column
 				fixed="right"
 				label="操作"
 				width="155"

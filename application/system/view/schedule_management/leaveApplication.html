@@ -36,6 +36,9 @@
 									style="width:100%;">
 									</el-date-picker>
 								</el-form-item>
+								<el-span style="color:red" v-if="ruleForm.timestamp_start > ruleForm.timestamp_end || (ruleForm.timestamp_start == ruleForm.timestamp_end && ruleForm.half_day_start > ruleForm.half_day_end)">
+									{{'开始时间不能大于结束时间'}}
+								</el-span>
 							</el-col>
 						</el-form-item>
 						<el-form-item label="午次" prop="half_day_start">
@@ -125,9 +128,32 @@
 									:key="item.dbl_id"
 									:label="item.dol_timestamp + (item.dol_day_or_night? '白班': '夜班') + '0.5天'"
 									:value="item.dbl_id"
-									disabled>
+									:disabled="!ruleForm.timestamp_start || !ruleForm.half_day_start || !ruleForm.timestamp_end || !ruleForm.half_day_end 
+									|| isOutOfDate(item.dol_timestamp, ruleForm.timestamp_end, rvs_time_liness)">
 									</el-option>
+									<!-- disabeld 禁止调休超过三个月以后日期 -->
 								</el-select>
+								<br>
+								<!-- 调休说明 -->
+								<el-span v-if="!ruleForm.timestamp_start" style="color:red">
+									{{'请选择开始日期'}}
+								</el-span>
+								<el-span v-else-if="!ruleForm.half_day_start " style="color:red">
+									{{'请选择开始日期午次'}}
+								</el-span>
+								<el-span v-else-if="!ruleForm.timestamp_end" style="color:red">
+									{{'请选择结束日期'}}
+								</el-span>
+								<el-span v-else-if="!ruleForm.half_day_end" style="color:red">
+									{{'请选择结束日期午次'}}
+								</el-span>
+								<el-span v-else-if="is_show_tips1" style="color:red; line-height: 24px;text-align:left;margin: 10px;">
+									{{'所选的计划休假时段跨越了部分调休的有效期，请分批提交'}}
+								</el-span>
+								<br>
+								<el-span v-if="ruleForm.dol_arr.length && ruleForm.num_of_days_off != 0.5*ruleForm.dol_arr.length" style="color:red">
+									{{'调休天数与休假天数不对应'}}
+								</el-span>
 							</el-col>
 						</el-form-item><br>
 						<el-form-item label="休假说明" prop="remarks">
@@ -155,7 +181,7 @@
 						【调休过期说明】
 					</div>
 					<div class="text item">
-						根据中心内部要求调休需在1个月内休完，如有特殊情况可申请延期，但最长不超3个月（系统默认三个月）
+						值班调休原则上1个月内休完，最长有效期不超过{{rvs_time_liness}}个月，未休则作废；因此如果部分班次在“开始日期”和“结束日期”之间失效，请分批提单。
 					</div>
 				</el-card>
 				<br>
@@ -182,6 +208,7 @@
 					label-width="100px"
 					class="demo-ruleForm"
 					style="margin-top: 40px;">
+					</el-input>
 						<el-form-item label="开始日期" required>
 							<el-col :span="18">
 								<el-form-item prop="timestamp_start">
@@ -195,6 +222,9 @@
 									:picker-options="pickerOptions1">
 									</el-date-picker>
 								</el-form-item>
+								<el-span style="color:red" v-if="ruleForm.timestamp_start > ruleForm.timestamp_end || (ruleForm.timestamp_start == ruleForm.timestamp_end && ruleForm.half_day_start > ruleForm.half_day_end)">
+									{{'开始时间不能大于结束时间'}}
+								</el-span>
 							</el-col>
 						</el-form-item>
 						<el-form-item label="午次" prop="half_day_start">
@@ -280,27 +310,12 @@
 								style="width: 250px;"
 								placeholder="请选择">
 									<el-option
-									v-for="item in days_off_balance_list"
+									v-for="(item, index) in days_off_balance_list"
 									:key="item.dbl_id"
 									:label="item.dol_timestamp + (item.dol_day_or_night? '白班': '夜班') + '0.5天'"
 									:value="item.dbl_id"
 									:disabled="!ruleForm.timestamp_start || !ruleForm.half_day_start || !ruleForm.timestamp_end || !ruleForm.half_day_end 
-									|| (ruleForm.timestamp_end.substr(0, 4) == item.dol_timestamp.substr(0, 4) 
-											? parseInt(ruleForm.timestamp_end.substr(4, 2)) - rvs_time_liness > parseInt(item.dol_timestamp.substr(4, 2)) 
-												? true
-												: parseInt(ruleForm.timestamp_end.substr(4, 2)) - rvs_time_liness == parseInt(item.dol_timestamp.substr(4, 2))
-														? parseInt(ruleForm.timestamp_end.substr(6, 2)) > parseInt(item.dol_timestamp.substr(6, 2))
-															? true
-															: false
-														: false
-											: (12 - parseInt(item.dol_timestamp.substr(4, 2)) + parseInt(ruleForm.timestamp_end.substr(4, 2)) > rvs_time_liness )
-												? true
-												: (12 - parseInt(item.dol_timestamp.substr(4, 2)) + parseInt(ruleForm.timestamp_end.substr(4, 2)) == rvs_time_liness )
-													? parseInt(ruleForm.timestamp_end.substr(6, 2)) > parseInt(item.dol_timestamp.substr(6, 2))
-														? true
-														: false
-													: false
-										)">
+									|| isOutOfDate(item.dol_timestamp, ruleForm.timestamp_end, rvs_time_liness)">
 									<!-- disabeld 禁止调休超过三个月以后日期 -->
 									</el-option>
 								</el-select>
@@ -315,11 +330,15 @@
 								<el-span v-else-if="!ruleForm.timestamp_end" style="color:red">
 									{{'请选择结束日期'}}
 								</el-span>
-								<el-span v-else-if="!ruleForm.half_day_end " style="color:red">
+								<el-span v-else-if="!ruleForm.half_day_end" style="color:red">
 									{{'请选择结束日期午次'}}
 								</el-span>
-								<el-span v-else style="color:#67c23a">
-									{{'注：结束日期超过调休日期'+rvs_time_liness+'月则无法使用'}}
+								<p popper-class="testclass" v-else-if="is_show_tips1" style="color:red; line-height: 24px;text-align:left;margin: 10px;">
+									{{'所选的计划休假时段跨越了部分调休的有效期，请分批提交'}}
+								</p>
+								<br>
+								<el-span v-if="ruleForm.dol_arr.length && ruleForm.num_of_days_off != 0.5*ruleForm.dol_arr.length" style="color:red">
+									{{'调休天数与休假天数不对应'}}
 								</el-span>
 							</el-col>
 						</el-form-item><br>
@@ -348,7 +367,7 @@
 						【调休过期说明】
 					</div>
 					<div class="text item">
-						根据中心内部要求调休需在1个月内休完，如有特殊情况可申请延期，但最长不超3个月（系统默认三个月）
+						值班调休原则上1个月内休完，最长有效期不超过{{rvs_time_liness}}个月，未休则作废；因此如果部分班次在“开始日期”和“结束日期”之间失效，请分批提单。
 					</div>
 				</el-card>
 				<br>
@@ -376,6 +395,9 @@
 .el-drawer__body{
     overflow: scroll;
 }
+.testclass {
+	font-size: 30px;
+}
 </style>
 <script>
 function isMobile(){
@@ -385,7 +407,6 @@ function isMobile(){
 	return getArr.length ? true : false
 }
 const leaveApplication = {:json_encode($leaveApplication)};
-console.log(leaveApplication)
 const Dates = new Date();
 const Y = Dates.getFullYear();
 const M = Dates.getMonth() + 1;
@@ -403,6 +424,9 @@ const app = new Vue({
 			isShowAddDrawer: true,
         	direction: 'ltr',
         	nowDate: nowDate,
+			is_dol_timestamp_out_of_start_time:[],
+			is_dol_timestamp_out_of_end_time:[],
+			is_show_tips1: false, // 是否显示提示1：调休时间对于结束时间已过期，但对于开始时间还未过期
 			ruleForm: {
 				timestamp_start: '',
 				half_day_start: 1,
@@ -443,6 +467,81 @@ const app = new Vue({
 			myVacationBalance: 0, // 我的调休余额
 			days_off_balance_list: [], // 我的调休余额清单
 			count: 0
+		}
+	},
+	created: function() {
+		const _this = this
+		// 直接用watch不知道为啥会失效，这里在created阶段开始watch
+		// timestamp_start 变化时，判断调休是否过期
+		this.$watch('ruleForm.timestamp_start', function(newVal, oldVal) {
+			if (_this.ruleForm.vacation_type == 2 && _this.days_off_balance_list.length != 0) {
+				// 仅当选择调休类型以及调休余额异步加载成功时进入
+				for (let i = 0; i < _this.days_off_balance_list.length; i++){
+					_this.is_dol_timestamp_out_of_start_time[i] = _this.isOutOfDate(_this.days_off_balance_list[i].dol_timestamp, _this.ruleForm.timestamp_start, _this.rvs_time_liness)
+				}
+				// 设置is_show_tips1值
+				set_is_show_tips1()
+				// 自动勾选调休
+				auto_select_balance_list()
+			}
+		}, { deep: true });
+		// timestamp_end 变化时，判断调休是否过期
+		this.$watch('ruleForm.timestamp_end', function(newVal, oldVal) {
+			if (_this.ruleForm.vacation_type == 2 && _this.days_off_balance_list.length != 0) {
+				// 仅当选择调休类型以及调休余额异步加载成功时进入
+				for (let i = 0; i < _this.days_off_balance_list.length; i++){
+					_this.is_dol_timestamp_out_of_end_time[i] = _this.isOutOfDate(_this.days_off_balance_list[i].dol_timestamp, _this.ruleForm.timestamp_end, _this.rvs_time_liness)
+				}
+				// 设置is_show_tips1值
+				set_is_show_tips1()
+				// 自动勾选调休
+				auto_select_balance_list()
+			}
+		}, { deep: true });
+		// days_off_balance_list 变化时，判断调休是否过期
+		this.$watch('days_off_balance_list', function(newVal, oldVal) {
+			if (_this.ruleForm.timestamp_start && _this.ruleForm.timestamp_end) {
+				for (let i = 0; i < _this.days_off_balance_list.length; i++){
+					_this.is_dol_timestamp_out_of_start_time[i] = _this.isOutOfDate(_this.days_off_balance_list[i].dol_timestamp, _this.ruleForm.timestamp_start, _this.rvs_time_liness)
+					_this.is_dol_timestamp_out_of_end_time[i] = _this.isOutOfDate(_this.days_off_balance_list[i].dol_timestamp, _this.ruleForm.timestamp_end, _this.rvs_time_liness)
+				}
+				// 设置is_show_tips1值
+				set_is_show_tips1()
+				// 自动勾选调休
+				auto_select_balance_list()
+			}
+		}, { deep: true });
+
+		// num_of_days_off 变化时，判断调休是否过期
+		this.$watch('ruleForm.num_of_days_off', function(newVal, oldVal) {
+			// 只要num_of_days_off变化，先清空数组，重置垃圾数据
+			_this.ruleForm.dol_arr.length = 0
+			// 自动勾选调休
+			auto_select_balance_list()
+		}, { deep: true });
+
+		function set_is_show_tips1(){
+			// 设置is_show_tips1值
+			if (_this.is_dol_timestamp_out_of_start_time.length && _this.is_dol_timestamp_out_of_end_time.length) {
+					for(let i = 0; i < _this.is_dol_timestamp_out_of_start_time.length; i++) {
+						if (_this.is_dol_timestamp_out_of_start_time[i] != _this.is_dol_timestamp_out_of_end_time[i]){
+							// is_dol_timestamp_out_of_start_time与is_dol_timestamp_out_of_end_time对应位置，只要存在一个不相同值就可以显示tips1
+							_this.is_show_tips1 = true
+							break
+						}
+						_this.is_show_tips1 = false
+					}
+				}
+		}
+		// 休假类型为调休时，则系统自动勾选调休
+		function auto_select_balance_list(){
+			if (_this.ruleForm.vacation_type == 2 && _this.days_off_balance_list.length && _this.myVacationBalance > 0 && _this.ruleForm.num_of_days_off > 0 && (_this.myVacationBalance >= _this.ruleForm.num_of_days_off)) {
+				_this.ruleForm.dol_arr.length = 0 // 清空数组
+				for(let i = 0; i < _this.ruleForm.num_of_days_off; i+=0.5){
+					// _this.$set(_this.ruleForm.dol_arr, i*2, _this.days_off_balance_list[i*2]['dbl_id'])
+					_this.ruleForm.dol_arr.push(_this.days_off_balance_list[i*2]['dbl_id'])
+				}
+			}
 		}
 	},
 	methods: {
@@ -516,6 +615,30 @@ const app = new Vue({
 		},
 		resetForm(formName) {
 			this.$refs[formName].resetFields();
+		},
+		isOutOfDate(dol_timestamp, timestamp, rvs_time_liness){
+			//	判断选择调休是否过期
+			/*
+			* dol_timestamp 值班日期
+			* timestamp 休假日期
+			* rvs_time_liness 过期月份，默认3个月（月）
+			*/
+			return (timestamp.substr(0, 4) == dol_timestamp.substr(0, 4) 
+											? parseInt(timestamp.substr(4, 2)) - rvs_time_liness > parseInt(dol_timestamp.substr(4, 2)) 
+												? true
+												: parseInt(timestamp.substr(4, 2)) - rvs_time_liness == parseInt(dol_timestamp.substr(4, 2))
+														? parseInt(timestamp.substr(6, 2)) > parseInt(dol_timestamp.substr(6, 2))
+															? true
+															: false
+														: false
+											: (12 - parseInt(dol_timestamp.substr(4, 2)) + parseInt(timestamp.substr(4, 2)) > rvs_time_liness )
+												? true
+												: (12 - parseInt(dol_timestamp.substr(4, 2)) + parseInt(timestamp.substr(4, 2)) == rvs_time_liness )
+													? parseInt(timestamp.substr(6, 2)) > parseInt(dol_timestamp.substr(6, 2))
+														? true
+														: false
+													: false
+										)
 		},
 		getMyBalance () {
 			if (this.ruleForm.vacation_type == 1) {
