@@ -147,9 +147,9 @@
 								<el-span v-else-if="!ruleForm.half_day_end" style="color:red">
 									{{'请选择结束日期午次'}}
 								</el-span>
-								<el-span v-else-if="is_show_tips1" style="color:red; line-height: 24px;text-align:left;margin: 10px;">
+								<p v-else-if="is_show_tips1" style="color:red; line-height: 24px;text-align:left;margin: 10px;">
 									{{'所选的计划休假时段跨越了部分调休的有效期，请分批提交，并优先使用最早的班次。'}}
-								</el-span>
+								</p>
 								<br>
 								<el-span v-if="ruleForm.dol_arr.length && ruleForm.num_of_days_off != 0.5*ruleForm.dol_arr.length" style="color:red">
 									{{'调休天数与休假天数不对应'}}
@@ -333,7 +333,7 @@
 								<el-span v-else-if="!ruleForm.half_day_end" style="color:red">
 									{{'请选择结束日期午次'}}
 								</el-span>
-								<p popper-class="testclass" v-else-if="is_show_tips1" style="color:red; line-height: 24px;text-align:left;margin: 10px;">
+								<p v-else-if="is_show_tips1" style="color:red; line-height: 24px;text-align:left;margin: 10px;">
 									{{'所选的计划休假时段跨越了部分调休的有效期，请分批提交，并优先使用最早的班次。'}}
 								</p>
 								<br>
