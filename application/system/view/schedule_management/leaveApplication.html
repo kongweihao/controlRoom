@@ -481,6 +481,7 @@ const app = new Vue({
 				}
 				// 设置is_show_tips1值
 				set_is_show_tips1()
+				
 				// 自动勾选调休
 				auto_select_balance_list()
 			}
@@ -514,8 +515,6 @@ const app = new Vue({
 
 		// num_of_days_off 变化时，判断调休是否过期
 		this.$watch('ruleForm.num_of_days_off', function(newVal, oldVal) {
-			// 只要num_of_days_off变化，先清空数组，重置垃圾数据
-			_this.ruleForm.dol_arr.length = 0
 			// 自动勾选调休
 			auto_select_balance_list()
 		}, { deep: true });
@@ -535,11 +534,13 @@ const app = new Vue({
 		}
 		// 休假类型为调休时，则系统自动勾选调休
 		function auto_select_balance_list(){
+			_this.ruleForm.dol_arr.length = 0 // 清空数组
 			if (_this.ruleForm.vacation_type == 2 && _this.days_off_balance_list.length && _this.myVacationBalance > 0 && _this.ruleForm.num_of_days_off > 0 && (_this.myVacationBalance >= _this.ruleForm.num_of_days_off)) {
-				_this.ruleForm.dol_arr.length = 0 // 清空数组
 				for(let i = 0; i < _this.ruleForm.num_of_days_off; i+=0.5){
 					// _this.$set(_this.ruleForm.dol_arr, i*2, _this.days_off_balance_list[i*2]['dbl_id'])
-					_this.ruleForm.dol_arr.push(_this.days_off_balance_list[i*2]['dbl_id'])
+					if (_this.is_dol_timestamp_out_of_end_time[i*2] == false) { // 仅当调休可选时（disabled为false时）才自动选上
+						_this.ruleForm.dol_arr.push(_this.days_off_balance_list[i*2]['dbl_id'])
+					}
 				}
 			}
 		}
