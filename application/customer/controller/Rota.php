@@ -14,6 +14,80 @@ class Rota extends Controller
 	{
 		return $this->fetch();
 	}
+	// 创建本地日历（2002-2024）
+	public function create_calendar()
+	{	
+		$arrContextOptions=array( // ；临时跳过ssl认证
+		    "ssl"=>array(
+		        "verify_peer"=>false,
+		        "verify_peer_name"=>false,
+		        "allow_self_signed"=>true,
+		    ),
+		);
+		$ym = 200201; // 开始时间
+		// 取消30s的时间限制 -- 不过有时候也会失败，因为roll接口有访问总数限制
+		set_time_limit(0);
+		while ($ym <= 202412) { // 结束时间 循环获取2002年-2024年的数据，每年更新当年日历，未来的数据要实时获取
+			if (substr($ym, 4, 2) == 13) {
+				$ym = $ym - 12 + 100;
+			}
+			$rollHolidayAPI = 'https://www.mxnzp.com/api/holiday/list/month/' . $ym . '?ignoreHoliday=false&app_id=n0suksemrqafttpd&app_secret=T1d6Z0wraTdYeTRjZktnc2VoeDUrQT09';
+			$rollHolidayRS = json_decode(file_get_contents($rollHolidayAPI, false, stream_context_create($arrContextOptions)), true);
+			$holidayData = $rollHolidayRS['data'];
+			// 检测字段完整性 insertAll方法的缺陷，字段必须一一对应
+			for ($i = 0; $i < sizeof($holidayData); $i ++) {
+				if (!array_key_exists('date', $holidayData[$i])) {
+					$holidayData[$i]['date'] = '';
+				}
+				if (!array_key_exists('weekDay', $holidayData[$i])) {
+					$holidayData[$i]['weekDay'] = '';
+				}
+				if (!array_key_exists('yearTips', $holidayData[$i])) {
+					$holidayData[$i]['yearTips'] = '';
+				}
+				if (!array_key_exists('type', $holidayData[$i])) {
+					$holidayData[$i]['type'] = '';
+				}
+				if (!array_key_exists('typeDes', $holidayData[$i])) {
+					$holidayData[$i]['typeDes'] = '';
+				}
+				if (!array_key_exists('chineseZodiac', $holidayData[$i])) {
+					$holidayData[$i]['chineseZodiac'] = '';
+				}
+				if (!array_key_exists('solarTerms', $holidayData[$i])) {
+					$holidayData[$i]['solarTerms'] = '';
+				}
+				if (!array_key_exists('lunarCalendar', $holidayData[$i])) {
+					$holidayData[$i]['lunarCalendar'] = '';
+				}
+				if (!array_key_exists('suit', $holidayData[$i])) {
+					$holidayData[$i]['suit'] = '';
+				}
+				if (!array_key_exists('avoid', $holidayData[$i])) {
+					$holidayData[$i]['avoid'] = '';
+				}
+				if (!array_key_exists('dayOfYear', $holidayData[$i])) {
+					$holidayData[$i]['dayOfYear'] = '';
+				}
+				if (!array_key_exists('weekOfYear', $holidayData[$i])) {
+					$holidayData[$i]['weekOfYear'] = '';
+				}
+				if (!array_key_exists('constellation', $holidayData[$i])) {
+					$holidayData[$i]['constellation'] = '';
+				}
+				if (!array_key_exists('indexWorkDayOfMonth', $holidayData[$i])) {
+					$holidayData[$i]['indexWorkDayOfMonth'] = '';
+				}
+			}
+			$rs = Db::table('calendar')->insertAll($holidayData);
+			$ym++;
+			print($rs);
+			sleep(1); // 接口qps不允许连续获取数据，此处每次延迟一秒保存一次数据
+		}
+		
+		return $ym;
+	}
+	
 	/**
 	 * 获取最近四天天气数据
 	 * ROLLAPI
