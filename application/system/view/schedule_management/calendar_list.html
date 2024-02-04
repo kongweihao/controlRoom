@@ -1,0 +1,363 @@
+<div class="layui-body" style="left:200px;">
+	<div id="app">
+		<fieldset class="layui-elem-field layui-field-title">
+			<legend>日历信息</legend>
+		</fieldset>
+		<el-card style="display: block;margin: auto 15px;">
+			<el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch"></el-button>
+			<el-button icon="el-icon-plus" circle @click="isShowCreateDiv = !isShowCreateDiv"></el-button>
+			<!-- 搜索面板 -->
+			<div v-show="isShowSearch" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true" :model="searchForm" ref="searchForm">
+					<el-form-item label="日期" prop="date">
+						<el-input
+						v-model="searchForm.date"
+						width="50"
+						placeholder="格式yyyy-mm-dd,支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="星期" prop="weekDay">
+						<el-input
+						v-model="searchForm.weekDay"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="纪年" prop="yearTips">
+						<el-input
+						v-model="searchForm.yearTips"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="类型" prop="type">
+						<el-input
+						v-model="searchForm.type"
+						width="50"
+						placeholder="类型 0 工作日 1 假日 2 节假日"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="类型描述" prop="typeDes">
+						<el-input
+						v-model="searchForm.typeDes"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="属相" prop="chineseZodiac">
+						<el-input
+						v-model="searchForm.chineseZodiac"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="节气" prop="solarTerms">
+						<el-input
+						v-model="searchForm.solarTerms"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="农历日期" prop="lunarCalendar">
+						<el-input
+						v-model="searchForm.lunarCalendar"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="宜事项" prop="suit">
+						<el-input
+						v-model="searchForm.suit"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="忌事项" prop="avoid">
+						<el-input
+						v-model="searchForm.avoid"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="这一年的第几天" prop="dayOfYear">
+						<el-input
+						v-model="searchForm.dayOfYear"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="这一年的第几周" prop="weekOfYear">
+						<el-input
+						v-model="searchForm.weekOfYear"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="星座" prop="constellation">
+						<el-input
+						v-model="searchForm.constellation"
+						width="50"
+						placeholder="支持模糊搜索"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item label="本月工作日索引" prop="indexWorkDayOfMonth">
+						<el-input
+						v-model="searchForm.indexWorkDayOfMonth"
+						width="50"
+						placeholder="如果当前是工作日 则返回是当前月的第几个工作日，否则返回0"
+						@blur="search()"></el-input>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="search()">搜索</el-button>
+						<el-button @click="resetForm('searchForm')">重置</el-button>
+						<el-button @click="isShowSearch = !isShowSearch">收起</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<!-- 创建面板 -->
+			<div v-show="isShowCreateDiv" style="border: 1px solid #eee; border-radius:5px;padding:15px;margin:15px auto;">
+				<el-form :inline="true">
+					<el-form-item label="创建日历">
+						<el-date-picker
+						v-model="createForm"
+						value-format="yyyyMM"
+						type="monthrange"
+						range-separator="至"
+						start-placeholder="开始月份"
+						end-placeholder="结束月份">
+						</el-date-picker>
+					</el-form-item>
+					<el-form-item style="display: block;text-align:center">
+						<el-button type="primary" @click="handleCreate()">创建日历</el-button>
+						<el-button @click="resetForm('createForm')">重置</el-button>
+						<el-button @click="isShowSearch = !isShowSearch">收起</el-button>
+					</el-form-item>
+				</el-form>
+			</div>
+			<!-- 日历列表 -->
+			<el-table
+			:data="calendar_list"
+			max-height="1000"
+			show-summary
+			border
+			style="margin-top:15px">
+				<el-table-column
+				type="index"
+				label="序号"
+				width="50"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="date"
+				label="日期"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="weekDay"
+				label="星期"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="yearTips"
+				label="纪年"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="type"
+				label="类型"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="typeDes"
+				label="类型描述"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="chineseZodiac"
+				label="属相"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="solarTerms"
+				label="节气"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="lunarCalendar"
+				label="农历日期"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="suit"
+				label="宜事项"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="avoid"
+				label="忌事项"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="dayOfYear"
+				label="这一年的第几天"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="weekOfYear"
+				label="这一年的第几周"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="constellation"
+				label="星座"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="indexWorkDayOfMonth"
+				label="本月工作日索引"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="create_time"
+				label="创建时间"
+				sortable
+				align="center"></el-table-column>
+				<el-table-column
+				prop="update_time"
+				label="更新时间"
+				sortable
+				align="center"></el-table-column>
+			</el-table>
+			<div style="margin: auto 15px">
+				<el-pagination
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+				:current-page="pagination.current_page"
+				:page-sizes="[10, 20, 30, 40, 50, 100, 500]"
+				:page-size="pagination.per_page"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="pagination.total"
+				style="margin-top: 10px"></el-pagination>
+			</div>
+		</el-card>
+	</div>
+</div>
+<script>
+const calendar_list = {:json_encode($calendar_list)};
+const pagination = {
+				current_page: calendar_list.current_page,
+				last_page: calendar_list.last_page,
+				per_page: calendar_list.per_page,
+				total: calendar_list.total
+			};
+let app = new Vue({
+	el: '#app',
+	data() {
+		return {
+			isShowSearch: false, // 打开搜索面板
+			isShowCreateDiv: false, // 打开创建面板
+			createForm: [],
+			searchForm: {
+				date: '',
+				weekDay: '',
+				yearTips: '',
+				type: '',
+				typeDes: '',
+				chineseZodiac: '',
+				solarTerms: '',
+				lunarCalendar: '',
+				suit: '',
+				avoid: '',
+				dayOfYear: '',
+				weekOfYear: '',
+				indexWorkDayOfMonth: '',
+				create_time: [],
+				update_time: []
+			},
+			calendar_list: calendar_list.data,
+			pagination: pagination,
+		}
+	},
+	methods: {
+		search(){
+			const _this = this;
+			$.ajax({
+				url:'calendar_list',
+				type:'post',
+				data:{
+					isSearch: 1,
+					pagination: _this.pagination,
+					searchForm: _this.searchForm
+				},
+				success:function (res) {
+					console.log(res);
+					_this.calendar_list = res.data
+					_this.pagination = {
+						current_page: res.current_page,
+						last_page: res.last_page,
+						per_page: res.per_page,
+						total: res.total
+					}
+				},
+				error:function(e){
+					console.log(e)
+					
+								_this.$message({
+									type: 'error',
+									message: '发生错误，请刷新一下'
+								});
+				}
+			})
+		},
+		resetForm(formName){
+			this.$refs[formName].resetFields();
+			if (formName === 'searchForm') {
+				this.search()
+			}
+		},
+		handleCreate() {
+			const _this = this;
+			const data = {
+				start_month: _this.createForm[0],
+				end_month: _this.createForm[1]
+			}
+			$.ajax({
+				url:'create_calendar',
+				data: data,
+				type: 'post',
+				success: function (res) {
+					_this.$message({
+						type: 'info',
+						message: res
+					});
+				},
+				error: function (err) {
+					console.log(err);
+					_this.$message({
+						type: 'error',
+						message: '未知错误，请联系管理员'
+					});
+				}
+			})
+		},
+		// pagination时
+		handleSizeChange(per_page){
+			const _this = this;
+			_this.pagination.per_page = per_page
+			_this.search();
+		},
+		handleCurrentChange(current_page){
+			const _this = this;
+			_this.pagination.current_page = current_page
+			_this.search();
+		},
+		handleClose(done) {
+			this.$confirm('确认关闭？')
+				.then(_ => {
+					done();
+				})
+          .catch(_ => {});
+      	}
+	}
+})
+</script>

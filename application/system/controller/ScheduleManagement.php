@@ -22,6 +22,147 @@ class ScheduleManagement extends Auth{ // 上线用的
 	public function test(Request $request){
 		
 	}
+	
+	/**
+	 * 查看日历
+	 */
+	public function calendar_list(){
+		$params = input();
+		if( $params['isSearch'] != 1 ){
+			// 首次打开页面
+			$calendar_list = Db::table('calendar')
+				->order('create_time','DESC') // ASC 升序
+				->paginate(10)->toArray();
+			$this->assign([
+				'calendar_list'=>$calendar_list
+			]);
+			return $this->fetch();
+		} else {
+			// 搜索功能
+			$pagination = $params['pagination'];
+			$searchForm = $params['searchForm'];
+			$condition = [];
+			$condition['date'] = ['like','%'.$searchForm['date'].'%'];
+			$condition['weekDay'] = ['like','%'.$searchForm['weekDay'].'%'];
+			$condition['yearTips'] = ['like','%'.$searchForm['yearTips'].'%'];
+			$condition['type'] = ['like','%'.$searchForm['type'].'%'];
+			$condition['typeDes'] = ['like','%'.$searchForm['typeDes'].'%'];
+			$condition['chineseZodiac'] = ['like','%'.$searchForm['chineseZodiac'].'%'];
+			$condition['solarTerms'] = ['like','%'.$searchForm['solarTerms'].'%'];
+			$condition['lunarCalendar'] = ['like','%'.$searchForm['lunarCalendar'].'%'];
+			$condition['suit'] = ['like','%'.$searchForm['suit'].'%'];
+			$condition['avoid'] = ['like','%'.$searchForm['avoid'].'%'];
+			$condition['dayOfYear'] = ['like','%'.$searchForm['dayOfYear'].'%'];
+			$condition['weekOfYear'] = ['like','%'.$searchForm['weekOfYear'].'%'];
+			$condition['constellation'] = ['like','%'.$searchForm['constellation'].'%'];
+			$condition['indexWorkDayOfMonth'] = ['like','%'.$searchForm['indexWorkDayOfMonth'].'%'];
+			$calendar_list = Db::table('calendar')
+				->where($condition)
+				->paginate($pagination['per_page'],false,[
+					'page' => $pagination['current_page'],
+					'list_rows' => $pagination['per_page'],
+				]);
+			return \json($calendar_list);
+		}
+	}
+	/**
+	 * 创建本地日历
+	 * 接口只有2002-至今的返回数据
+	 */
+	public function create_calendar()
+	{	
+		$arrContextOptions=array( // ；临时跳过ssl认证
+		    "ssl"=>array(
+		        "verify_peer"=>false,
+		        "verify_peer_name"=>false,
+		        "allow_self_signed"=>true,
+		    ),
+		);
+		$start_month = input()['start_month'];
+		$end_month = input()['end_month'];
+
+		if (!is_numeric($start_month) || !is_numeric($end_month)) {
+			return '参数需为yyyymm格式的六位数字';
+		}
+
+		if ($start_month < 200200) {
+			return '开始时间不能小于200201';
+		}
+
+		if ($start_month >= $end_month) {
+			return '开始时间不能大于等于结束时间';
+		}
+		$is_time_range_exit = Db::table('calendar')->where('date', substr( $start_month, 0, 4) . '-'.substr( $start_month, 4, 2).'-01')->find();
+		
+		if ($is_time_range_exit) {
+			return '开始月份已存在';
+		}
+		$ym = $start_month; // 开始时间
+		// 取消30s的时间限制 -- 不过有时候也会失败，因为roll接口有访问总数限制
+		set_time_limit(0);
+		while ($ym <= $end_month) { // 结束时间 循环获取2002年-2024年的数据，每年更新当年日历，未来的数据要实时获取
+			if (substr($ym, 4, 2) == 13) {
+				$ym = $ym - 12 + 100;
+			}
+			$rollHolidayAPI = 'https://www.mxnzp.com/api/holiday/list/month/' . $ym . '?ignoreHoliday=false&app_id=n0suksemrqafttpd&app_secret=T1d6Z0wraTdYeTRjZktnc2VoeDUrQT09';
+			$rollHolidayRS = json_decode(file_get_contents($rollHolidayAPI, false, stream_context_create($arrContextOptions)), true);
+			if ($rollHolidayRS['coda'] != 1) {
+				return $rollHolidayRS['msg'];
+			}
+			$holidayData = $rollHolidayRS['data'];
+			// 检测字段完整性 insertAll方法的缺陷，字段必须一一对应
+			for ($i = 0; $i < sizeof($holidayData); $i ++) {
+				if (!array_key_exists('date', $holidayData[$i])) {
+					$holidayData[$i]['date'] = '';
+				}
+				if (!array_key_exists('weekDay', $holidayData[$i])) {
+					$holidayData[$i]['weekDay'] = '';
+				}
+				if (!array_key_exists('yearTips', $holidayData[$i])) {
+					$holidayData[$i]['yearTips'] = '';
+				}
+				if (!array_key_exists('type', $holidayData[$i])) {
+					$holidayData[$i]['type'] = '';
+				}
+				if (!array_key_exists('typeDes', $holidayData[$i])) {
+					$holidayData[$i]['typeDes'] = '';
+				}
+				if (!array_key_exists('chineseZodiac', $holidayData[$i])) {
+					$holidayData[$i]['chineseZodiac'] = '';
+				}
+				if (!array_key_exists('solarTerms', $holidayData[$i])) {
+					$holidayData[$i]['solarTerms'] = '';
+				}
+				if (!array_key_exists('lunarCalendar', $holidayData[$i])) {
+					$holidayData[$i]['lunarCalendar'] = '';
+				}
+				if (!array_key_exists('suit', $holidayData[$i])) {
+					$holidayData[$i]['suit'] = '';
+				}
+				if (!array_key_exists('avoid', $holidayData[$i])) {
+					$holidayData[$i]['avoid'] = '';
+				}
+				if (!array_key_exists('dayOfYear', $holidayData[$i])) {
+					$holidayData[$i]['dayOfYear'] = '';
+				}
+				if (!array_key_exists('weekOfYear', $holidayData[$i])) {
+					$holidayData[$i]['weekOfYear'] = '';
+				}
+				if (!array_key_exists('constellation', $holidayData[$i])) {
+					$holidayData[$i]['constellation'] = '';
+				}
+				if (!array_key_exists('indexWorkDayOfMonth', $holidayData[$i])) {
+					$holidayData[$i]['indexWorkDayOfMonth'] = '';
+				}
+			}
+			$rs = Db::table('calendar')->insertAll($holidayData);
+			$ym++;
+			print($rs);
+			sleep(1); // 接口qps不允许连续获取数据，此处每次延迟一秒保存一次数据
+		}
+		
+		return $ym;
+	}
 	/**
 	 * 规则设置·查
 	 */

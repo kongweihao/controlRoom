@@ -4,7 +4,6 @@ use think\Route;
 /***************************************************customer模块***************************************************************************/
 // Rota控制器 前端值班新增展示模块
 Route::group(['prefix' => 'customer/Rota/'], function () {
-	Route::get('customer/create_calendar', 'create_calendar'); // 创建本地日历（2002-2050），接口只有2002年开始的数据
 	Route::get('customer/get_rotaList_day_for_alarm_topo', 'get_rotaList_day_for_alarm_topo'); // 获取每日值班表列表_告警topo共享接口
 	Route::get('customer/rotaList_day', 'rotaList_day'); // 打开值班表页面，同时获取每日值班信息
 	Route::get('customer/rotaList_day_happyNewYear2020', 'rotaList_day_happyNewYear2020'); // 打开值班表页面，同时获取每日值班信息
@@ -285,6 +284,9 @@ Route::group(['prefix' => 'system/inventory_management/'], function () {
 
 // schedule_management控制器 日程管理模块
 Route::group(['prefix' => 'system/schedule_management/'], function () {
+	// 查看日历
+	Route::any('system/calendar_list', 'calendar_list'); // 查看日历
+	Route::any('system/create_calendar', 'create_calendar'); // 创建日历
 	// 调休申请
 	Route::any('system/leaveApplication', 'leaveApplication'); // 调休申请·查
 	Route::any('system/addleaveApplication', 'addleaveApplication'); // 调休申请·增
