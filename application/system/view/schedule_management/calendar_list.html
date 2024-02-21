@@ -166,7 +166,11 @@
 				prop="type"
 				label="类型"
 				sortable
-				align="center"></el-table-column>
+				align="center">
+					<template slot-scope="scope">
+						{{scope.row.type == 0? '工作日': scope.row.type == 1? '周末': '节假日'}}
+					</template>
+				</el-table-column>
 				<el-table-column
 				prop="typeDes"
 				label="类型描述"

@@ -377,11 +377,18 @@ class Rota extends Controller
 	 * 获取当日值班信息
 	 * 需求人：王如玥
 	 * 用途：为岗位日志大值班自动生成总结提供数据源
+	 * 后来用途：为故障看板2.0提供值班人员信息
 	 */
 	public function getTodayMonitor(RotaModel $rota)
 	{
 		$today = date('Ymd');
-		$rs = Db::table('rota')->where('time_stamp', $today)->select();
+		$rs = Db::table('rota')
+				->alias(['rota' => 'r', 'member' => 'm'])
+				->where(['r.time_stamp' => $today, 'r.is_night' => 1])
+				->join('member m', 'r.member_name=m.name')
+				->order(['r.sort_night ASC']) //DESC降序
+				->select();
+		// $rs = Db::table('rota')->where('time_stamp', $today)->select();
 		return json($rs);
 	}
 }

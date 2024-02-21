@@ -58,6 +58,7 @@ class ScheduleManagement extends Auth{ // 上线用的
 			$condition['indexWorkDayOfMonth'] = ['like','%'.$searchForm['indexWorkDayOfMonth'].'%'];
 			$calendar_list = Db::table('calendar')
 				->where($condition)
+				->order('create_time','DESC') // ASC 升序
 				->paginate($pagination['per_page'],false,[
 					'page' => $pagination['current_page'],
 					'list_rows' => $pagination['per_page'],
