@@ -384,9 +384,8 @@ class Rota extends Controller
 		$today = date('Ymd');
 		$rs = Db::table('rota')
 				->alias(['rota' => 'r', 'member' => 'm'])
-				->where(['r.time_stamp' => $today, 'r.is_night' => 1])
+				->where(['r.time_stamp' => $today])
 				->join('member m', 'r.member_name=m.name')
-				->order(['r.sort_night ASC']) //DESC降序
 				->select();
 		// $rs = Db::table('rota')->where('time_stamp', $today)->select();
 		return json($rs);
