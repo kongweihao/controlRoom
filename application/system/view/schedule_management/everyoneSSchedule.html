@@ -11,14 +11,19 @@
 		</el-card>
 		<el-card style="display: block;margin: auto 15px 15px;max-height: 600px;overflow:auto" v-loading="isAppLoading">
 			<el-divider>
+				<span v-if="isShowTItle" @click="isShowTItle = false " style="cursor: pointer;">
+					<span v-show="thisYear != year">{{year + '年' }}</span><span style="font-size:40px">{{ month }}</span> 月
+				</span>
 				<el-date-picker
+				v-else
+				ref="title_input"
+				@blur="isShowTItle = true"
 				v-model="nowDate"
 				type="month"
 				value-format="yyyy-MM"
 				@change="getMonths('nowDate')"
 				placeholder="选择月">
 				</el-date-picker>
-				<!-- <span v-if="thisYear != year">{{year + '年' }}</span><span style="font-size:40px">{{ month }}</span> 月 -->
 			</el-divider>
 			<el-table
 			:data="everyoneSScheduleTableData"
@@ -194,6 +199,7 @@ const app = new Vue({
 		return {
 			isMobile: isMobile(),
 			isAppLoading: false,
+			isShowTItle: true, // 用于切换编辑框
 			isShowNight: false,
 			thisYear: Y,
 			year: Y,
@@ -203,6 +209,16 @@ const app = new Vue({
 			monthDayNum: this.getMonthDays(Y,M), // 制作休假日历的table数据
 			everyoneSScheduleTableData: this.makeEveryoneSScheduleTableData(everyoneSSchedule, this.getMonthDays(Y,M), Y + (M < 10 ? "0" : "") + M),
 		}
+	},
+	watch:{
+		'isShowTItle'(){
+			const _this = this
+			if (!_this.isShowTItle) {
+				setTimeout(function(){
+					_this.$refs.title_input.focus() // 显示时间筛选框的时候自动聚焦，这样才能在用户未手动聚焦点击其他地方时触发blur失焦事件，以切回正常title
+				}, 100)
+			}
+		}	
 	},
 	methods: {
 		getMonths(monthType) {
