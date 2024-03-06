@@ -214,7 +214,7 @@ const app = new Vue({
 		'isShowTItle'(){
 			const _this = this
 			if (!_this.isShowTItle) {
-				setTimeout(function(){
+				setTimeout(function(){ // 延迟100毫米执行，等待组建渲染完成
 					_this.$refs.title_input.focus() // 显示时间筛选框的时候自动聚焦，这样才能在用户未手动聚焦点击其他地方时触发blur失焦事件，以切回正常title
 				}, 100)
 			}

@@ -10,6 +10,7 @@ Route::group(['prefix' => 'customer/Rota/'], function () {
 	Route::get('customer/rotaList_day_happyNewYear2021', 'rotaList_day_happyNewYear2021'); // 打开值班表页面，同时获取每日值班信息
 	Route::get('customer/rotaList_day_happyNewYear', 'rotaList_day_happyNewYear'); // 打开值班表页面，同时获取每日值班信息
 	//  短期开放微信小程序测试接口
+	Route::get('customer/rotaListByTimeRange', 'rotaListByTimeRange'); // 获取值班表，按时间范围获取
 	Route::get('customer/rotaList', 'rotaList'); // 获取值班表，按日期获取
 	Route::get('customer/editRotaList', 'editRotaList'); // 更换班表
 	Route::get('customer/getTMMonitor', 'getTMMonitor'); // 获取今明两天值班人员信息——短信接口

@@ -329,6 +329,28 @@ class Rota extends Controller
 		return $this->fetch();
 	}
 	/**
+	 * 按时间范围获取值班表
+	 */
+	public function rotaListByTimeRange(RotaModel $rota)
+	{
+		$data = input();
+		$start_time = $data['start_time'];
+		$end_time = $data['end_time'];
+		$res = [];
+		$res['code'] = 0;
+		
+		if ($start_time == '' || $end_time == '') {
+			$res['msg'] = '请输入时间范围';
+			return json($res);
+		}
+
+		$rotalist = Db::table('rota')
+			->where('time_stamp', '>=', $start_time)
+			->where('time_stamp', '<=', $end_time)
+			->select();
+		return json($rotalist);
+	}
+	/**
 	 * 按月份获取值班表
 	 */
 	public function rotaList(RotaModel $rota)
