@@ -347,7 +347,9 @@ class Rota extends Controller
 		$rotalist = Db::table('rota')
 			->where('time_stamp', '>=', $start_time)
 			->where('time_stamp', '<=', $end_time)
+			->order(['time_stamp DESC']) // ASC升序 DESC降序
 			->select();
+
 		return json($rotalist);
 	}
 	/**
