@@ -181,9 +181,17 @@ Route::group(['prefix' => 'system/rota_data/'], function () {
 	Route::any('system/nightShiftData', 'nightShiftData'); // 夜班数据统计
 	Route::any('system/holidayOvertimeData', 'holidayOvertimeData'); // 节假日加班统计
 });
-// ArtificialIntelligence控制器   智慧大楼模块
+// AI控制器 人工智能模块
 Route::group(['prefix' => 'system/Ai/'], function () {
 	Route::any('system/faceDetect', 'faceDetect'); // 人脸识别
+	Route::any('system/sd1', 'sd1'); // stable diffusion列表
+	Route::any('system/sd2', 'sd2'); // stable diffusion列表
+	Route::any('system/sd3', 'sd3'); // stable diffusion列表
+	Route::any('system/sd4', 'sd4'); // stable diffusion列表
+	Route::any('system/sd5', 'sd5'); // stable diffusion列表
+	Route::any('system/sd6', 'sd6'); // stable diffusion列表
+	Route::any('system/sd7', 'sd7'); // stable diffusion列表
+	Route::any('system/sd8', 'sd8'); // stable diffusion列表
 });
 // PersonalCenter控制器   个人中心模块
 Route::group(['prefix' => 'system/PersonalCenter/'], function () {

@@ -11,13 +11,13 @@
 		</el-card>
 		<el-card style="display: block;margin: auto 15px 15px;max-height: 600px;overflow:auto" v-loading="isAppLoading">
 			<el-divider>
-				<span v-if="isShowTItle" @click="isShowTItle = false " style="cursor: pointer;">
+				<span v-if="isShowTitle" @click="isShowTitle = false " style="cursor: pointer;">
 					<span v-show="thisYear != year">{{year + '年' }}</span><span style="font-size:40px">{{ month }}</span> 月
 				</span>
 				<el-date-picker
 				v-else
 				ref="title_input"
-				@blur="isShowTItle = true"
+				@blur="isShowTitle = true"
 				v-model="nowDate"
 				type="month"
 				value-format="yyyy-MM"
@@ -199,7 +199,7 @@ const app = new Vue({
 		return {
 			isMobile: isMobile(),
 			isAppLoading: false,
-			isShowTItle: true, // 用于切换编辑框
+			isShowTitle: true, // 用于切换编辑框
 			isShowNight: false,
 			thisYear: Y,
 			year: Y,
@@ -211,11 +211,12 @@ const app = new Vue({
 		}
 	},
 	watch:{
-		'isShowTItle'(){
+		'isShowTitle'(){
 			const _this = this
-			if (!_this.isShowTItle) {
-				setTimeout(function(){ // 延迟100毫米执行，等待组建渲染完成
+			if (!_this.isShowTitle) {
+				const Timer = setTimeout(function(){ // 延迟100毫米执行，等待组建渲染完成
 					_this.$refs.title_input.focus() // 显示时间筛选框的时候自动聚焦，这样才能在用户未手动聚焦点击其他地方时触发blur失焦事件，以切回正常title
+					clearTimeout(Timer)
 				}, 100)
 			}
 		}	

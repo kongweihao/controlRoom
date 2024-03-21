@@ -1,0 +1,26 @@
+
+<div id="app" class="layui-body">
+	<el-row style="width: 100%;height: 800px;">
+		<el-button icon="el-icon-refresh" @click="handleReloadSDIframe" type="primary" circle style="position: absolute;right: 15px;top: 20px; "></el-button>
+		<iframe v-if="!isReloadSDIframe" src="http://192.168.199.63:7868" frameborder="0" style="width: 100%;height: 100%;margin: 10px 0;border: 3px solid rgb(56, 119, 255);border-radius: 10px;"></iframe>
+	</el-row>
+</div>
+<script>
+const app = new Vue({
+	el: '#app',
+	data() {
+		return {
+			isReloadSDIframe: false
+		}
+	},
+	methods: {
+		// 重载设备1iframe
+		handleReloadSDIframe(){
+			this.isReloadSDIframe = true
+			this.$nextTick(function(){
+				this.isReloadSDIframe = false
+			})
+		}
+	}
+})
+</script>
