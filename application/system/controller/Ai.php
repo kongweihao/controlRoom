@@ -17,6 +17,12 @@ use think\Session;
 // class Ai extends Controller{ // 调试用的，没有做权限限制
 class Ai extends Auth{ // 上线用的
 	/**
+	 * 图像生成·管理员端口8860
+	 */
+	public function sd0(Request $request) {
+		return $this->fetch();
+	}
+	/**
 	 * 图像生成·设备1
 	 */
 	public function sd1(Request $request) {
@@ -57,43 +63,5 @@ class Ai extends Auth{ // 上线用的
 	 */
 	public function sd7(Request $request) {
 		return $this->fetch();
-	}
-	/**
-	 * 图像生成·设备8
-	 */
-	public function sd8(Request $request) {
-		return $this->fetch();
-	}
-	
-	/**
-	 * 公共测试接口
-	 */
-	public function test(Request $request){
-		return json(input());
-	}
-	/**
-	 * 监控岗位列表
-	 */
-	public function faceDetect(Request $request){
-		$data = input();
-		if($data['detect'] == 1){
-			// 开始人脸检测
-			unset($data['detect']);
-			// 获取AccessToken
-			$getAccessToken = 'https://aip.baidubce.com/rest/2.0/face/v3/detect';
-			//写入参数
-			$rs = HttpRequest::curl_post($getAccessToken,$data);
-			return json($rs);
-		}else{
-			// 获取AccessToken
-			$getAccessToken = 'http://aip.baidubce.com/oauth/2.0/token';
-			//写入参数
-			$param['grant_type'] = 'client_credentials';
-			$param['client_id'] = 'EmG9tUExovCtSfY8gzeEGnYr';
-			$param['client_secret'] = '31cCNKFiQF5NY41KBnWknMZQaXyoUWsf';
-			$rs = HttpRequest::curl_post($getAccessToken,$param);
-			$this->assign('AccessToken', $rs['access_token']);
-			return $this->fetch();
-		}
 	}
 }
