@@ -255,30 +255,30 @@ document.onkeydown = function(event){
 }
 
 
-let tipDiv = document.createElement('DIV');
-let tipDivWidth = 280;
-let tipDivheight = 36;
-let tipDivTop = window.innerHeight/2 - tipDivheight;
-let tipDivLeft = window.innerWidth/2 - tipDivWidth;
+// let tipDiv = document.createElement('DIV');
+// let tipDivWidth = 280;
+// let tipDivheight = 36;
+// let tipDivTop = window.innerHeight/2 - tipDivheight;
+// let tipDivLeft = window.innerWidth/2 - tipDivWidth;
 
-tipDiv.style.position = 'fixed';
-tipDiv.style.top = tipDivTop + 'px';
-tipDiv.style.left = tipDivLeft + 'px';
-tipDiv.style.width = tipDivWidth + 'px';
-tipDiv.style.height = tipDivheight +  'px';
-tipDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
-tipDiv.style.textAlign = 'center';
-tipDiv.style.verticalAlign = 'center';
-tipDiv.style.fontSize = '16px';
-tipDiv.style.paddingTop = '15px';
-tipDiv.style.borderRadius = '5px';
-tipDiv.textContent = '试试按下组合键：ctr+alt+F1';
-tipDiv.className = 'wow rubberBand tipDiv';
-tipDiv.setAttribute('data-wow-duration','1s');
-document.body.appendChild(tipDiv)
-setInterval(function(){
-	$('.tipDiv').remove()
-},4000)
+// tipDiv.style.position = 'fixed';
+// tipDiv.style.top = tipDivTop + 'px';
+// tipDiv.style.left = tipDivLeft + 'px';
+// tipDiv.style.width = tipDivWidth + 'px';
+// tipDiv.style.height = tipDivheight +  'px';
+// tipDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
+// tipDiv.style.textAlign = 'center';
+// tipDiv.style.verticalAlign = 'center';
+// tipDiv.style.fontSize = '16px';
+// tipDiv.style.paddingTop = '15px';
+// tipDiv.style.borderRadius = '5px';
+// tipDiv.textContent = '试试按下组合键：ctr+alt+F1';
+// tipDiv.className = 'wow rubberBand tipDiv';
+// tipDiv.setAttribute('data-wow-duration','1s');
+// document.body.appendChild(tipDiv)
+// setInterval(function(){
+// 	$('.tipDiv').remove()
+// },4000)
 
 </script>
 <style>
